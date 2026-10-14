@@ -37,9 +37,14 @@ enum AnnotationRenderer {
     }
 
     private static func drawContent(_ annotation: Annotation, in ctx: CGContext, context: RenderContext) {
+        let style = annotation.style
         switch annotation.kind {
-        default:
-            break
+        case .arrow(let data): ShapeRenderer.drawArrow(data, style: style, in: ctx)
+        case .line(let data): ShapeRenderer.drawLine(data.line, style: style, in: ctx)
+        case .shape(let data): ShapeRenderer.drawShape(data, style: style, in: ctx)
+        case .pen(let data): ShapeRenderer.drawPen(data, style: style, in: ctx)
+        case .highlight(let data): ShapeRenderer.drawHighlight(data, style: style, in: ctx)
+        default: break
         }
     }
 }
