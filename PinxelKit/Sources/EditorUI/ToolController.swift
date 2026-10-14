@@ -64,7 +64,11 @@ public struct TextEditRequest: Equatable, Sendable {
 /// e comandi. Non conosce viste né finestre (spec §6.3).
 public final class ToolController {
     public var tool: EditorTool = .select {
-        didSet { if tool != oldValue { gesture = .idle } }
+        didSet {
+            guard tool != oldValue else { return }
+            cancelGesture()
+            cropRect = nil
+        }
     }
     public var styles = ToolStyles()
     /// Distanze in pixel del documento; il canvas le aggiorna con lo zoom.
@@ -88,12 +92,28 @@ public final class ToolController {
     private var gesture: Gesture = .idle
     /// Dimensioni dell'immagine del documento dell'ultimo evento (lente, ritaglio, guide).
     private var imageSize: CGSize = .zero
+    /// Riquadro del ritaglio in corso, in coordinate del documento; `nil` = tutta l'immagine.
+    public private(set) var cropRect: CGRect?
+    private var cropDrag: (mode: CropGeometry.DragMode, start: CGPoint, original: CGRect)?
 
     public init() {}
 
     public var isGestureActive: Bool {
+        if cropDrag != nil { return true }
         if case .idle = gesture { return false }
         return true
+    }
+
+    /// Interrompe il gesto in corso senza produrre comandi.
+    private func cancelGesture() {
+        gesture = .idle
+        cropDrag = nil
+    }
+
+    /// Riquadro da mostrare sopra l'immagine con lo strumento Ritaglio; `nil` con gli altri strumenti.
+    public func cropOverlay(imageSize: PixelSize) -> CGRect? {
+        guard tool == .crop else { return nil }
+        return cropRect ?? CGRect(origin: .zero, size: imageSize.cgSize)
     }
 
     public func handle(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
@@ -104,6 +124,7 @@ public final class ToolController {
         switch tool {
         case .select: return handleSelect(event, document: document, selection: selection)
         case .text, .callout: return handleText(event, document: document)
+        case .crop: return handleCrop(event, document: document)
         default: return handleCreate(event, document: document)
         }
     }
@@ -112,10 +133,20 @@ public final class ToolController {
 
     private func handleKey(_ key: ToolKey, _ modifiers: ToolModifiers, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         let step: Double = modifiers.contains(.shift) ? 10 : 1
+        if tool == .crop {
+            switch key {
+            case .enter: return commitCrop(document: document)
+            case .escape:
+                cancelGesture()
+                cropRect = nil
+                return ToolResult(tool: .select)
+            default: return ToolResult()
+            }
+        }
         switch key {
         case .escape:
             if isGestureActive {
-                gesture = .idle
+                cancelGesture()
                 return ToolResult()
             }
             return ToolResult(selection: [])
@@ -252,6 +283,48 @@ public final class ToolController {
         case .key:
             return ToolResult()
         }
+    }
+
+    // MARK: Ritaglio
+
+    private func handleCrop(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        let image = CGRect(origin: .zero, size: document.imageSize.cgSize)
+        let current = cropRect ?? image
+        switch event {
+        case .down(let point, _, _):
+            let reach = hitTolerance * 1.5
+            if let handle = Handle.boxHandles.first(where: { HitTesting.boxPoint($0, of: current).distance(to: point) <= reach }) {
+                cropDrag = (.resize(handle), point, current)
+            } else if cropRect != nil, current.contains(point) {
+                cropDrag = (.move, point, current)
+            } else {
+                // Senza un riquadro scelto, trascinare sull'immagine ne disegna uno nuovo.
+                cropDrag = (.new, point, current)
+            }
+            return ToolResult()
+        case .drag(let point, let modifiers), .up(let point, let modifiers):
+            guard let drag = cropDrag else { return ToolResult() }
+            let rect = CropGeometry.dragged(drag.mode, from: drag.start, to: point, original: drag.original,
+                                            image: image, keepAspect: modifiers.contains(.shift))
+            if drag.mode != .new || (rect.width >= dragThreshold && rect.height >= dragThreshold) { cropRect = rect }
+            if case .up = event { cropDrag = nil }
+            return ToolResult()
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    private func commitCrop(document: PinxelDocument) -> ToolResult {
+        defer {
+            cropRect = nil
+            cropDrag = nil
+        }
+        let size = document.imageSize
+        guard let rect = cropRect, let pixel = CropGeometry.pixelRect(rect, imageSize: size),
+              pixel != PixelRect(x: 0, y: 0, width: size.width, height: size.height) else {
+            return ToolResult(tool: .select)
+        }
+        return ToolResult(command: ApplyImageOperation(.crop(pixel), in: document), selection: [], tool: .select)
     }
 
     // MARK: Testo e callout

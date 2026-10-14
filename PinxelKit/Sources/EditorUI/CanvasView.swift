@@ -17,6 +17,8 @@ import Rendering
     func duplicateSelection(_ sender: Any?)
     func lockSelection(_ sender: Any?)
     func unlockSelection(_ sender: Any?)
+    func commitCrop(_ sender: Any?)
+    func cancelCrop(_ sender: Any?)
 }
 
 /// Tela dell'editor: disegna il documento con `DocumentRenderer` e trasforma mouse e tastiera in eventi
@@ -103,6 +105,11 @@ public final class CanvasView: NSView, EditorActions {
                 guard let self else { return }
                 // Un altro strumento chiude la modifica del testo.
                 if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
+                // Ritaglio, taglio, ridimensiona e margini cambiano la tela: se segue la finestra, la riadatta.
+                if self.followsWindow, self.bounds.width > 0, self.bounds.height > 0 {
+                    self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
+                    self.layoutTextEditor()
+                }
                 self.needsDisplay = true
                 self.updateAccessibilityValue()
                 self.window?.invalidateCursorRects(for: self)
@@ -112,7 +119,8 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     private func updateAccessibilityValue() {
-        setAccessibilityValue("Annotazioni: \(session.document.annotations.count), selezionate: \(session.selection.count)")
+        let size = session.document.imageSize
+        setAccessibilityValue("Annotazioni: \(session.document.annotations.count), selezionate: \(session.selection.count), immagine: \(size.width)×\(size.height)")
     }
 
     // MARK: Disegno
@@ -147,6 +155,7 @@ public final class CanvasView: NSView, EditorActions {
 
         if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
         drawSelection(in: ctx)
+        drawCropOverlay(in: ctx)
         if let marquee { drawMarquee(marquee, in: ctx) }
         if let textEditor { drawTextFrame(textEditor, in: ctx) }
     }
@@ -228,6 +237,61 @@ public final class CanvasView: NSView, EditorActions {
         ctx.setLineWidth(1)
         ctx.stroke(area.insetBy(dx: 0.5, dy: 0.5))
         ctx.restoreGState()
+    }
+
+    private func drawCropOverlay(in ctx: CGContext) {
+        let size = session.document.imageSize
+        guard let rect = controller.cropOverlay(imageSize: size) else { return }
+        let image = viewRect(fromDocument: CGRect(origin: .zero, size: size.cgSize))
+        let crop = viewRect(fromDocument: rect)
+        ctx.saveGState()
+        let dim = CGMutablePath()
+        dim.addRect(image)
+        dim.addRect(crop)
+        ctx.addPath(dim)
+        ctx.setFillColor(NSColor.black.withAlphaComponent(0.45).cgColor)
+        ctx.fillPath(using: .evenOdd)
+        // Linee dei terzi, come nel ritaglio di Foto.
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.5).cgColor)
+        ctx.setLineWidth(0.5)
+        for third in 1...2 {
+            let x = crop.minX + crop.width * CGFloat(third) / 3
+            let y = crop.minY + crop.height * CGFloat(third) / 3
+            ctx.move(to: CGPoint(x: x, y: crop.minY))
+            ctx.addLine(to: CGPoint(x: x, y: crop.maxY))
+            ctx.move(to: CGPoint(x: crop.minX, y: y))
+            ctx.addLine(to: CGPoint(x: crop.maxX, y: y))
+        }
+        ctx.strokePath()
+        ctx.setStrokeColor(NSColor.white.cgColor)
+        ctx.setLineWidth(1.5)
+        ctx.stroke(crop)
+        ctx.setFillColor(NSColor.white.cgColor)
+        ctx.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        ctx.setLineWidth(1)
+        for handle in Handle.boxHandles {
+            let center = viewPoint(fromDocument: HitTesting.boxPoint(handle, of: rect))
+            let box = CGRect(x: center.x - 4, y: center.y - 4, width: 8, height: 8)
+            ctx.fill(box)
+            ctx.stroke(box)
+        }
+        ctx.restoreGState()
+        if let pixels = CropGeometry.pixelRect(rect, imageSize: size) {
+            drawBadge("\(pixels.width) × \(pixels.height)", at: CGPoint(x: crop.minX, y: crop.maxY + 6))
+        }
+    }
+
+    /// Etichetta scura con testo bianco (dimensioni del ritaglio, lunghezza del taglio).
+    private func drawBadge(_ text: String, at point: CGPoint) {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: NSColor.white,
+        ]
+        let size = (text as NSString).size(withAttributes: attributes)
+        let box = CGRect(x: point.x, y: point.y, width: size.width + 12, height: size.height + 6)
+        NSColor.black.withAlphaComponent(0.7).setFill()
+        NSBezierPath(roundedRect: box, xRadius: 4, yRadius: 4).fill()
+        (text as NSString).draw(at: CGPoint(x: box.minX + 6, y: box.minY + 3), withAttributes: attributes)
     }
 
     private func drawMessage(_ text: String) {
@@ -360,6 +424,7 @@ public final class CanvasView: NSView, EditorActions {
         if let selection = result.selection { session.selection = selection }
         if let delta = result.nudge { session.nudge(by: delta) }
         if let request = result.editText { beginTextEditing(request) }
+        if let tool = result.tool { model.tool = tool }
     }
 
     public override func mouseDown(with event: NSEvent) {
@@ -504,6 +569,14 @@ public final class CanvasView: NSView, EditorActions {
 
     @objc public func unlockSelection(_ sender: Any?) {
         if let command = AnnotationEditing.setLocked(false, ids: session.selection, in: session.document) { session.perform(command) }
+    }
+
+    @objc public func commitCrop(_ sender: Any?) {
+        send(.key(.enter, []))
+    }
+
+    @objc public func cancelCrop(_ sender: Any?) {
+        send(.key(.escape, []))
     }
 
     private func arrange(_ make: (Set<UUID>, PinxelDocument) -> ReorderAnnotations) {
