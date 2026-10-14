@@ -44,6 +44,9 @@ enum AnnotationRenderer {
         case .shape(let data): ShapeRenderer.drawShape(data, style: style, in: ctx)
         case .pen(let data): ShapeRenderer.drawPen(data, style: style, in: ctx)
         case .highlight(let data): ShapeRenderer.drawHighlight(data, style: style, in: ctx)
+        case .text(let data): TextRenderer.drawText(data, style: style, in: ctx)
+        case .callout(let data): TextRenderer.drawCallout(data, style: style, in: ctx)
+        case .step(let data): TextRenderer.drawStep(data, label: context.stepLabels[annotation.id] ?? "?", style: style, in: ctx)
         default: break
         }
     }
