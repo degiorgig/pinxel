@@ -47,4 +47,54 @@ final class EditorUITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
         app.terminate()
     }
+
+    func testTextToolTypesAndCommitsWithEscape() {
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.click()
+        canvas.typeKey("t", modifierFlags: [])
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.45)).click()
+        app.typeText("Ciao")
+        app.typeKey(.escape, modifierFlags: [])
+        waitForValue(canvas, prefix: "Annotazioni: 1")
+        app.typeKey("z", modifierFlags: .command)
+        waitForValue(canvas, prefix: "Annotazioni: 0")
+        app.terminate()
+    }
+
+    func testCropWithReturnChangesTheImageSize() {
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.click()
+        canvas.typeKey("k", modifierFlags: [])
+        let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.42))
+        let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.55))
+        start.click(forDuration: 0.1, thenDragTo: end)
+        app.typeKey(.return, modifierFlags: [])
+        let cropped = NSPredicate(format: "NOT (value CONTAINS %@)", "200×200")
+        wait(for: [expectation(for: cropped, evaluatedWith: canvas)], timeout: 5)
+        app.terminate()
+    }
+
+    func testArrangeMenuFollowsTheSelection() {
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.click()
+        let arrange = app.menuBars.menuBarItems["Disponi"]
+        arrange.click()
+        XCTAssertFalse(arrange.menuItems["Duplica"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+        canvas.typeKey("r", modifierFlags: [])
+        let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.4))
+        let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.55))
+        start.click(forDuration: 0.1, thenDragTo: end)
+        waitForValue(canvas, prefix: "Annotazioni: 1")
+        arrange.click()
+        XCTAssertTrue(arrange.menuItems["Duplica"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+        app.terminate()
+    }
 }

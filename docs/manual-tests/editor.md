@@ -23,3 +23,17 @@ Segna ogni voce con ✅ / ❌ e note.
 | E16 | Aspetto chiaro e scuro; Accessibilità → Riduci movimento | Toolbar, pannello e maniglie leggibili in entrambi; nessuna animazione che blocca | |
 | E17 | Con "Solo appunti": cattura, poi icona nella barra dei menu → Modifica ultima cattura | La cattura si apre nell'editor; prima di qualsiasi cattura la voce è disattivata | |
 | E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
+| E19 | T, clic sull'immagine, scrivi "Ciao" con una parola in ⌘B, Esc; doppio clic sul testo, cambia una parola, clic fuori | Il testo resta formattato; ogni modifica è un solo ⌘Z; un testo nuovo lasciato vuoto non lascia nulla | |
+| E20 | Durante la scrittura: dimensione, colore e allineamento dal pannello; poi cambia strumento con un tasto | Il testo cambia subito; cambiare strumento conferma il testo | |
+| E21 | C, trascina un fumetto, scrivi; trascina la maniglia della coda e un angolo del fumetto | La coda segue il puntatore; il fumetto si ridimensiona senza spostare la punta | |
+| E22 | M, trascina su un dettaglio; sposta la sorgente, poi l'ingrandimento; cambia Ingrandimento e Forma | Le due parti si spostano da sole; l'ingrandimento mostra sempre la zona sotto la sorgente | |
+| E23 | K, trascina un riquadro, sposta e ridimensiona con ⇧, Invio; poi ⌘Z | L'immagine e le annotazioni vengono ritagliate insieme; ⌘Z ripristina tutto; Esc annulla senza ritagliare | |
+| E24 | X, trascina in verticale su una fascia; poi in orizzontale; prova Dritto e Zig-zag | Durante il trascinamento la fascia è rossa; al rilascio sparisce e le parti si ricuciono | |
+| E25 | Immagine → Ridimensiona immagine… al 50%; Immagine → Bordo, ombra e margini…: ombra, margine 40, sfondo | Anteprima dal vivo sulla tela; Annulla non cambia niente; Applica è un solo ⌘Z; l'export include ombra e margini | |
+| E26 | Sposta un oggetto vicino al bordo di un altro e al centro dell'immagine; ripeti tenendo ⌘ | Compaiono guide rosa e l'oggetto si aggancia; con ⌘ niente guide | |
+| E27 | Crea tre frecce con stili diversi; seleziona una forma; clicca uno stile rapido | Gli ultimi stili compaiono nel pannello per strumento e restano dopo il riavvio | |
+| E28 | Copia un'immagine in Safari e incollala (⌘V); salva, chiudi, riapri; trascina l'icona foto della toolbar sulla Scrivania | L'immagine incollata è centrata e resta dopo la riapertura; sulla Scrivania compare un PNG con le annotazioni | |
+| E29 | Apri un file danneggiato (vedi Task 13 Step 6 del piano 4) | L'errore offre "Apri l'immagine", che apre la cattura in un documento nuovo | |
+| E30 | Apri un file di versione futura (modifica `manifest.json` a `"version": 99`) | Banner "solo leggere" sopra la tela; strumenti e menu di modifica grigi; Esporta funziona | |
+| E31 | Menu Modifica e Disponi senza selezione, con un oggetto bloccato, e nelle Preferenze | Voci grigie quando non possono agire; "Annulla <azione>"; nelle Preferenze ⌘C/⌘V funzionano nei campi | |
+| E32 | Cattura area su un Retina, poi frecce durante la selezione | Le dimensioni cambiano di 1 pixel per freccia (10 con ⇧) | |

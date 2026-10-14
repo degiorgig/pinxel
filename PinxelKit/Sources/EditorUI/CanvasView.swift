@@ -260,24 +260,31 @@ public final class CanvasView: NSView, EditorActions {
     private func drawGuides(in ctx: CGContext) {
         guard !guides.isEmpty else { return }
         ctx.saveGState()
-        ctx.setStrokeColor(NSColor.systemPink.cgColor)
-        ctx.setLineWidth(1)
+        let path = CGMutablePath()
         for guide in guides {
             switch guide.orientation {
             case .vertical:
                 let top = viewPoint(fromDocument: CGPoint(x: guide.position, y: guide.from))
                 let bottom = viewPoint(fromDocument: CGPoint(x: guide.position, y: guide.to))
                 let x = top.x.rounded() + 0.5
-                ctx.move(to: CGPoint(x: x, y: top.y))
-                ctx.addLine(to: CGPoint(x: x, y: bottom.y))
+                path.move(to: CGPoint(x: x, y: top.y))
+                path.addLine(to: CGPoint(x: x, y: bottom.y))
             case .horizontal:
                 let start = viewPoint(fromDocument: CGPoint(x: guide.from, y: guide.position))
                 let end = viewPoint(fromDocument: CGPoint(x: guide.to, y: guide.position))
                 let y = start.y.rounded() + 0.5
-                ctx.move(to: CGPoint(x: start.x, y: y))
-                ctx.addLine(to: CGPoint(x: end.x, y: y))
+                path.move(to: CGPoint(x: start.x, y: y))
+                path.addLine(to: CGPoint(x: end.x, y: y))
             }
         }
+        // Alone chiaro sotto la linea: la guida resta visibile su qualsiasi cattura.
+        ctx.addPath(path)
+        ctx.setStrokeColor(NSColor.white.withAlphaComponent(0.8).cgColor)
+        ctx.setLineWidth(3)
+        ctx.strokePath()
+        ctx.addPath(path)
+        ctx.setStrokeColor(NSColor.systemPink.cgColor)
+        ctx.setLineWidth(1)
         ctx.strokePath()
         ctx.restoreGState()
     }
