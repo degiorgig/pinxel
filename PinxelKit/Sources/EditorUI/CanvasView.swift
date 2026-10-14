@@ -33,6 +33,7 @@ public final class CanvasView: NSView, EditorActions {
 
     private let renderer = DocumentRenderer()
     private var marquee: CGRect?
+    private var guides: [GuideLine] = []
     /// Finché l'utente non cambia zoom o posizione, la tela segue le dimensioni della finestra.
     private var followsWindow = true
     private var spaceHeld = false
@@ -163,6 +164,7 @@ public final class CanvasView: NSView, EditorActions {
 
         if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
         drawSelection(in: ctx)
+        drawGuides(in: ctx)
         drawCropOverlay(in: ctx)
         drawCutPreview(in: ctx)
         if let marquee { drawMarquee(marquee, in: ctx) }
@@ -245,6 +247,31 @@ public final class CanvasView: NSView, EditorActions {
         ctx.setStrokeColor(NSColor.controlAccentColor.cgColor)
         ctx.setLineWidth(1)
         ctx.stroke(area.insetBy(dx: 0.5, dy: 0.5))
+        ctx.restoreGState()
+    }
+
+    private func drawGuides(in ctx: CGContext) {
+        guard !guides.isEmpty else { return }
+        ctx.saveGState()
+        ctx.setStrokeColor(NSColor.systemPink.cgColor)
+        ctx.setLineWidth(1)
+        for guide in guides {
+            switch guide.orientation {
+            case .vertical:
+                let top = viewPoint(fromDocument: CGPoint(x: guide.position, y: guide.from))
+                let bottom = viewPoint(fromDocument: CGPoint(x: guide.position, y: guide.to))
+                let x = top.x.rounded() + 0.5
+                ctx.move(to: CGPoint(x: x, y: top.y))
+                ctx.addLine(to: CGPoint(x: x, y: bottom.y))
+            case .horizontal:
+                let start = viewPoint(fromDocument: CGPoint(x: guide.from, y: guide.position))
+                let end = viewPoint(fromDocument: CGPoint(x: guide.to, y: guide.position))
+                let y = start.y.rounded() + 0.5
+                ctx.move(to: CGPoint(x: start.x, y: y))
+                ctx.addLine(to: CGPoint(x: end.x, y: y))
+            }
+        }
+        ctx.strokePath()
         ctx.restoreGState()
     }
 
@@ -432,6 +459,7 @@ public final class CanvasView: NSView, EditorActions {
         controller.hitTolerance = 4 / pointsPerPixel
         controller.rotationHandleOffset = 24 / pointsPerPixel
         controller.dragThreshold = 3 / pointsPerPixel
+        controller.snapTolerance = 6 / pointsPerPixel
     }
 
     private func modifiers(of event: NSEvent) -> ToolModifiers {
@@ -449,6 +477,7 @@ public final class CanvasView: NSView, EditorActions {
 
     private func apply(_ result: ToolResult) {
         marquee = result.marquee
+        guides = result.guides
         defer { needsDisplay = true }
         guard !session.isReadOnly else {
             // Sola lettura: si può selezionare, non modificare.

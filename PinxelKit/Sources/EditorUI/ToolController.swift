@@ -35,9 +35,12 @@ public struct ToolResult {
     public var editText: TextEditRequest?
     /// Passa a questo strumento (es. Selezione dopo un ritaglio).
     public var tool: EditorTool?
+    /// Guide magnetiche da disegnare durante lo spostamento.
+    public var guides: [GuideLine]
 
     public init(preview: [Annotation]? = nil, command: (any EditCommand)? = nil, selection: Set<UUID>? = nil,
-                marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil) {
+                marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil,
+                guides: [GuideLine] = []) {
         self.preview = preview
         self.command = command
         self.selection = selection
@@ -45,6 +48,7 @@ public struct ToolResult {
         self.nudge = nudge
         self.editText = editText
         self.tool = tool
+        self.guides = guides
     }
 }
 
@@ -75,6 +79,8 @@ public final class ToolController {
     public var hitTolerance: Double = 4
     public var rotationHandleOffset: Double = 30
     public var dragThreshold: Double = 3
+    /// Distanza entro cui uno spostamento si aggancia a una guida.
+    public var snapTolerance: Double = 6
     var makeID: () -> UUID = { UUID() }
 
     private enum Gesture {
@@ -226,10 +232,12 @@ public final class ToolController {
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
             case .move(let start, let originals, let copyIDs, let started):
-                let delta = constrainedDelta(from: start, to: point, modifiers)
                 guard started || hypot(point.x - start.x, point.y - start.y) >= dragThreshold else { return ToolResult() }
                 gesture = .move(start: start, originals: originals, copyIDs: copyIDs, started: true)
-                return ToolResult(preview: movedPreview(originals, copyIDs: copyIDs, delta: delta, in: annotations))
+                let snapped = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,
+                                           in: annotations, modifiers: modifiers, copying: copyIDs != nil)
+                return ToolResult(preview: movedPreview(originals, copyIDs: copyIDs, delta: snapped.delta, in: annotations),
+                                  guides: snapped.guides)
             case .resize(let handle, let original, let start, let grab, let started):
                 guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
                 gesture = .resize(handle, original: original, start: start, grab: grab, started: true)
@@ -257,7 +265,8 @@ public final class ToolController {
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)))
             case .move(let start, let originals, let copyIDs, let started):
                 guard started else { return ToolResult() }
-                let delta = constrainedDelta(from: start, to: point, modifiers)
+                let delta = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,
+                                         in: annotations, modifiers: modifiers, copying: copyIDs != nil).delta
                 let after = originals.map { AnnotationGeometry.moved($0, by: delta) }
                 if let copyIDs {
                     let copies = zip(after, copyIDs).map { moved, id in
@@ -494,6 +503,33 @@ public final class ToolController {
             if abs(delta.width) >= abs(delta.height) { delta.height = 0 } else { delta.width = 0 }
         }
         return delta
+    }
+
+    /// Aggancia lo spostamento a bordi e centri degli altri oggetti e dell'immagine; `⌘` lo disattiva.
+    /// L'asse bloccato da `⇧` resta fermo.
+    private func snappedDelta(_ delta: CGSize, moving originals: [Annotation], in annotations: [Annotation],
+                              modifiers: ToolModifiers, copying: Bool) -> (delta: CGSize, guides: [GuideLine]) {
+        guard !modifiers.contains(.command) else { return (delta, []) }
+        let union = originals.map(HitTesting.worldBounds).filter { !$0.isNull }.reduce(CGRect.null) { $0.union($1) }
+        guard !union.isNull else { return (delta, []) }
+        // Con ⌥ gli originali restano dove sono: fanno da riferimento anche loro.
+        let movingIDs = copying ? Set<UUID>() : Set(originals.map(\.id))
+        var targets = annotations.filter { !movingIDs.contains($0.id) }.map(HitTesting.worldBounds).filter { !$0.isNull }
+        targets.append(CGRect(origin: .zero, size: imageSize))
+        let snap = SmartGuides.snap(union.offsetBy(dx: delta.width, dy: delta.height), to: targets, tolerance: snapTolerance)
+        var adjusted = CGSize(width: delta.width + snap.offset.width, height: delta.height + snap.offset.height)
+        var guides = snap.guides
+        if modifiers.contains(.shift) {
+            if delta.width == 0 {
+                adjusted.width = 0
+                guides.removeAll { $0.orientation == .vertical }
+            }
+            if delta.height == 0 {
+                adjusted.height = 0
+                guides.removeAll { $0.orientation == .horizontal }
+            }
+        }
+        return (adjusted, guides)
     }
 
     private func movedPreview(_ originals: [Annotation], copyIDs: [UUID]?, delta: CGSize, in annotations: [Annotation]) -> [Annotation] {
