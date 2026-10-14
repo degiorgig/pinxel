@@ -17,21 +17,24 @@ final class PostCaptureActions {
         var editorOpened = false
         run(plan.immediate, contents: contents, image: image, settings: settings, editorOpened: &editorOpened)
         guard plan.showsQuickPreview else { return }
+        // Ogni anteprima toglie dall'elenco solo se stessa: le altre ancora visibili devono restare vive.
+        weak var finished: QuickPreviewController?
         let preview = QuickPreviewController(
             image: image, scale: contents.document.scale,
             onOpen: { [weak self] in
                 DocumentOpener.open(contents)
-                self?.previews.removeAll()
+                self?.previews.removeAll { $0 === finished }
             },
             onExpire: { [weak self] in
                 guard let self else { return }
                 var opened = false
                 self.run(plan.afterPreview, contents: contents, image: image, settings: settings, editorOpened: &opened)
-                self.previews.removeAll()
+                self.previews.removeAll { $0 === finished }
             }
         )
+        finished = preview
         previews.append(preview)
-        preview.show()
+        preview.show(stackIndex: previews.count - 1)
     }
 
     private func run(_ steps: [PostCaptureStep], contents: PinxelFileContents, image: CGImage, settings: CaptureSettings, editorOpened: inout Bool) {

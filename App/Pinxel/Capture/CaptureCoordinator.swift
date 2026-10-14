@@ -54,6 +54,7 @@ final class CaptureCoordinator {
 
             switch await choose(snapshot) {
             case .cancelled:
+                frontmost?.activate()
                 return
             case .area(let rect):
                 guard let composed = CaptureComposer.compose(rect, from: snapshot.displays) else { throw CaptureError.emptySelection }
@@ -73,9 +74,15 @@ final class CaptureCoordinator {
             }
 
             let contents = try CaptureDocumentBuilder.make(image: image, scale: scale, metadata: metadata)
-            actions.perform(PostCaptureRouter.plan(for: current), contents: contents, image: image, settings: current)
+            let plan = PostCaptureRouter.plan(for: current)
+            actions.perform(plan, contents: contents, image: image, settings: current)
+            // L'overlay ha attivato Pinxel: se non si apre una finestra, il focus torna all'app di prima (es. per ⌘V).
+            if !plan.immediate.contains(.openEditor), frontmost?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                frontmost?.activate()
+            }
         } catch {
             AppEnvironment.shared.notifier.failure(error)
+            frontmost?.activate()
         }
     }
 

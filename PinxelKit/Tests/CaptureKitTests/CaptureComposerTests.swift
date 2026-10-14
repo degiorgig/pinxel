@@ -54,6 +54,22 @@ struct CaptureComposerTests {
         #expect(PixelBuffer(result.image).pixel(x: 100, y: 10).a == 0)
     }
 
+    @Test func fractionalSelectionStaysOnPixelGrid() throws {
+        // Colonne alternate nere/bianche da 1 px su uno schermo a 2x: una selezione non allineata non deve sfocarle.
+        let ctx = TestImages.makeContext(width: 200, height: 200)
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+        ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
+        for x in stride(from: 0, to: 200, by: 2) { ctx.fill(CGRect(x: x, y: 0, width: 1, height: 200)) }
+        let display = FrozenDisplay(info: DisplayInfo(id: 1, frame: CGRect(x: 0, y: 0, width: 100, height: 100), scale: 2), image: ctx.makeImage()!)
+        let result = try #require(CaptureComposer.compose(CGRect(x: 10.37, y: 5.2, width: 20.4, height: 10.1), from: [display]))
+        let pixels = PixelBuffer(result.image)
+        for x in 0..<min(pixels.width, 10) {
+            let value = pixels.pixel(x: x, y: 2).r
+            #expect(value == 0 || value == 255, "column \(x) = \(value)")
+        }
+    }
+
     @Test func outsideOrTinyReturnsNil() {
         #expect(CaptureComposer.compose(CGRect(x: 500, y: 500, width: 10, height: 10), from: twoDisplays) == nil)
         #expect(CaptureComposer.compose(CGRect(x: 10, y: 10, width: 0.4, height: 10), from: twoDisplays) == nil)

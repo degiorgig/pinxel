@@ -15,10 +15,14 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         self.modifiers = modifiers
     }
 
-    /// Una scorciatoia globale senza modificatori ruberebbe il tasto a tutte le app.
+    /// Una scorciatoia globale senza ⌃, ⌥ o ⌘ ruberebbe il tasto a tutte le app (anche ⇧1 = "!").
+    /// Fanno eccezione i tasti funzione, che non scrivono testo.
     public var hasModifier: Bool {
-        modifiers & (Self.control | Self.option | Self.shift | Self.command) != 0
+        if Self.functionKeys.contains(keyCode) { return true }
+        return modifiers & (Self.control | Self.option | Self.command) != 0
     }
+
+    static let functionKeys: Set<UInt32> = [0x7A, 0x78, 0x63, 0x76, 0x60, 0x61, 0x62, 0x64, 0x65, 0x6D, 0x67, 0x6F]
 
     public var displayString: String {
         var text = ""

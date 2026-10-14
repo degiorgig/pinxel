@@ -17,10 +17,16 @@ public enum CaptureComposer {
     /// Ritaglia `rect` (punti globali, origine in alto a sinistra) dalle immagini congelate.
     /// Il risultato usa la scala massima tra gli schermi toccati; le zone fuori dagli schermi restano trasparenti.
     public static func compose(_ rect: CGRect, from displays: [FrozenDisplay]) -> (image: CGImage, scale: Double)? {
-        let selection = rect.standardized
-        guard selection.width >= 1, selection.height >= 1 else { return nil }
-        let touched = displays.filter { $0.info.frame.intersects(selection) }
+        let requested = rect.standardized
+        guard requested.width >= 1, requested.height >= 1 else { return nil }
+        let touched = displays.filter { $0.info.frame.intersects(requested) }
         guard let scale = touched.map(\.info.scale).max() else { return nil }
+        // Allineo la selezione alla griglia dei pixel: con coordinate frazionarie l'immagine verrebbe ricampionata (sfocata).
+        let minX = (requested.minX * scale).rounded(.down) / scale
+        let minY = (requested.minY * scale).rounded(.down) / scale
+        let maxX = (requested.maxX * scale).rounded(.up) / scale
+        let maxY = (requested.maxY * scale).rounded(.up) / scale
+        let selection = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
 
         let width = Int((selection.width * scale).rounded())
         let height = Int((selection.height * scale).rounded())

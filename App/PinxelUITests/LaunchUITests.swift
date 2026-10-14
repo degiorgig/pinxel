@@ -3,7 +3,7 @@ import XCTest
 final class LaunchUITests: XCTestCase {
     func testAppLaunchesAsMenuBarAgent() {
         let app = XCUIApplication()
-        app.launchArguments = ["-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-PinxelUITestFakeCapture", "-ApplePersistenceIgnoreState", "YES"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10) || app.wait(for: .runningBackground, timeout: 10))
         // Agente: nessuna finestra all'avvio.
@@ -13,7 +13,7 @@ final class LaunchUITests: XCTestCase {
 
     func testSampleDocumentOpensViewerWindow() {
         let app = XCUIApplication()
-        app.launchArguments = ["-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
+        app.launchArguments = ["-PinxelUITestFakeCapture", "-ApplePersistenceIgnoreState", "YES", "-PinxelUITestOpenSample"]
         app.launch()
         XCTAssertTrue(app.images["pinxel.viewer.image"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.windows.count, 1)

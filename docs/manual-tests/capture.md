@@ -24,3 +24,7 @@ Segna ogni voce con ✅ / ❌ e note.
 | M14 | Assegna una scorciatoia già usata da un'altra app | Avviso rosso nelle Preferenze | |
 | M15 | Apri un documento: l'icona compare nel Dock; chiudilo | L'icona sparisce dal Dock | |
 | M16 | Ricompila l'app e cattura | Con firma Apple Development il permesso resta concesso (con firma ad hoc viene richiesto di nuovo) | |
+| M17 | Da un'altra app (es. TextEdit) premi ⌃⇧1, poi Esc; poi ripeti in modalità Solo appunti e incolla con ⌘V | Esc chiude l'overlay e il focus torna all'app di prima; ⌘V incolla subito la cattura | |
+| M18 | Anteprima veloce + salvataggio automatico: due catture a meno di 5 s | Due miniature impilate; entrambe vengono salvate alla scadenza e si aprono con un clic | |
+| M19 | Dopo "Riavvia Pinxel" premi subito ⌃⇧1 | La scorciatoia funziona (nessun avviso di conflitto nelle Preferenze) | |
+| M20 | Seleziona un testo piccolo con un trascinamento lento sul trackpad | Cattura nitida, nessuna sfocatura | |

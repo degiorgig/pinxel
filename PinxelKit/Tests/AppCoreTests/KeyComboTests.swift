@@ -27,7 +27,14 @@ struct KeyComboTests {
 
     @Test func bareKeyHasNoModifier() {
         #expect(!KeyCombo(keyCode: 0x12, modifiers: 0).hasModifier)
-        #expect(KeyCombo(keyCode: 0x12, modifiers: KeyCombo.shift).hasModifier)
+        // Solo ⇧ su un tasto che scrive equivale a un tasto nudo ("!", "A" maiuscola).
+        #expect(!KeyCombo(keyCode: 0x12, modifiers: KeyCombo.shift).hasModifier)
+        #expect(!KeyCombo(keyCode: 0x00, modifiers: KeyCombo.shift).hasModifier)
+        #expect(KeyCombo(keyCode: 0x12, modifiers: KeyCombo.shift | KeyCombo.control).hasModifier)
+        #expect(KeyCombo(keyCode: 0x12, modifiers: KeyCombo.command).hasModifier)
+        // I tasti funzione possono essere usati anche da soli o con ⇧.
+        #expect(KeyCombo(keyCode: 0x7A, modifiers: KeyCombo.shift).hasModifier)
+        #expect(KeyCombo(keyCode: 0x7A, modifiers: 0).hasModifier)
     }
 
     @Test func codableRoundTrip() throws {

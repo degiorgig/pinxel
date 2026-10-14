@@ -30,9 +30,11 @@ final class QuickPreviewController {
         panel.contentView = view
     }
 
-    func show() {
+    /// `stackIndex` impila le anteprime una sopra l'altra.
+    func show(stackIndex: Int = 0) {
         if let screen = NSScreen.main?.visibleFrame {
-            panel.setFrameOrigin(NSPoint(x: screen.maxX - panel.frame.width - 20, y: screen.minY + 20))
+            let offset = CGFloat(stackIndex) * (panel.frame.height + 12)
+            panel.setFrameOrigin(NSPoint(x: screen.maxX - panel.frame.width - 20, y: screen.minY + 20 + offset))
         }
         panel.orderFrontRegardless()
         resume()
