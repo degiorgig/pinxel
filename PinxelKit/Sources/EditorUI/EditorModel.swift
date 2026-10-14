@@ -124,6 +124,9 @@ public final class EditorModel {
             toolChange(&toolStyles)
         } else if let command = AnnotationEditing.update(session.selection, in: session.document, name: name, change) {
             session.perform(command, coalescingKey: coalescing ? name : nil)
+        } else {
+            // Nessun cambiamento (es. cursore tornato al valore di partenza): via l'anteprima.
+            session.preview = nil
         }
     }
 
@@ -164,6 +167,27 @@ public final class EditorModel {
             annotation.richText = text
         }, tool: { styles in
             if tool == .callout { change(&styles.calloutText) } else { change(&styles.text) }
+        })
+    }
+
+    /// Accende o spegne il riempimento solo dove ha senso (forme, step, testi, callout). Testi e callout
+    /// partono dal bianco, gli altri dal colore del tratto.
+    public func setFill(_ on: Bool) {
+        let tool = self.tool
+        func fill(for kind: InspectedKind, current: Style) -> RGBA? {
+            guard on else { return nil }
+            return current.fill ?? (kind == .text || kind == .callout ? .white : (current.stroke ?? .accentRed))
+        }
+        update(name: "Riempimento", selection: { annotation in
+            let kind = InspectedKind(annotation.kind)
+            guard kind.showsFill else { return }
+            annotation.style.fill = fill(for: kind, current: annotation.style)
+        }, tool: { styles in
+            let kind = InspectedKind(tool)
+            guard kind.showsFill else { return }
+            var style = styles.style(for: tool)
+            style.fill = fill(for: kind, current: style)
+            styles.styles[tool] = style
         })
     }
 

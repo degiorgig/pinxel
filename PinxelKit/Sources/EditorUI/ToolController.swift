@@ -104,6 +104,8 @@ public final class ToolController {
     /// Fascia che il taglio toglierebbe, mentre la si trascina.
     public private(set) var cutPreview: CutOut?
     private var cutStart: CGPoint?
+    /// Annotazioni del documento quando è iniziato il gesto.
+    private var gestureAnnotations: [Annotation]?
 
     public init() {}
 
@@ -119,6 +121,7 @@ public final class ToolController {
         cropDrag = nil
         cutStart = nil
         cutPreview = nil
+        gestureAnnotations = nil
     }
 
     /// Riquadro da mostrare sopra l'immagine con lo strumento Ritaglio; `nil` con gli altri strumenti.
@@ -129,6 +132,18 @@ public final class ToolController {
 
     public func handle(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         imageSize = document.imageSize.cgSize
+        switch event {
+        case .down:
+            gestureAnnotations = document.annotations
+        case .drag, .up:
+            // Un annulla o un'altra modifica arrivata durante il gesto: gli originali sarebbero vecchi.
+            if isGestureActive, let base = gestureAnnotations, base != document.annotations {
+                cancelGesture()
+                return ToolResult()
+            }
+        case .key:
+            break
+        }
         if case .key(let key, let modifiers) = event {
             return handleKey(key, modifiers, document: document, selection: selection)
         }
@@ -145,6 +160,8 @@ public final class ToolController {
 
     private func handleKey(_ key: ToolKey, _ modifiers: ToolModifiers, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         let step: Double = modifiers.contains(.shift) ? 10 : 1
+        // Durante un trascinamento conta solo Esc: altri tasti lavorerebbero su uno stato a metà.
+        if isGestureActive, key != .escape { return ToolResult() }
         if tool == .crop {
             switch key {
             case .enter: return commitCrop(document: document)
@@ -158,6 +175,10 @@ public final class ToolController {
         switch key {
         case .escape:
             if isGestureActive {
+                if case .marquee(_, let base) = gesture {
+                    cancelGesture()
+                    return ToolResult(selection: base)
+                }
                 cancelGesture()
                 return ToolResult()
             }

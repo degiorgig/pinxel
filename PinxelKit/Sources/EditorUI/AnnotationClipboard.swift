@@ -17,10 +17,12 @@ public enum AnnotationClipboard {
 
     /// Copie da incollare: ID nuovi, spostate di `pasteOffset`, sbloccate. Le immagini incollate restano
     /// fuori perché i loro file non viaggiano negli appunti.
-    public static func prepareForPaste(_ annotations: [Annotation], makeID: () -> UUID = { UUID() }) -> [Annotation] {
-        annotations.compactMap { annotation in
+    /// `times`: quante volte si è incollato lo stesso contenuto; ogni copia si sposta di un passo in più.
+    public static func prepareForPaste(_ annotations: [Annotation], times: Int = 1, makeID: () -> UUID = { UUID() }) -> [Annotation] {
+        let offset = CGSize(width: pasteOffset.width * Double(max(times, 1)), height: pasteOffset.height * Double(max(times, 1)))
+        return annotations.compactMap { annotation in
             if case .image = annotation.kind { return nil }
-            let moved = AnnotationGeometry.moved(annotation, by: pasteOffset)
+            let moved = AnnotationGeometry.moved(annotation, by: offset)
             return Annotation(id: makeID(), kind: moved.kind, style: moved.style, rotation: moved.rotation, isLocked: false)
         }
     }

@@ -36,7 +36,9 @@ public final class CanvasView: NSView, EditorActions {
     private var guides: [GuideLine] = []
     /// Finché l'utente non cambia zoom o posizione, la tela segue le dimensioni della finestra.
     private var followsWindow = true
-    private var spaceHeld = false
+    private(set) var spaceHeld = false
+    /// Incolla ripetuti dello stesso contenuto degli appunti, per spostare ogni copia un po' più in là.
+    private var lastPaste: (changeCount: Int, count: Int)?
     private var panPoint: CGPoint?
     private var renderFailed = false
     /// Testo in modifica sulla tela, e lo strumento con cui è iniziata la modifica.
@@ -69,6 +71,11 @@ public final class CanvasView: NSView, EditorActions {
     public override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         window?.makeFirstResponder(self)
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        if let window {
+            NotificationCenter.default.addObserver(self, selector: #selector(windowDidLoseKey(_:)),
+                                                   name: NSWindow.didResignKeyNotification, object: window)
+        }
     }
 
     // MARK: Coordinate
@@ -586,6 +593,23 @@ public final class CanvasView: NSView, EditorActions {
         window?.invalidateCursorRects(for: self)
     }
 
+    public override func resignFirstResponder() -> Bool {
+        endSpacePan()
+        return super.resignFirstResponder()
+    }
+
+    @objc private func windowDidLoseKey(_ notification: Notification) {
+        endSpacePan()
+    }
+
+    /// Se Spazio viene rilasciato fuori dalla finestra il keyUp non arriva: il pan finisce con il fuoco.
+    private func endSpacePan() {
+        guard spaceHeld || panPoint != nil else { return }
+        spaceHeld = false
+        panPoint = nil
+        window?.invalidateCursorRects(for: self)
+    }
+
     public override func resetCursorRects() {
         addCursorRect(bounds, cursor: model.tool == .select ? .arrow : .crosshair)
     }
@@ -682,11 +706,26 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     @objc public func copy(_ sender: Any?) {
+        write(session.selectedAnnotations)
+    }
+
+    @objc public func cut(_ sender: Any?) {
+        // Si taglia solo ciò che si può eliminare: gli oggetti bloccati restano e non finiscono negli appunti.
+        let deletable = session.selectedAnnotations.filter { !$0.isLocked }
+        guard !deletable.isEmpty, !session.isReadOnly else {
+            NSSound.beep()
+            return
+        }
+        write(deletable)
+        session.perform(DeleteAnnotations(ids: Set(deletable.map(\.id)), in: session.document, name: "Taglia"))
+    }
+
+    /// Senza annotazioni copia l'immagine intera; con annotazioni il loro contenuto privato più il loro PNG.
+    private func write(_ selected: [Annotation]) {
         guard let image = try? renderer.renderImage(session.document, assets: session.assets) else {
             NSSound.beep()
             return
         }
-        let selected = session.selectedAnnotations
         pasteboard.clearContents()
         guard !selected.isEmpty else {
             writeImage(image)
@@ -701,18 +740,15 @@ public final class CanvasView: NSView, EditorActions {
         }
     }
 
-    @objc public func cut(_ sender: Any?) {
-        copy(sender)
-        delete(sender)
-    }
-
     @objc public func paste(_ sender: Any?) {
         guard !session.isReadOnly else {
             NSSound.beep()
             return
         }
         if let data = pasteboard.data(forType: Self.annotationsType), let annotations = try? AnnotationClipboard.decode(data) {
-            let copies = AnnotationClipboard.prepareForPaste(annotations)
+            let count = lastPaste?.changeCount == pasteboard.changeCount ? (lastPaste?.count ?? 0) + 1 : 1
+            lastPaste = (pasteboard.changeCount, count)
+            let copies = AnnotationClipboard.prepareForPaste(annotations, times: count)
             guard !copies.isEmpty else { return }
             session.perform(AddAnnotations(copies, name: "Incolla"))
             session.selection = Set(copies.map(\.id))

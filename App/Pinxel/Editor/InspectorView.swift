@@ -40,7 +40,7 @@ struct InspectorView: View {
             if kind.showsFill {
                 Toggle("Riempimento", isOn: Binding(
                     get: { model.inspectedStyle.fill != nil },
-                    set: { model.setStyle(\.fill, $0 ? (model.inspectedStyle.stroke ?? .accentRed) : nil) }
+                    set: { model.setFill($0) }
                 ))
                 if style.fill != nil {
                     ColorPicker("Colore riempimento", selection: Binding(
