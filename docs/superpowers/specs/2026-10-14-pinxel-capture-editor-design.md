@@ -21,6 +21,12 @@ o asset di terzi).
 | 3 | Cattura a scorrimento (auto, poi manuale) | spec futura |
 | 4 | Registrazione video + audio, trim, export MP4/GIF | spec futura |
 
+La v1 è implementata in tre piani successivi:
+(1) `PinxelKit` core — `DocumentModel`, `Rendering`, `Persistence`, headless e
+testabile con `swift test`; (2) app + `CaptureKit` — barra dei menu,
+scorciatoie, overlay, permessi, flusso post-cattura; (3) `EditorUI` — canvas,
+strumenti, pannelli, export dall'interfaccia.
+
 Fuori dalla v1: cronologia/libreria, cattura a scorrimento, video, OCR,
 estensione Quick Look, sincronizzazione iCloud, firma e notarizzazione.
 
@@ -150,8 +156,12 @@ struct Style: Codable, Equatable {
 ```
 
 `RGBA` usa componenti `Double` 0...1 nello spazio colore del documento.
-`RichText` incapsula una `AttributedString` (font, dimensione, grassetto,
-corsivo, sottolineato, colore, allineamento) serializzata come JSON Codable.
+`RichText` è una struttura Codable propria: famiglia e dimensione del font,
+colore, allineamento e una lista di `TextRun` (testo + grassetto, corsivo,
+sottolineato, colore opzionale). Niente `AttributedString` nel modello (JSON
+stabile e indipendente da AppKit); niente barrato nella v1 (CoreText non lo
+disegna nativamente). La conversione verso `NSAttributedString` avviene in
+`Rendering` ed `EditorUI`.
 
 `StepLabel`: `sequence` (numeri, lettere maiuscole, lettere minuscole),
 `override: String?`. Senza override il valore visualizzato è calcolato
