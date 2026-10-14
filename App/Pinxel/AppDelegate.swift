@@ -21,6 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.arguments.contains("-PinxelUITestOpenSample") {
             openSample()
         }
+        if ProcessInfo.processInfo.arguments.contains("-PinxelUITestCaptureOnLaunch") {
+            AppEnvironment.shared.capture(.area)
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

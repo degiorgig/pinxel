@@ -16,6 +16,8 @@ final class AppEnvironment {
     @ObservationIgnored private let store: SettingsStore
     @ObservationIgnored private let hotKeys = HotKeyCenter()
     @ObservationIgnored let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "app")
+    @ObservationIgnored let notifier: Notifier
+    @ObservationIgnored private var coordinator: CaptureCoordinator!
 
     private init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         isUITesting = arguments.contains("-PinxelUITestFakeCapture")
@@ -33,6 +35,16 @@ final class AppEnvironment {
             loaded.postCaptureAction = action
         }
         settings = loaded
+        notifier = Notifier(enabled: !isUITesting)
+        let engine: any CaptureEngine = isUITesting ? FakeCaptureEngine() : ScreenCaptureKitEngine()
+        let permission: any ScreenRecordingPermission = isUITesting ? GrantedScreenRecordingPermission() : SystemScreenRecordingPermission()
+        let selection: any SelectionProvider = isUITesting
+            ? FixedSelectionProvider(result: .area(FakeCaptureEngine.redSquare))
+            : OverlaySelectionProvider()
+        let actions = PostCaptureActions(notifier: notifier)
+        coordinator = CaptureCoordinator(engine: engine, permission: permission, selection: selection, actions: actions) { [unowned self] in
+            self.settings
+        }
     }
 
     func start() {
@@ -50,11 +62,18 @@ final class AppEnvironment {
     }
 
     func capture(_ mode: CaptureMode) {
-        logger.info("capture \(mode.rawValue, privacy: .public) requested (not wired yet)")
+        Task {
+            // Lascia chiudere il menu, altrimenti finisce nell'immagine congelata.
+            try? await Task.sleep(for: .milliseconds(250))
+            await coordinator.capture(mode)
+        }
     }
 
     func repeatLastArea() {
-        logger.info("repeat last area requested (not wired yet)")
+        Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            await coordinator.repeatLastArea()
+        }
     }
 
     private func applyHotKeys() {
