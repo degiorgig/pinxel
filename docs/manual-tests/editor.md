@@ -21,3 +21,5 @@ Segna ogni voce con ✅ / ❌ e note.
 | E14 | File → Esporta… (⌘E): PNG 2x, JPEG qualità 50, PDF | File corretti; il PNG a 2x ha le dimensioni in pixel della cattura | |
 | E15 | Toolbar → Condividi → AirDrop o Messaggi | Viene proposto un PNG con le annotazioni | |
 | E16 | Aspetto chiaro e scuro; Accessibilità → Riduci movimento | Toolbar, pannello e maniglie leggibili in entrambi; nessuna animazione che blocca | |
+| E17 | Con "Solo appunti": cattura, poi icona nella barra dei menu → Modifica ultima cattura | La cattura si apre nell'editor; prima di qualsiasi cattura la voce è disattivata | |
+| E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |

@@ -1,3 +1,4 @@
+import AppCore
 import AppKit
 
 @MainActor
@@ -12,5 +13,12 @@ enum Clipboard {
         if let tiff = representation.tiffRepresentation {
             pasteboard.setData(tiff, forType: .tiff)
         }
+    }
+
+    /// L'immagine negli appunti, con la sua scala in pixel per punto.
+    static func image() -> (image: CGImage, scale: Double)? {
+        guard let image = NSImage(pasteboard: .general),
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        return (cgImage, CaptureDocumentBuilder.pastedScale(pixelWidth: cgImage.width, pointWidth: image.size.width))
     }
 }

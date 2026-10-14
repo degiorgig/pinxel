@@ -7,7 +7,7 @@ final class EditorUITests: XCTestCase {
 
     private func launchWithSample() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-PinxelUITestFakeCapture", "-ApplePersistenceIgnoreState", "YES", "-PinxelUITestOpenSample"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
         app.launch()
         return app
     }

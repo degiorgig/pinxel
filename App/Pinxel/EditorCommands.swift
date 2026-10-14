@@ -6,6 +6,12 @@ import SwiftUI
 /// o il documento in primo piano; senza editor aperto non succede nulla.
 struct EditorCommands: Commands {
     var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("Nuova dagli appunti") { AppEnvironment.shared.openClipboard() }
+                .keyboardShortcut("n")
+            Button("Apri…") { NSDocumentController.shared.openDocument(nil) }
+                .keyboardShortcut("o")
+        }
         CommandGroup(replacing: .saveItem) {
             Button("Salva") { send(#selector(NSDocument.save(_:))) }
                 .keyboardShortcut("s")
