@@ -47,7 +47,11 @@ enum AnnotationRenderer {
         case .text(let data): TextRenderer.drawText(data, style: style, in: ctx)
         case .callout(let data): TextRenderer.drawCallout(data, style: style, in: ctx)
         case .step(let data): TextRenderer.drawStep(data, label: context.stepLabels[annotation.id] ?? "?", style: style, in: ctx)
-        default: break
+        case .blur(let data): EffectRenderer.drawBlur(data, context: context, in: ctx)
+        case .pixelate(let data): EffectRenderer.drawPixelate(data, context: context, in: ctx)
+        case .magnifier(let data): EffectRenderer.drawMagnifier(data, style: style, context: context, in: ctx)
+        case .image(let data): EffectRenderer.drawPlacedImage(data, context: context, in: ctx)
+        case .unknown: break
         }
     }
 }
