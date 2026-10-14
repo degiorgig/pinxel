@@ -64,6 +64,19 @@ struct EditorCommands: Commands {
             }
             .disabled(!state.hasEditor)
         }
+        // Grassetto, corsivo e sottolineato sulle parole selezionate mentre si scrive sulla tela. Al posto del
+        // menu Formato di sistema, i cui Più grande/Più piccolo (⌘+/⌘−) si scontrerebbero con lo zoom.
+        CommandMenu("Formato") {
+            Group {
+                Button("Grassetto") { send(#selector(PinxelTextView.toggleBoldface(_:))) }
+                    .keyboardShortcut("b")
+                Button("Corsivo") { send(#selector(PinxelTextView.toggleItalics(_:))) }
+                    .keyboardShortcut("i")
+                Button("Sottolineato") { send(#selector(NSTextView.underline(_:))) }
+                    .keyboardShortcut("u")
+            }
+            .disabled(!state.isEditingText)
+        }
         CommandMenu("Immagine") {
             Group {
                 Button("Ritaglia") { focus.model?.tool = .crop }

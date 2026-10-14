@@ -62,6 +62,19 @@ final class PinxelFileDocument: NSDocument {
         return try PinxelArchive.write(document: contents.document, images: contents.images, thumbnail: thumbnail, appVersion: version)
     }
 
+    // Il testo che si sta scrivendo sulla tela entra nel documento prima di salvare (anche in automatico)
+    // e prima di decidere se chiedere di salvare alla chiusura.
+    override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
+                       completionHandler: @escaping (Error?) -> Void) {
+        MainActor.assumeIsolated { editorModel?.commitTextEditing() }
+        super.save(to: url, ofType: typeName, for: saveOperation, completionHandler: completionHandler)
+    }
+
+    override func canClose(withDelegate delegate: Any, shouldClose shouldCloseSelector: Selector?, contextInfo: UnsafeMutableRawPointer?) {
+        MainActor.assumeIsolated { editorModel?.commitTextEditing() }
+        super.canClose(withDelegate: delegate, shouldClose: shouldCloseSelector, contextInfo: contextInfo)
+    }
+
     override func makeWindowControllers() {
         MainActor.assumeIsolated {
             guard let contents else { return }
@@ -87,6 +100,7 @@ final class PinxelFileDocument: NSDocument {
     @objc func exportImage(_ sender: Any?) {
         MainActor.assumeIsolated {
             guard let model = editorModel, let window = windowControllers.first?.window else { return }
+            model.commitTextEditing()
             let session = model.session
             let name = displayName ?? "Pinxel"
             Task { await ExportPanel.run(document: session.document, assets: session.assets, suggestedName: name, window: window) }

@@ -16,6 +16,7 @@ struct SharedCapture: Transferable {
 
     @MainActor
     func pngData() throws -> Data {
+        model.commitTextEditing()
         let session = model.session
         let image = try DocumentRenderer().renderImage(session.document, assets: session.assets)
         guard let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {

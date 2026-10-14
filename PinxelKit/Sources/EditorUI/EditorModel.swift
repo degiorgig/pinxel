@@ -121,6 +121,7 @@ public final class EditorModel {
                        selection change: (inout Annotation) -> Void,
                        tool toolChange: (inout ToolStyles) -> Void) {
         if session.selection.isEmpty {
+            textEditing?.applyToNewAnnotation(change)
             toolChange(&toolStyles)
         } else if let command = AnnotationEditing.update(session.selection, in: session.document, name: name, change) {
             session.perform(command, coalescingKey: coalescing ? name : nil)
@@ -133,6 +134,7 @@ public final class EditorModel {
     /// Anteprima non registrata di una modifica in corso (cursore trascinato).
     public func previewUpdate(selection change: (inout Annotation) -> Void, tool toolChange: (inout ToolStyles) -> Void) {
         if session.selection.isEmpty {
+            textEditing?.applyToNewAnnotation(change)
             toolChange(&toolStyles)
             return
         }
@@ -144,6 +146,12 @@ public final class EditorModel {
             change(&copy)
             return copy
         }
+    }
+
+    /// Conferma il testo in modifica sulla tela: da chiamare prima di salvare, esportare, trascinare o chiudere,
+    /// altrimenti il documento letto non contiene ciò che si sta scrivendo.
+    public func commitTextEditing() {
+        textEditing?.finish()
     }
 
     /// Testo mostrato nel pannello: quello in modifica, quello selezionato o il modello dello strumento.

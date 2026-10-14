@@ -6,9 +6,10 @@ import DocumentModel
 /// come lo scala il renderer.
 @MainActor
 final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
-    let request: TextEditRequest
+    /// La richiesta; per un testo nuovo l'annotazione segue le modifiche di stile fatte durante la scrittura.
+    private(set) var request: TextEditRequest
     let container = FlippedView()
-    let textView = NSTextView(usingTextLayoutManager: false)
+    let textView = PinxelTextView(usingTextLayoutManager: false)
     /// Riquadro del testo nel documento; l'altezza cresce con il contenuto, non cala.
     private(set) var frame: CGRect
     /// Famiglia, dimensione, colore e allineamento (senza run).
@@ -20,7 +21,8 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
 
     var onChange: ((RichText) -> Void)?
     var onFrameChange: (() -> Void)?
-    var onFinish: ((RichText, Double) -> Void)?
+    /// Testo, altezza e se la modifica si è chiusa perché il testo ha perso il fuoco (es. un clic altrove).
+    var onFinish: ((RichText, Double, Bool) -> Void)?
 
     init(request: TextEditRequest) {
         self.request = request
@@ -63,9 +65,21 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
 
     /// Chiude la modifica una volta sola (Esc, clic fuori, cambio di strumento, perdita del fuoco).
     func finish() {
+        finish(byFocusLoss: false)
+    }
+
+    private func finish(byFocusLoss: Bool) {
         guard !finished else { return }
         finished = true
-        onFinish?(richText, frame.height)
+        onFinish?(richText, frame.height, byFocusLoss)
+    }
+
+    /// Modifica di stile dal pannello (o uno stile rapido) mentre si scrive un oggetto nuovo: non è ancora nel
+    /// documento, quindi la modifica va all'oggetto in scrittura.
+    func applyToNewAnnotation(_ change: (inout Annotation) -> Void) {
+        guard request.isNew else { return }
+        change(&request.annotation)
+        onChange?(richText)
     }
 
     func applyToAll(_ change: (inout RichText) -> Void) {
@@ -89,7 +103,7 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
     }
 
     func textDidEndEditing(_ notification: Notification) {
-        finish()
+        finish(byFocusLoss: true)
     }
 
     func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {

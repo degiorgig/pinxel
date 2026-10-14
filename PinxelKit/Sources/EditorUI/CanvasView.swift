@@ -44,6 +44,8 @@ public final class CanvasView: NSView, EditorActions {
     /// Testo in modifica sulla tela, e lo strumento con cui è iniziata la modifica.
     private(set) var textEditor: CanvasTextEditor?
     private var textEditingTool: EditorTool?
+    /// Il clic che ha tolto il fuoco al testo in modifica non deve fare altro.
+    private var swallowNextMouseDown = false
 
     static let annotationsType = NSPasteboard.PasteboardType(AnnotationClipboard.typeIdentifier)
 
@@ -403,8 +405,8 @@ public final class CanvasView: NSView, EditorActions {
             self?.layoutTextEditor()
             self?.needsDisplay = true
         }
-        editor.onFinish = { [weak self] text, height in
-            self?.endTextEditing(request, text: text, height: height)
+        editor.onFinish = { [weak self] text, height, byFocusLoss in
+            self?.endTextEditing(text: text, height: height, byFocusLoss: byFocusLoss)
         }
         textEditor = editor
         textEditingTool = model.tool
@@ -421,13 +423,13 @@ public final class CanvasView: NSView, EditorActions {
         textEditor?.finish()
     }
 
-    private func endTextEditing(_ request: TextEditRequest, text: RichText, height: Double) {
+    private func endTextEditing(text: RichText, height: Double, byFocusLoss: Bool) {
         guard let editor = textEditor else { return }
+        let request = editor.request
         textEditor = nil
         textEditingTool = nil
         model.textEditing = nil
         model.editingText = nil
-        editor.container.removeFromSuperview()
         if let command = TextEditing.commit(request, text: text, minimumHeight: height, document: session.document) {
             if request.isNew, command is AddAnnotations, let tool = EditorTool(kind: request.annotation.kind) {
                 model.quickStyles.record(request.annotation.style, for: tool)
@@ -436,7 +438,19 @@ public final class CanvasView: NSView, EditorActions {
             let id = request.annotation.id
             session.selection = session.document.annotations.contains { $0.id == id } ? [id] : []
         }
-        if window?.firstResponder !== self { window?.makeFirstResponder(self) }
+        if byFocusLoss {
+            // Il fuoco sta già passando altrove (dentro il passaggio non si cambia first responder né si toglie
+            // la vista). Se è un clic sulla tela, quel clic deve solo chiudere la modifica.
+            editor.container.isHidden = true
+            swallowNextMouseDown = true
+            DispatchQueue.main.async { [weak self] in
+                editor.container.removeFromSuperview()
+                self?.swallowNextMouseDown = false
+            }
+        } else {
+            editor.container.removeFromSuperview()
+            if window?.firstResponder !== self { window?.makeFirstResponder(self) }
+        }
         needsDisplay = true
     }
 
@@ -524,6 +538,10 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     public override func mouseDown(with event: NSEvent) {
+        if swallowNextMouseDown {
+            swallowNextMouseDown = false
+            return
+        }
         if textEditor != nil {
             // Un clic fuori dal testo chiude la modifica e non fa altro.
             finishTextEditing()
@@ -755,8 +773,13 @@ public final class CanvasView: NSView, EditorActions {
         if let data = pasteboard.data(forType: Self.annotationsType), let annotations = try? AnnotationClipboard.decode(data) {
             let count = lastPaste?.changeCount == pasteboard.changeCount ? (lastPaste?.count ?? 0) + 1 : 1
             lastPaste = (pasteboard.changeCount, count)
-            let copies = AnnotationClipboard.prepareForPaste(annotations, times: count)
-            guard !copies.isEmpty else { return }
+            let assets = session.assets
+            let copies = AnnotationClipboard.prepareForPaste(annotations, times: count, keepImage: { assets.image(for: $0) != nil })
+            guard !copies.isEmpty else {
+                // Solo immagini di un altro documento: resta il PNG negli appunti.
+                if !pasteImage() { NSSound.beep() }
+                return
+            }
             session.perform(AddAnnotations(copies, name: "Incolla"))
             session.selection = Set(copies.map(\.id))
             return
@@ -767,12 +790,14 @@ public final class CanvasView: NSView, EditorActions {
     /// Un'immagine negli appunti diventa un'annotazione immagine (spec §6.3).
     private func pasteImage() -> Bool {
         guard let image = NSImage(pasteboard: pasteboard),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              // Oltre il limite dei documenti il file salvato non si riaprirebbe: si riduce.
+              let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide),
               let asset = session.assets.add(cgImage) else { return false }
         let document = session.document
         let rect = ImagePlacement.rect(
             pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
-            imageScale: PixelDensity.scale(pixelWidth: cgImage.width, pointWidth: image.size.width),
+            imageScale: PixelDensity.scale(pixelWidth: original.width, pointWidth: image.size.width),
             documentScale: document.scale,
             center: visibleDocumentCenter(),
             imageSize: document.imageSize.cgSize

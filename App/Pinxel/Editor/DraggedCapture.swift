@@ -16,6 +16,7 @@ struct DraggedCapture: Transferable {
 
     @MainActor
     func writePNG() throws -> URL {
+        model.commitTextEditing()
         let session = model.session
         let image = try DocumentRenderer().renderImage(session.document, assets: session.assets)
         guard let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {

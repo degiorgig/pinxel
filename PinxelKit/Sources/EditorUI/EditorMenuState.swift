@@ -14,6 +14,9 @@ public struct EditorMenuState: Equatable, Sendable {
     public var canRedo = false
     public var undoActionName = ""
     public var redoActionName = ""
+    /// `false` quando un'altra finestra (un foglio come Salva o Esporta) ha la tastiera: le voci di modifica
+    /// devono raggiungere i suoi campi.
+    public var editorIsKey = true
 
     /// Nessun editor in primo piano.
     public init() {}
@@ -38,14 +41,14 @@ public struct EditorMenuState: Equatable, Sendable {
     /// Le voci di modifica senza un editor in primo piano (Preferenze, pannello Salva) o durante la scrittura
     /// di un testo vanno ai campi di testo: restano attive. Altrimenti decide `condition`.
     public func allows(_ condition: Bool) -> Bool {
-        !hasEditor || isEditingText || condition
+        !hasEditor || !editorIsKey || isEditingText || condition
     }
 
     public var undoTitle: String { title("Annulla", undoActionName) }
     public var redoTitle: String { title("Ripristina", redoActionName) }
 
     private func title(_ verb: String, _ action: String) -> String {
-        guard hasEditor, !isEditingText, let first = action.first else { return verb }
+        guard hasEditor, editorIsKey, !isEditingText, let first = action.first else { return verb }
         return "\(verb) \(first.lowercased())\(action.dropFirst())"
     }
 }

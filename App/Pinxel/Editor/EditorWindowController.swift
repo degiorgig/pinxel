@@ -30,7 +30,15 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     // I menu seguono l'editor della finestra principale (un foglio come Esporta lascia la finestra principale).
     func windowDidBecomeMain(_ notification: Notification) {
-        EditorFocus.shared.focus(model)
+        EditorFocus.shared.focus(model, isKey: window?.isKeyWindow ?? true)
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        EditorFocus.shared.keyChanged(model, isKey: true)
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        EditorFocus.shared.keyChanged(model, isKey: false)
     }
 
     func windowDidResignMain(_ notification: Notification) {

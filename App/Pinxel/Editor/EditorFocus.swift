@@ -10,9 +10,18 @@ final class EditorFocus: ObservableObject {
 
     @Published private(set) var state = EditorMenuState()
     private(set) weak var model: EditorModel?
+    /// `false` quando un foglio della finestra (Salva, Esporta, Ridimensiona) ha la tastiera.
+    private var editorIsKey = true
 
-    func focus(_ model: EditorModel) {
+    func focus(_ model: EditorModel, isKey: Bool) {
         self.model = model
+        editorIsKey = isKey
+        refresh()
+    }
+
+    func keyChanged(_ model: EditorModel, isKey: Bool) {
+        guard self.model === model, editorIsKey != isKey else { return }
+        editorIsKey = isKey
         refresh()
     }
 
@@ -32,6 +41,8 @@ final class EditorFocus: ObservableObject {
         } onChange: { [weak self] in
             Task { @MainActor in self?.refresh() }
         }
-        if next != state { state = next }
+        var adjusted = next
+        adjusted.editorIsKey = editorIsKey
+        if adjusted != state { state = adjusted }
     }
 }

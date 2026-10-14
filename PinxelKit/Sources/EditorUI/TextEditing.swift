@@ -45,4 +45,8 @@ public enum TextEditing {
 public protocol TextEditingControl: AnyObject {
     /// Applica una modifica a tutto il testo (dimensione, colore, allineamento, grassetto…).
     func applyToAll(_ change: (inout RichText) -> Void)
+    /// Conferma il testo e chiude la modifica.
+    func finish()
+    /// Modifica di stile per l'oggetto nuovo in scrittura (nessun effetto su un oggetto già nel documento).
+    func applyToNewAnnotation(_ change: (inout Annotation) -> Void)
 }

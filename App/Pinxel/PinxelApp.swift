@@ -9,11 +9,7 @@ struct PinxelApp: App {
         MenuBarExtra("Pinxel", systemImage: "camera.viewfinder") {
             MenuContent(environment: environment)
         }
-        .commands {
-            EditorCommands()
-            // Formato → Font: ⌘B, ⌘I, ⌘U mentre si scrive un testo sulla tela.
-            TextFormattingCommands()
-        }
+        .commands { EditorCommands() }
         Settings {
             SettingsView(environment: environment)
         }
