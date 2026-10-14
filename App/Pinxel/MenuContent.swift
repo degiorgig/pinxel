@@ -7,10 +7,10 @@ struct MenuContent: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Button("\(HotKeyAction.area.title)  \(environment.settings.combo(for: .area).displayString)") { environment.capture(.area) }
-        Button("\(HotKeyAction.window.title)  \(environment.settings.combo(for: .window).displayString)") { environment.capture(.window) }
-        Button("\(HotKeyAction.screen.title)  \(environment.settings.combo(for: .screen).displayString)") { environment.capture(.screen) }
-        Button("\(HotKeyAction.repeatLastArea.title)  \(environment.settings.combo(for: .repeatLastArea).displayString)") { environment.repeatLastArea() }
+        ForEach(HotKeyAction.allCases, id: \.self) { action in
+            Button(action.title) { perform(action) }
+                .globalShortcut(environment.settings.combo(for: action))
+        }
         Divider()
         Button("Apri…") {
             NSApp.setActivationPolicy(.regular)
@@ -25,5 +25,34 @@ struct MenuContent: View {
         Divider()
         Button("Esci da Pinxel") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
+    }
+
+    private func perform(_ action: HotKeyAction) {
+        switch action {
+        case .area: environment.capture(.area, fromMenu: true)
+        case .window: environment.capture(.window, fromMenu: true)
+        case .screen: environment.capture(.screen, fromMenu: true)
+        case .repeatLastArea: environment.repeatLastArea(fromMenu: true)
+        }
+    }
+}
+
+private extension View {
+    /// Mostra la scorciatoia globale nella colonna nativa a destra del menu.
+    @ViewBuilder func globalShortcut(_ combo: KeyCombo) -> some View {
+        if let key = combo.menuKeyEquivalent?.first {
+            keyboardShortcut(KeyEquivalent(key), modifiers: eventModifiers(combo))
+        } else {
+            self
+        }
+    }
+
+    private func eventModifiers(_ combo: KeyCombo) -> EventModifiers {
+        var modifiers: EventModifiers = []
+        if combo.modifiers & KeyCombo.control != 0 { modifiers.insert(.control) }
+        if combo.modifiers & KeyCombo.option != 0 { modifiers.insert(.option) }
+        if combo.modifiers & KeyCombo.shift != 0 { modifiers.insert(.shift) }
+        if combo.modifiers & KeyCombo.command != 0 { modifiers.insert(.command) }
+        return modifiers
     }
 }

@@ -18,6 +18,15 @@ struct KeyComboTests {
         #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).displayString == "⌃Tasto 90")
     }
 
+    @Test func menuKeyEquivalentForNativeShortcutColumn() {
+        #expect(KeyCombo(keyCode: 0x15, modifiers: KeyCombo.command | KeyCombo.shift).menuKeyEquivalent == "4")
+        #expect(KeyCombo(keyCode: 0x00, modifiers: KeyCombo.command).menuKeyEquivalent == "a")
+        #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.option).menuKeyEquivalent == " ")
+        #expect(KeyCombo(keyCode: 0x7A, modifiers: KeyCombo.command).menuKeyEquivalent == "\u{F704}")
+        #expect(KeyCombo(keyCode: 0x6F, modifiers: KeyCombo.command).menuKeyEquivalent == "\u{F70F}")
+        #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).menuKeyEquivalent == nil)
+    }
+
     @Test func cocoaFlagsMapToCarbon() {
         let cocoa: UInt = (1 << 18) | (1 << 17) // control + shift
         #expect(KeyCombo.carbonModifiers(fromCocoa: cocoa) == KeyCombo.control | KeyCombo.shift)

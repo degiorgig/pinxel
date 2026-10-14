@@ -30,14 +30,46 @@ final class QuickPreviewController {
         panel.contentView = view
     }
 
-    /// `stackIndex` impila le anteprime una sopra l'altra.
+    /// `stackIndex` impila le anteprime una sopra l'altra. Entra dal bordo destro, come esce.
     func show(stackIndex: Int = 0) {
-        if let screen = NSScreen.main?.visibleFrame {
-            let offset = CGFloat(stackIndex) * (panel.frame.height + 12)
-            panel.setFrameOrigin(NSPoint(x: screen.maxX - panel.frame.width - 20, y: screen.minY + 20 + offset))
+        let target = frame(forStackIndex: stackIndex)
+        if Self.reduceMotion {
+            panel.setFrame(target, display: false)
+            panel.alphaValue = 0
+        } else {
+            panel.setFrame(target.offsetBy(dx: target.width + Self.margin, dy: 0), display: false)
         }
         panel.orderFrontRegardless()
+        animate(duration: 0.3) {
+            self.panel.animator().setFrame(target, display: true)
+            self.panel.animator().alphaValue = 1
+        }
         resume()
+    }
+
+    /// Riposiziona l'anteprima quando quelle sotto di lei spariscono.
+    func move(toStackIndex index: Int) {
+        guard !finished else { return }
+        let target = frame(forStackIndex: index)
+        animate(duration: 0.3) { self.panel.animator().setFrame(target, display: true) }
+    }
+
+    private static let margin: CGFloat = 20
+    private static var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    private func frame(forStackIndex index: Int) -> NSRect {
+        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let size = panel.frame.size
+        let y = screen.minY + Self.margin + CGFloat(index) * (size.height + 12)
+        return NSRect(x: screen.maxX - size.width - Self.margin, y: y, width: size.width, height: size.height)
+    }
+
+    private func animate(duration: TimeInterval, _ changes: @escaping () -> Void, completion: (@MainActor @Sendable () -> Void)? = nil) {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = Self.reduceMotion ? 0.2 : duration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            changes()
+        }, completionHandler: { MainActor.assumeIsolated { completion?() } })
     }
 
     private func pause() {
@@ -56,8 +88,13 @@ final class QuickPreviewController {
         guard !finished else { return }
         finished = true
         pause()
-        panel.orderOut(nil)
         open ? onOpen() : onExpire()
+        // Alla scadenza torna da dove è venuta; aprendola si dissolve sul posto.
+        let exit = open || Self.reduceMotion ? panel.frame : panel.frame.offsetBy(dx: panel.frame.width + Self.margin, dy: 0)
+        animate(duration: open ? 0.15 : 0.3, {
+            self.panel.animator().setFrame(exit, display: true)
+            self.panel.animator().alphaValue = 0
+        }, completion: { [panel] in panel.orderOut(nil) })
     }
 }
 
@@ -67,6 +104,7 @@ final class QuickPreviewView: NSView, NSDraggingSource {
     var onHover: ((Bool) -> Void)?
     private let image: CGImage
     private var dragged = false
+    private var mouseDownLocation: NSPoint?
 
     init(image: CGImage, size: NSSize) {
         self.image = image
@@ -87,10 +125,14 @@ final class QuickPreviewView: NSView, NSDraggingSource {
 
     override func mouseDown(with event: NSEvent) {
         dragged = false
+        mouseDownLocation = event.locationInWindow
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !dragged, let url = writeTemporaryPNG() else { return }
+        // Un piccolo movimento durante il clic non avvia il trascinamento.
+        guard !dragged, let start = mouseDownLocation,
+              hypot(event.locationInWindow.x - start.x, event.locationInWindow.y - start.y) >= 4,
+              let url = writeTemporaryPNG() else { return }
         dragged = true
         let item = NSDraggingItem(pasteboardWriter: url as NSURL)
         item.setDraggingFrame(bounds, contents: NSImage(cgImage: image, size: bounds.size))

@@ -43,6 +43,18 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         return result
     }
 
+    /// Carattere per la colonna nativa delle scorciatoie nei menu; `nil` se il tasto non ne ha uno.
+    public var menuKeyEquivalent: String? {
+        let functionKeyOrder: [UInt32] = [0x7A, 0x78, 0x63, 0x76, 0x60, 0x61, 0x62, 0x64, 0x65, 0x6D, 0x67, 0x6F]
+        if let index = functionKeyOrder.firstIndex(of: keyCode) {
+            // NSF1FunctionKey = 0xF704, poi consecutivi fino a F12.
+            return String(UnicodeScalar(0xF704 + UInt32(index))!)
+        }
+        if keyCode == 0x31 { return " " }
+        guard let name = Self.keyNames[keyCode], name.count == 1 else { return nil }
+        return name.lowercased()
+    }
+
     static let keyNames: [UInt32: String] = [
         0x00: "A", 0x01: "S", 0x02: "D", 0x03: "F", 0x04: "H", 0x05: "G", 0x06: "Z", 0x07: "X",
         0x08: "C", 0x09: "V", 0x0B: "B", 0x0C: "Q", 0x0D: "W", 0x0E: "E", 0x0F: "R", 0x10: "Y",

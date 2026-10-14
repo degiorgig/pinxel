@@ -28,3 +28,5 @@ Segna ogni voce con ✅ / ❌ e note.
 | M18 | Anteprima veloce + salvataggio automatico: due catture a meno di 5 s | Due miniature impilate; entrambe vengono salvate alla scadenza e si aprono con un clic | |
 | M19 | Dopo "Riavvia Pinxel" premi subito ⌃⇧1 | La scorciatoia funziona (nessun avviso di conflitto nelle Preferenze) | |
 | M20 | Seleziona un testo piccolo con un trascinamento lento sul trackpad | Cattura nitida, nessuna sfocatura | |
+| M21 | Anteprima veloce: osserva entrata e uscita; poi attiva Accessibilità → Movimento → Riduci movimento e ripeti | Entra dal bordo destro ed esce dallo stesso lato; con Riduci movimento si dissolve sul posto; quando una sparisce, quelle sopra scendono | |
+| M22 | Apri il menu di Pinxel; premi una scorciatoia globale con il menu chiuso | Scorciatoie allineate a destra come nei menu di sistema; dalla scorciatoia la cattura parte senza ritardo percepibile | |

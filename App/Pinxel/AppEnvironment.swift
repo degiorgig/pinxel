@@ -61,17 +61,18 @@ final class AppEnvironment {
         if hotKeysChanged { applyHotKeys() }
     }
 
-    func capture(_ mode: CaptureMode) {
+    /// `fromMenu`: aspetta che il menu si chiuda, altrimenti finisce nell'immagine congelata.
+    /// Dalle scorciatoie la cattura parte subito.
+    func capture(_ mode: CaptureMode, fromMenu: Bool = false) {
         Task {
-            // Lascia chiudere il menu, altrimenti finisce nell'immagine congelata.
-            try? await Task.sleep(for: .milliseconds(250))
+            if fromMenu { try? await Task.sleep(for: .milliseconds(250)) }
             await coordinator.capture(mode)
         }
     }
 
-    func repeatLastArea() {
+    func repeatLastArea(fromMenu: Bool = false) {
         Task {
-            try? await Task.sleep(for: .milliseconds(250))
+            if fromMenu { try? await Task.sleep(for: .milliseconds(250)) }
             await coordinator.repeatLastArea()
         }
     }
