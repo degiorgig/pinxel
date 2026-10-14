@@ -84,6 +84,21 @@ public final class EditorSession {
         perform(UpdateAnnotations(name: "Sposta", before: movable, after: moved), coalescingKey: "nudge")
     }
 
+    /// Da chiamare a ogni salvataggio: la modifica successiva diventa un passo nuovo, così il documento
+    /// risulta di nuovo modificato invece di confluire in un passo già salvato.
+    public func breakCoalescing() {
+        lastBox = nil
+        coalescing = nil
+    }
+
+    /// Sostituisce il documento (Ripristina, Versioni, file cambiato su disco): la cronologia si azzera.
+    public func replaceDocument(_ newDocument: PinxelDocument) {
+        undoManager.removeAllActions(withTarget: self)
+        document = newDocument
+        finishHistoryStep()
+        selection = []
+    }
+
     private func registerUndo(_ box: CommandBox) {
         // L'UndoManager non trattiene il bersaglio: è la sessione; la scatola la trattiene la closure.
         undoManager.registerUndo(withTarget: self) { session in

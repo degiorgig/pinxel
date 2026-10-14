@@ -11,6 +11,10 @@ extension CGPoint {
         return CGPoint(x: center.x + dx * cosine - dy * sine, y: center.y + dx * sine + dy * cosine)
     }
 
+    func offset(by delta: CGSize) -> CGPoint {
+        CGPoint(x: x + delta.width, y: y + delta.height)
+    }
+
     func distance(to other: CGPoint) -> Double {
         hypot(x - other.x, y - other.y)
     }

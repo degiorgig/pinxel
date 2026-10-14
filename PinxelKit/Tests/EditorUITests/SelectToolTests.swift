@@ -126,6 +126,24 @@ struct SelectToolTests {
         #expect(applied(up, to: doc).annotations.first?.bounds == CGRect(x: 100, y: 100, width: 150, height: 100))
     }
 
+    @Test func clickingAHandleIsNotAnEdit() {
+        let tool = controller()
+        let doc = document([a])
+        _ = tool.handle(.down(CGPoint(x: 203, y: 152), [], clickCount: 1), document: doc, selection: [a.id])
+        #expect(tool.handle(.up(CGPoint(x: 203, y: 152), []), document: doc, selection: [a.id]).command == nil)
+        _ = tool.handle(.down(CGPoint(x: 153, y: 70), [], clickCount: 1), document: doc, selection: [a.id])
+        #expect(tool.handle(.up(CGPoint(x: 153, y: 70), []), document: doc, selection: [a.id]).command == nil)
+    }
+
+    @Test func resizeKeepsTheGrabOffset() {
+        let tool = controller()
+        let doc = document([a])
+        _ = tool.handle(.down(CGPoint(x: 203, y: 152), [], clickCount: 1), document: doc, selection: [a.id])
+        _ = tool.handle(.drag(CGPoint(x: 230, y: 180), []), document: doc, selection: [a.id])
+        let up = tool.handle(.up(CGPoint(x: 253, y: 202), []), document: doc, selection: [a.id])
+        #expect(applied(up, to: doc).annotations.first?.bounds == CGRect(x: 100, y: 100, width: 150, height: 100))
+    }
+
     @Test func rotateThroughTheRotationHandleSnapsWithShift() {
         let tool = controller()
         let doc = document([a])

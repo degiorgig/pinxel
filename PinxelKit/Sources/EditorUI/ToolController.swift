@@ -59,8 +59,9 @@ public final class ToolController {
         case idle
         case marquee(start: CGPoint, base: Set<UUID>)
         case move(start: CGPoint, originals: [Annotation], copyIDs: [UUID]?, started: Bool)
-        case resize(Handle, original: Annotation)
-        case rotate(original: Annotation)
+        /// `grab`: distanza fra la maniglia e il punto premuto, mantenuta per tutto il gesto.
+        case resize(Handle, original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
+        case rotate(original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
         case create(start: CGPoint, id: UUID, points: [CGPoint])
     }
 
@@ -111,8 +112,12 @@ public final class ToolController {
         switch event {
         case .down(let point, let modifiers, _):
             if selection.count == 1, let selected = annotations.first(where: { selection.contains($0.id) }),
-               let handle = HitTesting.handle(at: point, for: selected, tolerance: hitTolerance, rotationOffset: rotationHandleOffset) {
-                gesture = handle == .rotation ? .rotate(original: selected) : .resize(handle, original: selected)
+               let handle = HitTesting.handle(at: point, for: selected, tolerance: hitTolerance, rotationOffset: rotationHandleOffset),
+               let handlePoint = HitTesting.handles(for: selected, rotationOffset: rotationHandleOffset).first(where: { $0.handle == handle })?.point {
+                let grab = CGSize(width: handlePoint.x - point.x, height: handlePoint.y - point.y)
+                gesture = handle == .rotation
+                    ? .rotate(original: selected, start: point, grab: grab, started: false)
+                    : .resize(handle, original: selected, start: point, grab: grab, started: false)
                 return ToolResult()
             }
             if let hit = HitTesting.annotation(at: point, in: annotations, tolerance: hitTolerance) {
@@ -145,11 +150,15 @@ public final class ToolController {
                 guard started || hypot(point.x - start.x, point.y - start.y) >= dragThreshold else { return ToolResult() }
                 gesture = .move(start: start, originals: originals, copyIDs: copyIDs, started: true)
                 return ToolResult(preview: movedPreview(originals, copyIDs: copyIDs, delta: delta, in: annotations))
-            case .resize(let handle, let original):
-                let resized = AnnotationGeometry.resized(original, handle: handle, to: point, keepAspect: modifiers.contains(.shift))
+            case .resize(let handle, let original, let start, let grab, let started):
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .resize(handle, original: original, start: start, grab: grab, started: true)
+                let resized = AnnotationGeometry.resized(original, handle: handle, to: point.offset(by: grab), keepAspect: modifiers.contains(.shift))
                 return ToolResult(preview: replacing([resized], in: annotations))
-            case .rotate(let original):
-                let rotated = AnnotationGeometry.rotated(original, pointer: point, snap: modifiers.contains(.shift))
+            case .rotate(let original, let start, let grab, let started):
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .rotate(original: original, start: start, grab: grab, started: true)
+                let rotated = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 return ToolResult(preview: replacing([rotated], in: annotations))
             case .idle, .create:
                 return ToolResult()
@@ -172,12 +181,15 @@ public final class ToolController {
                     return ToolResult(command: AddAnnotations(copies, name: "Duplica"), selection: Set(copyIDs))
                 }
                 return ToolResult(command: UpdateAnnotations(name: "Sposta", before: originals, after: after))
-            case .resize(let handle, let original):
-                let after = AnnotationGeometry.resized(original, handle: handle, to: point, keepAspect: modifiers.contains(.shift))
+            case .resize(let handle, let original, let start, let grab, let started):
+                // Un clic su una maniglia, senza trascinare, non modifica nulla.
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                let after = AnnotationGeometry.resized(original, handle: handle, to: point.offset(by: grab), keepAspect: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
                 return ToolResult(command: UpdateAnnotations(name: "Ridimensiona", before: [original], after: [after]))
-            case .rotate(let original):
-                let after = AnnotationGeometry.rotated(original, pointer: point, snap: modifiers.contains(.shift))
+            case .rotate(let original, let start, let grab, let started):
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                let after = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
                 return ToolResult(command: UpdateAnnotations(name: "Ruota", before: [original], after: [after]))
             case .idle, .create:

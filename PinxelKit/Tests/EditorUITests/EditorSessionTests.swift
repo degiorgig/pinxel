@@ -103,6 +103,31 @@ struct EditorSessionTests {
         #expect(minX(1, session) == 10)
     }
 
+    @Test func savingBreaksCoalescing() {
+        let clock = TestClock()
+        let session = makeSession([shape(1)], clock: clock)
+        session.selection = [TestDocuments.id(1)]
+        session.nudge(by: CGSize(width: 1, height: 0))
+        session.breakCoalescing()
+        clock.date += 0.1
+        session.nudge(by: CGSize(width: 1, height: 0))
+        session.undoManager.undo()
+        #expect(minX(1, session) == 11)
+    }
+
+    @Test func replacingTheDocumentResetsHistoryAndSelection() {
+        let session = makeSession([shape(1)])
+        let reverted = session.document
+        session.perform(AddAnnotations([shape(2, x: 200)]))
+        session.selection = [TestDocuments.id(2)]
+        session.preview = [shape(9)]
+        session.replaceDocument(reverted)
+        #expect(session.document == reverted)
+        #expect(session.selection.isEmpty)
+        #expect(session.preview == nil)
+        #expect(!session.undoManager.canUndo)
+    }
+
     @Test func nudgeSkipsLockedAnnotations() {
         let session = makeSession([shape(1, locked: true)])
         session.selection = [TestDocuments.id(1)]

@@ -26,18 +26,26 @@ final class PinxelFileDocument: NSDocument {
     }
 
     override func read(from data: Data, ofType typeName: String) throws {
+        let loaded: PinxelFileContents
         do {
-            contents = try PinxelArchive.read(data)
+            loaded = try PinxelArchive.read(data)
         } catch {
             throw Self.userError(for: error, data: data)
         }
+        contents = loaded
+        // Ripristina, Versioni o file cambiato su disco: l'editor già aperto deve mostrare il contenuto riletto,
+        // altrimenti il salvataggio successivo riscriverebbe quello vecchio.
+        MainActor.assumeIsolated { editorModel?.session.replaceDocument(loaded.document) }
     }
 
     override func data(ofType typeName: String) throws -> Data {
         guard var contents else { throw CocoaError(.fileWriteUnknown) }
-        if let edited = MainActor.assumeIsolated({ editorModel?.session.document }) {
-            contents.document = edited
+        let edited = MainActor.assumeIsolated { () -> PinxelDocument? in
+            // Dopo il salvataggio una nuova modifica deve essere un passo nuovo, o NSDocument non la vede.
+            editorModel?.session.breakCoalescing()
+            return editorModel?.session.document
         }
+        if let edited { contents.document = edited }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",
