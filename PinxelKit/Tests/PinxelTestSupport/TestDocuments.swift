@@ -52,4 +52,23 @@ public enum TestDocuments {
                 rect: CGRect(x: 330, y: 250, width: 40, height: 30), asset: placedImage))),
         ]
     }
+
+    public static func document(
+        annotations: [Annotation] = allKindsAnnotations(),
+        size: PixelSize = PixelSize(width: 400, height: 300),
+        scale: Double = 2
+    ) -> PinxelDocument {
+        PinxelDocument(
+            background: background,
+            canvasSize: size,
+            scale: scale,
+            annotations: annotations,
+            metadata: CaptureMetadata(
+                captureDate: Date(timeIntervalSinceReferenceDate: 800_000_000),
+                appName: "Finder",
+                bundleIdentifier: "com.apple.finder",
+                windowTitle: "Documenti"
+            )
+        )
+    }
 }
