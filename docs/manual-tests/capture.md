@@ -8,8 +8,8 @@ Segna ogni voce con ✅ / ❌ e note.
 |---|-------|--------|-------|
 | M0 | Avvia Pinxel e apri il menu dalla barra dei menu | Icona fotocamera; voci Cattura area/finestra/schermo con ⌃⇧1–3, Ripeti ultima area ⌃⇧4, Apri…, Preferenze…, Esci | |
 | M0b | Preferenze…: cambia azione, attiva salvataggio, registra una nuova scorciatoia | La finestra si apre; l'etichetta nel menu si aggiorna con la nuova scorciatoia | |
-| M1 | Primo avvio senza permesso, premi ⌃⇧1 | Si apre la finestra "Permesso di registrazione schermo"; nessuna cattura nera | |
-| M2 | Concedi il permesso, premi "Riavvia Pinxel", poi ⌃⇧1 | Overlay su tutti gli schermi con l'immagine congelata, cursore a mirino, lente con colore | |
+| M1 | Primo avvio senza permesso, premi ⌃⇧1 | Si apre la finestra "Permesso di registrazione schermo"; nessuna cattura nera | ✅ dopo f83fc62 (prima la finestra restava dietro le altre app) |
+| M2 | Concedi il permesso, premi "Riavvia Pinxel", poi ⌃⇧1 | Overlay su tutti gli schermi con l'immagine congelata, cursore a mirino, lente con colore | ✅ |
 | M3 | Trascina un'area e rilascia | Si apre una finestra con esattamente l'area selezionata, nitida (Retina) | |
 | M4 | ⌃⇧1, passa sopra una finestra e clicca | Cattura della sola finestra, senza finestre sovrapposte; ombra secondo le Preferenze | |
 | M5 | ⌃⇧2, scegli una finestra che si chiude da sola (es. un popup) prima del clic | Notifica "La finestra è stata chiusa prima della cattura", nessun documento | |

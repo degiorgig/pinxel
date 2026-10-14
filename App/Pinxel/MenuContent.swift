@@ -4,6 +4,7 @@ import SwiftUI
 
 struct MenuContent: View {
     let environment: AppEnvironment
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Button("\(HotKeyAction.area.title)  \(environment.settings.combo(for: .area).displayString)") { environment.capture(.area) }
@@ -16,7 +17,10 @@ struct MenuContent: View {
             NSApp.activate()
             NSDocumentController.shared.openDocument(nil)
         }
-        SettingsLink { Text("Preferenze…") }
+        Button("Preferenze…") {
+            NSApp.activate()
+            openSettings()
+        }
             .keyboardShortcut(",")
         Divider()
         Button("Esci da Pinxel") { NSApp.terminate(nil) }

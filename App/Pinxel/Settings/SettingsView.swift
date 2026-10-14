@@ -47,6 +47,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 520)
+        .background(FrontWindowRaiser())
         .padding()
     }
 
@@ -103,5 +104,22 @@ struct ShortcutRecorder: View {
         recording = false
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+    }
+}
+
+/// Pinxel è un'app agente e non sempre viene attivata: porta davanti la finestra che contiene questa vista.
+private struct FrontWindowRaiser: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { RaisingView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class RaisingView: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            DispatchQueue.main.async {
+                window.orderFrontRegardless()
+                window.makeKey()
+            }
+        }
     }
 }
