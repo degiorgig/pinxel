@@ -8,11 +8,15 @@ let package = Package(
         .library(name: "DocumentModel", targets: ["DocumentModel"]),
         .library(name: "Rendering", targets: ["Rendering"]),
         .library(name: "Persistence", targets: ["Persistence"]),
+        .library(name: "CaptureKit", targets: ["CaptureKit"]),
+        .library(name: "AppCore", targets: ["AppCore"]),
     ],
     targets: [
         .target(name: "DocumentModel"),
         .target(name: "Rendering", dependencies: ["DocumentModel"]),
         .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
+        .target(name: "CaptureKit"),
+        .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"]),
         .target(
             name: "PinxelTestSupport",
             dependencies: ["DocumentModel"],
@@ -30,6 +34,14 @@ let package = Package(
         .testTarget(
             name: "PersistenceTests",
             dependencies: ["Persistence", "PinxelTestSupport"]
+        ),
+        .testTarget(
+            name: "CaptureKitTests",
+            dependencies: ["CaptureKit", "PinxelTestSupport"]
+        ),
+        .testTarget(
+            name: "AppCoreTests",
+            dependencies: ["AppCore", "PinxelTestSupport"]
         ),
     ]
 )
