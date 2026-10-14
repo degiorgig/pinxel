@@ -49,9 +49,16 @@ public struct PixelRect: Codable, Equatable, Hashable, Sendable {
     public func clamped(to size: PixelSize) -> PixelRect {
         let minX = max(0, min(x, size.width))
         let minY = max(0, min(y, size.height))
-        let maxX = max(minX, min(x + width, size.width))
-        let maxY = max(minY, min(y + height, size.height))
+        let maxX = max(minX, min(Self.saturatingSum(x, width), size.width))
+        let maxY = max(minY, min(Self.saturatingSum(y, height), size.height))
         return PixelRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
+    /// Somma che satura invece di andare in overflow (i valori possono arrivare da file ostili).
+    private static func saturatingSum(_ a: Int, _ b: Int) -> Int {
+        let (sum, overflow) = a.addingReportingOverflow(b)
+        guard overflow else { return sum }
+        return b > 0 ? Int.max : Int.min
     }
 }
 

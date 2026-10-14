@@ -33,6 +33,15 @@ public enum ImageCodec {
         return image
     }
 
+    /// Dimensioni dichiarate dall'immagine, lette dall'intestazione senza decodificarla.
+    public static func pixelSize(of data: Data) -> PixelSize? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int else { return nil }
+        return PixelSize(width: width, height: height)
+    }
+
     /// PNG; HEIC se il PNG supera `heicThreshold` e il sistema sa codificare HEIC.
     public static func encodeBackground(_ image: CGImage) throws -> (ref: ImageAssetRef, data: Data) {
         let png = try encode(image, type: .png)

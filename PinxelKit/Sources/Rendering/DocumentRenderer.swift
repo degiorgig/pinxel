@@ -117,9 +117,16 @@ public final class DocumentRenderer {
 
     public func renderImage(_ document: PinxelDocument, assets: any AssetProvider, options: RenderOptions = RenderOptions()) throws -> CGImage {
         let canvas = canvasSize(for: document)
-        let width = Int((canvas.width * options.outputScale).rounded())
-        let height = Int((canvas.height * options.outputScale).rounded())
-        guard width > 0, height > 0 else { throw RenderError.invalidSize }
+        let scaledWidth = canvas.width * options.outputScale
+        let scaledHeight = canvas.height * options.outputScale
+        let maxPixels = Double(PinxelDocument.maxImageSide * 4)
+        guard canvas.width > 0, canvas.height > 0,
+              scaledWidth.isFinite, scaledHeight.isFinite,
+              scaledWidth > 0, scaledHeight > 0,
+              scaledWidth <= maxPixels, scaledHeight <= maxPixels else { throw RenderError.invalidSize }
+        // Un lato molto sottile ridotto (es. miniatura di una striscia) resta almeno di 1 pixel.
+        let width = max(1, Int(scaledWidth.rounded()))
+        let height = max(1, Int(scaledHeight.rounded()))
         guard let ctx = ImageDrawing.makeContext(width: width, height: height) else { throw RenderError.contextCreationFailed }
         try render(document, assets: assets, in: ctx, options: options)
         guard let image = ctx.makeImage() else { throw RenderError.contextCreationFailed }

@@ -9,6 +9,7 @@ public protocol EditCommand: Sendable {
     func revert(on document: inout PinxelDocument)
 }
 
+/// Le annotazioni aggiunte devono avere ID nuovi: `revert` rimuove per ID.
 public struct AddAnnotations: EditCommand {
     public let name: String
     public let annotations: [Annotation]
@@ -107,7 +108,7 @@ public struct ReorderAnnotations: EditCommand {
     public func revert(on document: inout PinxelDocument) { reorder(&document, to: before) }
 
     private func reorder(_ document: inout PinxelDocument, to order: [UUID]) {
-        let byID = Dictionary(uniqueKeysWithValues: document.annotations.map { ($0.id, $0) })
+        let byID = Dictionary(document.annotations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let ordered = order.compactMap { byID[$0] }
         let listed = Set(order)
         // Le annotazioni non elencate restano in cima, nel loro ordine.

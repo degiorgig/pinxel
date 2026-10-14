@@ -54,10 +54,20 @@ enum EffectRenderer {
 
     static func drawMagnifier(_ data: MagnifierData, style: Style, context: RenderContext, in ctx: CGContext) {
         let target = data.target.standardized
-        guard target.width > 0, target.height > 0,
+        let source = data.source.standardized
+        guard target.width > 0, target.height > 0, source.width > 0, source.height > 0,
               let region = region(data.source, in: context.background),
               let crop = context.background.cropping(to: region.cgRect) else { return }
-        let source = data.source.standardized
+        // Solo la parte della sorgente dentro l'immagine viene ingrandita, nella posizione corrispondente.
+        let sx = target.width / source.width
+        let sy = target.height / source.height
+        let visible = region.cgRect
+        let cropTarget = CGRect(
+            x: target.minX + (visible.minX - source.minX) * sx,
+            y: target.minY + (visible.minY - source.minY) * sy,
+            width: visible.width * sx,
+            height: visible.height * sy
+        )
         let stroked = style.stroke != nil && style.lineWidth > 0
 
         if data.showsConnector, stroked {
@@ -76,7 +86,7 @@ enum EffectRenderer {
         ctx.setFillColor(RGBA.white.cgColor)
         ctx.fill(target)
         ctx.interpolationQuality = .none
-        ImageDrawing.draw(crop, in: target, context: ctx)
+        ImageDrawing.draw(crop, in: cropTarget, context: ctx)
         ctx.restoreGState()
 
         if stroked {

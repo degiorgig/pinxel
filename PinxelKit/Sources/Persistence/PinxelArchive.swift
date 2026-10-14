@@ -88,13 +88,28 @@ public enum PinxelArchive {
             throw PinxelArchiveError.invalidDocument(String(describing: error))
         }
 
+        if let reason = document.validationError() {
+            throw PinxelArchiveError.invalidDocument(reason)
+        }
+
         var images: [ImageAssetRef: Data] = [:]
+        let limit = PinxelDocument.maxImageSide
         for ref in requiredAssets(of: document) {
+            let data: Data
             do {
-                images[ref] = try zip.data(for: ref.name)
+                data = try zip.data(for: ref.name)
             } catch ZipError.missingEntry(_) {
                 throw PinxelArchiveError.missingAsset(ref.name)
             }
+            // Controllo sull'intestazione: niente decodifica di immagini enormi o incoerenti.
+            guard let size = ImageCodec.pixelSize(of: data),
+                  (1...limit).contains(size.width), (1...limit).contains(size.height) else {
+                throw PinxelArchiveError.invalidDocument("immagine non valida o troppo grande: \(ref.name)")
+            }
+            if ref == document.background, size != document.canvasSize {
+                throw PinxelArchiveError.invalidDocument("lo sfondo è \(size.width)×\(size.height), il documento dichiara \(document.canvasSize.width)×\(document.canvasSize.height)")
+            }
+            images[ref] = data
         }
         let thumbnail = try? zip.data(for: "thumbnail.png")
         return PinxelFileContents(document: document, images: images, thumbnail: thumbnail, isReadOnly: manifest.version > currentVersion)
