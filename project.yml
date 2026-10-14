@@ -1,0 +1,80 @@
+name: Pinxel
+options:
+  bundleIdPrefix: com.degiorgi
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+packages:
+  PinxelKit:
+    path: PinxelKit
+configFiles:
+  Debug: App/Config/Base.xcconfig
+  Release: App/Config/Base.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Pinxel:
+    type: application
+    platform: macOS
+    sources: [App/Pinxel]
+    dependencies:
+      - package: PinxelKit
+        product: DocumentModel
+      - package: PinxelKit
+        product: Rendering
+      - package: PinxelKit
+        product: Persistence
+      - package: PinxelKit
+        product: CaptureKit
+      - package: PinxelKit
+        product: AppCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.degiorgi.pinxel
+        PRODUCT_NAME: Pinxel
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: App/Pinxel/Info.plist
+      properties:
+        CFBundleDisplayName: Pinxel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.graphics-design
+        LSMinimumSystemVersion: "15.0"
+        NSHumanReadableCopyright: "© 2026 Giovanni De Giorgi"
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Documento Pinxel
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.degiorgi.pinxel.document]
+            NSDocumentClass: PinxelFileDocument
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.degiorgi.pinxel.document
+            UTTypeDescription: Documento Pinxel
+            UTTypeConformsTo: [public.data, public.composite-content]
+            UTTypeTagSpecification:
+              public.filename-extension: [pinxel]
+  PinxelUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources: [App/PinxelUITests]
+    dependencies:
+      - target: Pinxel
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.degiorgi.pinxel.uitests
+        ENABLE_HARDENED_RUNTIME: NO
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Pinxel:
+    build:
+      targets:
+        Pinxel: all
+        PinxelUITests: [test]
+    test:
+      targets: [PinxelUITests]

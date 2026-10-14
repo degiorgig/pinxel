@@ -5,3 +5,7 @@ DerivedData/
 *.xcuserstate
 .superpowers/
 *.actual.png
+Pinxel.xcodeproj/
+App/Config/Signing.local.xcconfig
+App/Pinxel/Info.plist
+build/
