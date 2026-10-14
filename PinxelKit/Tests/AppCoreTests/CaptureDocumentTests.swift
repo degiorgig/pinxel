@@ -22,3 +22,20 @@ struct CaptureDocumentTests {
         #expect(reread.document == contents.document)
     }
 }
+
+struct PastedImageScaleTests {
+    @Test func retinaScreenshotIsTwoX() {
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 800, pointWidth: 400) == 2)
+    }
+
+    @Test func plainImageIsOneX() {
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 640, pointWidth: 640) == 1)
+    }
+
+    @Test func oddRatiosRoundAndStayInRange() {
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 1000, pointWidth: 480) == 2)
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 100, pointWidth: 400) == 1)
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 4000, pointWidth: 400) == 3)
+        #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 400, pointWidth: 0) == 1)
+    }
+}

@@ -31,6 +31,8 @@ targets:
         product: CaptureKit
       - package: PinxelKit
         product: AppCore
+      - package: PinxelKit
+        product: EditorUI
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.degiorgi.pinxel

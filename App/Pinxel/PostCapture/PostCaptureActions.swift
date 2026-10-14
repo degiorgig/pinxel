@@ -7,6 +7,8 @@ final class PostCaptureActions {
     private let notifier: Notifier
     private let autoSaver: AutoSaver
     private var previews: [QuickPreviewController] = []
+    /// Chiamato a ogni cattura, qualunque sia l'azione scelta.
+    var onCapture: ((PinxelFileContents) -> Void)?
 
     init(notifier: Notifier, autoSaver: AutoSaver = AutoSaver()) {
         self.notifier = notifier
@@ -14,6 +16,7 @@ final class PostCaptureActions {
     }
 
     func perform(_ plan: PostCapturePlan, contents: PinxelFileContents, image: CGImage, settings: CaptureSettings) {
+        onCapture?(contents)
         var editorOpened = false
         run(plan.immediate, contents: contents, image: image, settings: settings, editorOpened: &editorOpened)
         guard plan.showsQuickPreview else { return }

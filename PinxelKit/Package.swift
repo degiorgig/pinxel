@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "Persistence", targets: ["Persistence"]),
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
         .library(name: "AppCore", targets: ["AppCore"]),
+        .library(name: "EditorUI", targets: ["EditorUI"]),
     ],
     targets: [
         .target(name: "DocumentModel"),
@@ -17,6 +18,7 @@ let package = Package(
         .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
         .target(name: "CaptureKit"),
         .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"]),
+        .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"]),
         .target(
             name: "PinxelTestSupport",
             dependencies: ["DocumentModel"],
@@ -42,6 +44,10 @@ let package = Package(
         .testTarget(
             name: "AppCoreTests",
             dependencies: ["AppCore", "PinxelTestSupport"]
+        ),
+        .testTarget(
+            name: "EditorUITests",
+            dependencies: ["EditorUI", "DocumentModel", "Rendering", "PinxelTestSupport"]
         ),
     ]
 )

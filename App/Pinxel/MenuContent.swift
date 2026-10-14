@@ -12,6 +12,9 @@ struct MenuContent: View {
                 .globalShortcut(environment.settings.combo(for: action))
         }
         Divider()
+        Button("Modifica ultima cattura") { environment.openLastCapture() }
+            .disabled(environment.lastCapture == nil)
+        Button("Nuova dagli appunti") { environment.openClipboard() }
         Button("Apri…") {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate()
