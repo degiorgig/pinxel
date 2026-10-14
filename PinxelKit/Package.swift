@@ -6,9 +6,11 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "DocumentModel", targets: ["DocumentModel"]),
+        .library(name: "Rendering", targets: ["Rendering"]),
     ],
     targets: [
         .target(name: "DocumentModel"),
+        .target(name: "Rendering", dependencies: ["DocumentModel"]),
         .target(
             name: "PinxelTestSupport",
             dependencies: ["DocumentModel"],
@@ -17,6 +19,11 @@ let package = Package(
         .testTarget(
             name: "DocumentModelTests",
             dependencies: ["DocumentModel", "PinxelTestSupport"]
+        ),
+        .testTarget(
+            name: "RenderingTests",
+            dependencies: ["Rendering", "PinxelTestSupport"],
+            exclude: ["__Snapshots__"]
         ),
     ]
 )
