@@ -95,11 +95,14 @@ public final class ToolController {
     /// Riquadro del ritaglio in corso, in coordinate del documento; `nil` = tutta l'immagine.
     public private(set) var cropRect: CGRect?
     private var cropDrag: (mode: CropGeometry.DragMode, start: CGPoint, original: CGRect)?
+    /// Fascia che il taglio toglierebbe, mentre la si trascina.
+    public private(set) var cutPreview: CutOut?
+    private var cutStart: CGPoint?
 
     public init() {}
 
     public var isGestureActive: Bool {
-        if cropDrag != nil { return true }
+        if cropDrag != nil || cutStart != nil { return true }
         if case .idle = gesture { return false }
         return true
     }
@@ -108,6 +111,8 @@ public final class ToolController {
     private func cancelGesture() {
         gesture = .idle
         cropDrag = nil
+        cutStart = nil
+        cutPreview = nil
     }
 
     /// Riquadro da mostrare sopra l'immagine con lo strumento Ritaglio; `nil` con gli altri strumenti.
@@ -125,6 +130,7 @@ public final class ToolController {
         case .select: return handleSelect(event, document: document, selection: selection)
         case .text, .callout: return handleText(event, document: document)
         case .crop: return handleCrop(event, document: document)
+        case .cutOut: return handleCut(event, document: document)
         default: return handleCreate(event, document: document)
         }
     }
@@ -325,6 +331,33 @@ public final class ToolController {
             return ToolResult(tool: .select)
         }
         return ToolResult(command: ApplyImageOperation(.crop(pixel), in: document), selection: [], tool: .select)
+    }
+
+    // MARK: Taglia e ricuci
+
+    private func handleCut(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        switch event {
+        case .down(let point, _, _):
+            cutStart = point
+            cutPreview = nil
+            return ToolResult()
+        case .drag(let point, _):
+            guard let start = cutStart else { return ToolResult() }
+            cutPreview = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge)
+            return ToolResult()
+        case .up(let point, _):
+            defer {
+                cutStart = nil
+                cutPreview = nil
+            }
+            guard let start = cutStart,
+                  let cut = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge) else {
+                return ToolResult()
+            }
+            return ToolResult(command: ApplyImageOperation(.cutOut(cut), in: document), selection: [])
+        case .key:
+            return ToolResult()
+        }
     }
 
     // MARK: Testo e callout

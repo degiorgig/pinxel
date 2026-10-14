@@ -156,6 +156,7 @@ public final class CanvasView: NSView, EditorActions {
         if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
         drawSelection(in: ctx)
         drawCropOverlay(in: ctx)
+        drawCutPreview(in: ctx)
         if let marquee { drawMarquee(marquee, in: ctx) }
         if let textEditor { drawTextFrame(textEditor, in: ctx) }
     }
@@ -279,6 +280,35 @@ public final class CanvasView: NSView, EditorActions {
         if let pixels = CropGeometry.pixelRect(rect, imageSize: size) {
             drawBadge("\(pixels.width) × \(pixels.height)", at: CGPoint(x: crop.minX, y: crop.maxY + 6))
         }
+    }
+
+    private func drawCutPreview(in ctx: CGContext) {
+        guard let cut = controller.cutPreview else { return }
+        let size = session.document.imageSize
+        let band = cut.axis == .horizontal
+            ? CGRect(x: 0, y: Double(cut.start), width: Double(size.width), height: Double(cut.length))
+            : CGRect(x: Double(cut.start), y: 0, width: Double(cut.length), height: Double(size.height))
+        let rect = viewRect(fromDocument: band)
+        ctx.saveGState()
+        ctx.setFillColor(NSColor.systemRed.withAlphaComponent(0.25).cgColor)
+        ctx.fill(rect)
+        ctx.setStrokeColor(NSColor.systemRed.cgColor)
+        ctx.setLineWidth(1)
+        ctx.setLineDash(phase: 0, lengths: [5, 3])
+        if cut.axis == .horizontal {
+            for y in [rect.minY, rect.maxY] {
+                ctx.move(to: CGPoint(x: rect.minX, y: y))
+                ctx.addLine(to: CGPoint(x: rect.maxX, y: y))
+            }
+        } else {
+            for x in [rect.minX, rect.maxX] {
+                ctx.move(to: CGPoint(x: x, y: rect.minY))
+                ctx.addLine(to: CGPoint(x: x, y: rect.maxY))
+            }
+        }
+        ctx.strokePath()
+        ctx.restoreGState()
+        drawBadge("− \(cut.length) px", at: CGPoint(x: rect.minX + 6, y: rect.minY + 6))
     }
 
     /// Etichetta scura con testo bianco (dimensioni del ritaglio, lunghezza del taglio).

@@ -18,3 +18,21 @@ struct CropSection: View {
         }
     }
 }
+
+
+/// Strumento Taglia e ricuci: bordo della cucitura e istruzioni.
+struct CutSection: View {
+    @Bindable var model: EditorModel
+
+    var body: some View {
+        Section("Taglia e ricuci") {
+            Picker("Bordo", selection: $model.toolStyles.cutEdge) {
+                Text("Dritto").tag(CutEdge.straight)
+                Text("Zig-zag").tag(CutEdge.zigzag)
+            }
+            .pickerStyle(.segmented)
+            Text("Trascina in verticale per togliere una fascia orizzontale, in orizzontale per togliere una fascia verticale.")
+                .foregroundStyle(.secondary)
+        }
+    }
+}

@@ -136,6 +136,8 @@ struct InspectorView: View {
             MagnifierSection(model: model)
         case .crop:
             CropSection()
+        case .cutOut:
+            CutSection(model: model)
         default:
             EmptyView()
         }
