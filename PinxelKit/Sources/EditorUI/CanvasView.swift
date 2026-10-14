@@ -36,6 +36,9 @@ public final class CanvasView: NSView, EditorActions {
     private var spaceHeld = false
     private var panPoint: CGPoint?
     private var renderFailed = false
+    /// Testo in modifica sulla tela, e lo strumento con cui è iniziata la modifica.
+    private(set) var textEditor: CanvasTextEditor?
+    private var textEditingTool: EditorTool?
 
     static let annotationsType = NSPasteboard.PasteboardType(AnnotationClipboard.typeIdentifier)
 
@@ -86,6 +89,7 @@ public final class CanvasView: NSView, EditorActions {
         if followsWindow, bounds.width > 0, bounds.height > 0 {
             viewport.fit(canvasSize: canvasSize, in: bounds.size)
         }
+        layoutTextEditor()
     }
 
     private func observeModel() {
@@ -97,6 +101,8 @@ public final class CanvasView: NSView, EditorActions {
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                // Un altro strumento chiude la modifica del testo.
+                if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
                 self.needsDisplay = true
                 self.updateAccessibilityValue()
                 self.window?.invalidateCursorRects(for: self)
@@ -122,7 +128,7 @@ public final class CanvasView: NSView, EditorActions {
         drawCheckerboard(in: canvasRect, context: ctx)
 
         var document = session.document
-        document.annotations = session.displayedAnnotations
+        document.annotations = annotationsForDrawing()
         ctx.saveGState()
         ctx.clip(to: canvasRect)
         ctx.interpolationQuality = viewport.zoom >= 2 ? .none : .high
@@ -142,6 +148,7 @@ public final class CanvasView: NSView, EditorActions {
         if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
         drawSelection(in: ctx)
         if let marquee { drawMarquee(marquee, in: ctx) }
+        if let textEditor { drawTextFrame(textEditor, in: ctx) }
     }
 
     private func drawCheckerboard(in rect: CGRect, context ctx: CGContext) {
@@ -232,6 +239,88 @@ public final class CanvasView: NSView, EditorActions {
         (text as NSString).draw(at: CGPoint(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2), withAttributes: attributes)
     }
 
+    // MARK: Testo sulla tela
+
+    /// Rettangolo del documento in punti della vista.
+    func viewRect(fromDocument rect: CGRect) -> CGRect {
+        let origin = viewPoint(fromDocument: rect.origin)
+        return CGRect(x: origin.x, y: origin.y,
+                      width: rect.width * viewport.pointsPerPixel, height: rect.height * viewport.pointsPerPixel)
+    }
+
+    func beginTextEditing(_ request: TextEditRequest) {
+        finishTextEditing()
+        guard !session.isReadOnly, request.annotation.richText != nil, !request.annotation.isLocked else { return }
+        let editor = CanvasTextEditor(request: request)
+        editor.onChange = { [weak self] text in
+            self?.model.editingText = text
+            self?.needsDisplay = true
+        }
+        editor.onFrameChange = { [weak self] in
+            self?.layoutTextEditor()
+            self?.needsDisplay = true
+        }
+        editor.onFinish = { [weak self] text, height in
+            self?.endTextEditing(request, text: text, height: height)
+        }
+        textEditor = editor
+        textEditingTool = model.tool
+        model.textEditing = editor
+        model.editingText = editor.richText
+        session.selection = request.isNew ? [] : [request.annotation.id]
+        addSubview(editor.container)
+        layoutTextEditor()
+        window?.makeFirstResponder(editor.textView)
+        needsDisplay = true
+    }
+
+    func finishTextEditing() {
+        textEditor?.finish()
+    }
+
+    private func endTextEditing(_ request: TextEditRequest, text: RichText, height: Double) {
+        guard let editor = textEditor else { return }
+        textEditor = nil
+        textEditingTool = nil
+        model.textEditing = nil
+        model.editingText = nil
+        editor.container.removeFromSuperview()
+        if let command = TextEditing.commit(request, text: text, minimumHeight: height, document: session.document) {
+            session.perform(command)
+            let id = request.annotation.id
+            session.selection = session.document.annotations.contains { $0.id == id } ? [id] : []
+        }
+        if window?.firstResponder !== self { window?.makeFirstResponder(self) }
+        needsDisplay = true
+    }
+
+    private func layoutTextEditor() {
+        textEditor?.place(in: viewRect(fromDocument:))
+    }
+
+    /// Annotazioni da disegnare: durante la modifica il testo lo mostra l'`NSTextView`, sotto resta il riquadro.
+    private func annotationsForDrawing() -> [Annotation] {
+        var annotations = session.displayedAnnotations
+        guard let editor = textEditor else { return annotations }
+        let id = editor.request.annotation.id
+        let placeholder = TextEditing.placeholder(for: editor.request, current: annotations.first { $0.id == id }, height: editor.frame.height)
+        if let index = annotations.firstIndex(where: { $0.id == id }) {
+            annotations[index] = placeholder
+        } else {
+            annotations.append(placeholder)
+        }
+        return annotations
+    }
+
+    private func drawTextFrame(_ editor: CanvasTextEditor, in ctx: CGContext) {
+        ctx.saveGState()
+        ctx.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        ctx.setLineWidth(1)
+        ctx.setLineDash(phase: 0, lengths: [4, 3])
+        ctx.stroke(editor.container.frame.insetBy(dx: -0.5, dy: -0.5))
+        ctx.restoreGState()
+    }
+
     // MARK: Eventi
 
     private func syncController() {
@@ -270,9 +359,15 @@ public final class CanvasView: NSView, EditorActions {
         if let command = result.command { session.perform(command) }
         if let selection = result.selection { session.selection = selection }
         if let delta = result.nudge { session.nudge(by: delta) }
+        if let request = result.editText { beginTextEditing(request) }
     }
 
     public override func mouseDown(with event: NSEvent) {
+        if textEditor != nil {
+            // Un clic fuori dal testo chiude la modifica e non fa altro.
+            finishTextEditing()
+            return
+        }
         window?.makeFirstResponder(self)
         let point = convert(event.locationInWindow, from: nil)
         if spaceHeld {
@@ -355,12 +450,14 @@ public final class CanvasView: NSView, EditorActions {
     private func setZoom(_ zoom: Double, anchor: CGPoint) {
         viewport.setZoom(zoom, anchor: anchor)
         followsWindow = false
+        layoutTextEditor()
         needsDisplay = true
     }
 
     private func pan(by delta: CGSize) {
         viewport.pan(by: delta)
         followsWindow = false
+        layoutTextEditor()
         needsDisplay = true
     }
 
@@ -377,12 +474,14 @@ public final class CanvasView: NSView, EditorActions {
     @objc public func zoomToFit(_ sender: Any?) {
         followsWindow = true
         viewport.fit(canvasSize: canvasSize, in: bounds.size)
+        layoutTextEditor()
         needsDisplay = true
     }
 
     @objc public func zoomToActualSize(_ sender: Any?) {
         followsWindow = false
         viewport.actualSize(canvasSize: canvasSize, in: bounds.size)
+        layoutTextEditor()
         needsDisplay = true
     }
 

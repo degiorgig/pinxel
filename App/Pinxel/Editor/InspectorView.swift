@@ -130,6 +130,8 @@ struct InspectorView: View {
                     )
                 }
             }
+        case .text, .callout:
+            TextSection(model: model)
         default:
             EmptyView()
         }

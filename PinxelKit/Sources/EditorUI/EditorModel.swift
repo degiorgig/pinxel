@@ -60,6 +60,10 @@ public final class EditorModel {
     public var tool: EditorTool = .select
     public var toolStyles = ToolStyles()
     public var isInspectorPresented = true
+    /// Testo in modifica sulla tela (copia osservabile per il pannello); `nil` fuori dalla modifica.
+    public internal(set) var editingText: RichText?
+    /// Il testo in modifica, a cui il pannello manda le sue modifiche.
+    @ObservationIgnored public internal(set) weak var textEditing: (any TextEditingControl)?
 
     public init(session: EditorSession) {
         self.session = session
@@ -116,6 +120,30 @@ public final class EditorModel {
             change(&copy)
             return copy
         }
+    }
+
+    /// Testo mostrato nel pannello: quello in modifica, quello selezionato o il modello dello strumento.
+    public var inspectedRichText: RichText {
+        if let editingText { return editingText }
+        if let text = inspectedAnnotation?.richText { return text }
+        return tool == .callout ? toolStyles.calloutText : toolStyles.text
+    }
+
+    /// Modifica il testo in modifica (senza comandi: conta la fine della modifica), o i testi selezionati
+    /// (un comando), o il modello del testo dello strumento.
+    public func updateText(name: String, coalescing: Bool = false, _ change: (inout RichText) -> Void) {
+        if let textEditing {
+            textEditing.applyToAll(change)
+            return
+        }
+        let tool = self.tool
+        update(name: name, coalescing: coalescing, selection: { annotation in
+            guard var text = annotation.richText else { return }
+            change(&text)
+            annotation.richText = text
+        }, tool: { styles in
+            if tool == .callout { change(&styles.calloutText) } else { change(&styles.text) }
+        })
     }
 
     public func setEffectMode(_ mode: EffectMode) {
