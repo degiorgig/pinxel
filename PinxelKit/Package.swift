@@ -7,10 +7,12 @@ let package = Package(
     products: [
         .library(name: "DocumentModel", targets: ["DocumentModel"]),
         .library(name: "Rendering", targets: ["Rendering"]),
+        .library(name: "Persistence", targets: ["Persistence"]),
     ],
     targets: [
         .target(name: "DocumentModel"),
         .target(name: "Rendering", dependencies: ["DocumentModel"]),
+        .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
         .target(
             name: "PinxelTestSupport",
             dependencies: ["DocumentModel"],
@@ -24,6 +26,10 @@ let package = Package(
             name: "RenderingTests",
             dependencies: ["Rendering", "PinxelTestSupport"],
             exclude: ["__Snapshots__"]
+        ),
+        .testTarget(
+            name: "PersistenceTests",
+            dependencies: ["Persistence", "PinxelTestSupport"]
         ),
     ]
 )
