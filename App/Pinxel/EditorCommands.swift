@@ -11,6 +11,9 @@ struct EditorCommands: Commands {
                 .keyboardShortcut("s")
             Button("Salva con nome…") { send(#selector(NSDocument.saveAs(_:))) }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
+            Divider()
+            Button("Esporta…") { send(#selector(PinxelFileDocument.exportImage(_:))) }
+                .keyboardShortcut("e")
         }
         CommandGroup(replacing: .undoRedo) {
             Button("Annulla") { send(Selector(("undo:"))) }

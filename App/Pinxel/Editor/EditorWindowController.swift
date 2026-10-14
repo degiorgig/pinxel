@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Finestra dell'editor: vista SwiftUI con toolbar nativa (via `sceneBridgingOptions`) e pannello proprietà.
 @MainActor
-final class EditorWindowController: NSWindowController {
+final class EditorWindowController: NSWindowController, NSWindowDelegate {
     let model: EditorModel
 
     init(model: EditorModel) {
@@ -20,6 +20,8 @@ final class EditorWindowController: NSWindowController {
         window.center()
         if model.session.isReadOnly { window.subtitle = "Sola lettura" }
         super.init(window: window)
+        // Il documento entra nella catena dei responder (Salva, Esporta…) tramite il delegato della finestra.
+        window.delegate = self
         shouldCascadeWindows = true
     }
 

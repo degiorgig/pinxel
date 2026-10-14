@@ -70,6 +70,16 @@ final class PinxelFileDocument: NSDocument {
         }
     }
 
+    /// Esporta… dal menu File (arriva qui dalla catena dei responder).
+    @objc func exportImage(_ sender: Any?) {
+        MainActor.assumeIsolated {
+            guard let model = editorModel, let window = windowControllers.first?.window else { return }
+            let session = model.session
+            let name = displayName ?? "Pinxel"
+            Task { await ExportPanel.run(document: session.document, assets: session.assets, suggestedName: name, window: window) }
+        }
+    }
+
     nonisolated private static func userError(for error: Error, data: Data) -> NSError {
         let reason: String
         switch error {

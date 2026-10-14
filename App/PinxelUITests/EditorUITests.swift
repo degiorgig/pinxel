@@ -36,4 +36,15 @@ final class EditorUITests: XCTestCase {
         waitForValue(canvas, prefix: "Annotazioni: 1")
         app.terminate()
     }
+
+    func testExportOpensASaveSheet() {
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.click()
+        app.typeKey("e", modifierFlags: .command)
+        XCTAssertTrue(app.sheets.firstMatch.waitForExistence(timeout: 5))
+        app.typeKey(.escape, modifierFlags: [])
+        app.terminate()
+    }
 }

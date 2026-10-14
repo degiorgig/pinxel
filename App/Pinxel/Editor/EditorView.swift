@@ -25,6 +25,10 @@ struct EditorView: View {
                     .labelStyle(.iconOnly)
                 }
                 ToolbarItem(placement: .primaryAction) {
+                    ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))
+                        .help("Condividi l'immagine")
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button {
                         model.isInspectorPresented.toggle()
                     } label: {
