@@ -189,10 +189,76 @@ public final class ToolController {
         }
     }
 
-    // MARK: Creazione (Task 6)
+    // MARK: Creazione
 
     private func handleCreate(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
-        ToolResult()
+        let annotations = document.annotations
+        switch event {
+        case .down(let point, let modifiers, _):
+            let id = makeID()
+            gesture = .create(start: point, id: id, points: [point])
+            // Lo step compare subito sotto il puntatore.
+            guard let annotation = makeAnnotation(id: id, start: point, end: point, points: [point], modifiers: modifiers) else {
+                return ToolResult()
+            }
+            return ToolResult(preview: annotations + [annotation])
+
+        case .drag(let point, let modifiers):
+            guard case .create(let start, let id, var points) = gesture else { return ToolResult() }
+            if let last = points.last, last.distance(to: point) >= 1 { points.append(point) }
+            gesture = .create(start: start, id: id, points: points)
+            guard let annotation = makeAnnotation(id: id, start: start, end: point, points: points, modifiers: modifiers) else {
+                return ToolResult()
+            }
+            return ToolResult(preview: annotations + [annotation])
+
+        case .up(let point, let modifiers):
+            guard case .create(let start, let id, var points) = gesture else { return ToolResult() }
+            gesture = .idle
+            if let last = points.last, last.distance(to: point) >= 1 { points.append(point) }
+            guard let annotation = makeAnnotation(id: id, start: start, end: point, points: points, modifiers: modifiers) else {
+                return ToolResult()
+            }
+            return ToolResult(command: AddAnnotations([annotation], name: "Aggiungi \(tool.title.lowercased())"), selection: [id])
+
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    private func makeAnnotation(id: UUID, start: CGPoint, end: CGPoint, points: [CGPoint], modifiers: ToolModifiers) -> Annotation? {
+        let style = styles.style(for: tool)
+        switch tool {
+        case .arrow, .line:
+            let target = modifiers.contains(.shift) ? AnnotationGeometry.constrained45(from: start, to: end) : end
+            guard start.distance(to: target) >= dragThreshold else { return nil }
+            let line = LineGeometry(start: start, end: target)
+            let kind: Annotation.Kind = tool == .arrow
+                ? .arrow(ArrowData(line: line, heads: styles.arrowHeads))
+                : .line(LineData(line: line))
+            return Annotation(id: id, kind: kind, style: style)
+        case .shape, .blur:
+            let corner = modifiers.contains(.shift) ? AnnotationGeometry.squared(from: start, to: end) : end
+            let rect = CGRect.bounding([start, corner])
+            guard rect.width >= dragThreshold, rect.height >= dragThreshold else { return nil }
+            if tool == .shape {
+                return Annotation(id: id, kind: .shape(ShapeData(rect: rect, shape: styles.shapeType)), style: style)
+            }
+            let kind: Annotation.Kind = styles.effectMode == .blur
+                ? .blur(BlurData(rect: rect, radius: styles.effectAmount))
+                : .pixelate(PixelateData(rect: rect, blockSize: styles.effectAmount))
+            return Annotation(id: id, kind: kind, style: style)
+        case .pen, .highlight:
+            guard points.count >= 2 else { return nil }
+            let path = PathGeometry(points: points)
+            let kind: Annotation.Kind = tool == .pen ? .pen(PenData(path: path)) : .highlight(HighlightData(path: path))
+            return Annotation(id: id, kind: kind, style: style)
+        case .step:
+            let label = StepLabel(sequence: styles.stepSequence)
+            return Annotation(id: id, kind: .step(StepData(center: end, diameter: styles.stepDiameter, label: label)), style: style)
+        case .select:
+            return nil
+        }
     }
 
     // MARK: Aiuti
