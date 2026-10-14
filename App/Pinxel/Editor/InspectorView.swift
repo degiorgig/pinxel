@@ -132,6 +132,8 @@ struct InspectorView: View {
             }
         case .text, .callout:
             TextSection(model: model)
+        case .magnifier:
+            MagnifierSection(model: model)
         default:
             EmptyView()
         }

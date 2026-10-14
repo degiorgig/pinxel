@@ -107,6 +107,48 @@ extension Annotation {
         }
     }
 
+    public var magnifierShape: ShapeType? {
+        get {
+            guard case .magnifier(let data) = kind else { return nil }
+            return data.shape
+        }
+        set {
+            guard case .magnifier(var data) = kind, let newValue else { return }
+            data.shape = newValue
+            kind = .magnifier(data)
+        }
+    }
+
+    public var magnifierConnector: Bool? {
+        get {
+            guard case .magnifier(let data) = kind else { return nil }
+            return data.showsConnector
+        }
+        set {
+            guard case .magnifier(var data) = kind, let newValue else { return }
+            data.showsConnector = newValue
+            kind = .magnifier(data)
+        }
+    }
+
+    /// Ingrandimento (lato dell'ingrandimento / lato della sorgente); cambiarlo ridimensiona l'ingrandimento
+    /// attorno al suo centro.
+    public var magnifierZoom: Double? {
+        get {
+            guard case .magnifier(let data) = kind else { return nil }
+            let source = data.source.standardized
+            return source.width > 0 ? data.target.standardized.width / source.width : nil
+        }
+        set {
+            guard case .magnifier(var data) = kind, let newValue, newValue > 0 else { return }
+            let source = data.source.standardized
+            let center = data.target.standardized.center
+            let size = CGSize(width: source.width * newValue, height: source.height * newValue)
+            data.target = CGRect(x: center.x - size.width / 2, y: center.y - size.height / 2, width: size.width, height: size.height)
+            kind = .magnifier(data)
+        }
+    }
+
     mutating func convertEffect(to mode: EffectMode) {
         switch (kind, mode) {
         case (.blur(let data), .pixelate): kind = .pixelate(PixelateData(rect: data.rect, blockSize: data.radius))

@@ -80,6 +80,8 @@ public final class ToolController {
         /// `grab`: distanza fra la maniglia e il punto premuto, mantenuta per tutto il gesto.
         case resize(Handle, original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
         case rotate(original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
+        /// Spostamento di una sola parte di una lente.
+        case movePart(start: CGPoint, original: Annotation, part: MagnifierPart, started: Bool)
         case create(start: CGPoint, id: UUID, points: [CGPoint])
     }
 
@@ -165,7 +167,13 @@ public final class ToolController {
                 let movable = annotations.filter { newSelection.contains($0.id) && !$0.isLocked }
                 if newSelection.contains(hit.id), !movable.isEmpty {
                     let copies = modifiers.contains(.option) ? movable.map { _ in makeID() } : nil
-                    gesture = .move(start: point, originals: movable, copyIDs: copies, started: false)
+                    if copies == nil, movable.count == 1, case .magnifier(let data) = movable[0].kind,
+                       let part = HitTesting.magnifierPart(at: point, in: data, tolerance: hitTolerance) {
+                        // Si sposta solo la parte presa: la sorgente o l'ingrandimento.
+                        gesture = .movePart(start: point, original: movable[0], part: part, started: false)
+                    } else {
+                        gesture = .move(start: point, originals: movable, copyIDs: copies, started: false)
+                    }
                 } else {
                     gesture = .idle
                 }
@@ -195,6 +203,11 @@ public final class ToolController {
                 gesture = .rotate(original: original, start: start, grab: grab, started: true)
                 let rotated = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 return ToolResult(preview: replacing([rotated], in: annotations))
+            case .movePart(let start, let original, let part, let started):
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .movePart(start: start, original: original, part: part, started: true)
+                let moved = AnnotationGeometry.moved(original, part: part, by: constrainedDelta(from: start, to: point, modifiers))
+                return ToolResult(preview: replacing([moved], in: annotations))
             case .idle, .create:
                 return ToolResult()
             }
@@ -227,6 +240,11 @@ public final class ToolController {
                 let after = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
                 return ToolResult(command: UpdateAnnotations(name: "Ruota", before: [original], after: [after]))
+            case .movePart(let start, let original, let part, let started):
+                guard started else { return ToolResult() }
+                let after = AnnotationGeometry.moved(original, part: part, by: constrainedDelta(from: start, to: point, modifiers))
+                guard after != original else { return ToolResult() }
+                return ToolResult(command: UpdateAnnotations(name: "Sposta", before: [original], after: [after]))
             case .idle, .create:
                 return ToolResult()
             }
@@ -350,7 +368,14 @@ public final class ToolController {
         case .step:
             let label = StepLabel(sequence: styles.stepSequence)
             return Annotation(id: id, kind: .step(StepData(center: end, diameter: styles.stepDiameter, label: label)), style: style)
-        case .text, .callout, .magnifier, .crop, .cutOut, .select:
+        case .magnifier:
+            let corner = modifiers.contains(.shift) ? AnnotationGeometry.squared(from: start, to: end) : end
+            let source = CGRect.bounding([start, corner])
+            guard source.width >= dragThreshold, source.height >= dragThreshold else { return nil }
+            let target = MagnifierPlacement.target(for: source, zoom: styles.magnifierZoom, imageSize: imageSize)
+            let data = MagnifierData(source: source, target: target, shape: styles.magnifierShape, showsConnector: styles.magnifierConnector)
+            return Annotation(id: id, kind: .magnifier(data), style: style)
+        case .text, .callout, .crop, .cutOut, .select:
             return nil
         }
     }

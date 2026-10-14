@@ -13,6 +13,18 @@ public enum AnnotationGeometry {
         return annotation.transformed(by: PointMapping { CGPoint(x: $0.x + dx, y: $0.y + dy) })
     }
 
+    /// Sposta solo una parte di una lente; per gli altri tipi sposta tutto.
+    public static func moved(_ annotation: Annotation, part: MagnifierPart, by delta: CGSize) -> Annotation {
+        guard case .magnifier(var data) = annotation.kind else { return moved(annotation, by: delta) }
+        switch part {
+        case .source: data.source = data.source.offsetBy(dx: delta.width, dy: delta.height)
+        case .target: data.target = data.target.offsetBy(dx: delta.width, dy: delta.height)
+        }
+        var copy = annotation
+        copy.kind = .magnifier(data)
+        return copy
+    }
+
     /// Ridimensiona trascinando `handle` fino a `point`. Per le annotazioni ruotate il punto opposto
     /// resta fermo sullo schermo.
     public static func resized(_ annotation: Annotation, handle: Handle, to point: CGPoint, keepAspect: Bool) -> Annotation {
@@ -21,6 +33,17 @@ public enum AnnotationGeometry {
         case .rotation: return annotation
         case .calloutTail: return movingTail(annotation, to: point)
         default: break
+        }
+        if case .magnifier(var data) = annotation.kind {
+            // Le maniglie della sorgente ridimensionano la sorgente, le altre l'ingrandimento.
+            let box = handle.boxEquivalent
+            let old = (handle.isSourceHandle ? data.source : data.target).standardized
+            let rect = frame(anchor: HitTesting.boxPoint(box.opposite, of: old), dragged: point, handle: box,
+                             old: old, keepAspect: keepAspect && box.isCorner)
+            if handle.isSourceHandle { data.source = rect } else { data.target = rect }
+            var copy = annotation
+            copy.kind = .magnifier(data)
+            return copy
         }
         if case .callout(var data) = annotation.kind {
             // Si ridimensiona il fumetto; la punta della coda resta dov'è.

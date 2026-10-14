@@ -56,6 +56,11 @@ public enum Handle: Hashable, Sendable {
     public var movesY: Bool { [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .bottom].contains(self) }
 }
 
+/// Le due parti di una lente, che si spostano separatamente.
+public enum MagnifierPart: Sendable {
+    case source, target
+}
+
 public enum HitTesting {
     /// L'annotazione più in alto sotto `point` (coordinate del documento). `tolerance` è in pixel del documento.
     public static func annotation(at point: CGPoint, in annotations: [Annotation], tolerance: Double) -> Annotation? {
@@ -126,6 +131,13 @@ public enum HitTesting {
         }
     }
 
+    /// La parte di una lente sotto `point`; l'ingrandimento, disegnato sopra, vince.
+    public static func magnifierPart(at point: CGPoint, in data: MagnifierData, tolerance: Double) -> MagnifierPart? {
+        if data.target.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .target }
+        if data.source.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .source }
+        return nil
+    }
+
     /// Maniglie in coordinate del documento. `rotationOffset` è la distanza della maniglia di rotazione
     /// sopra il riquadro. Le annotazioni bloccate non hanno maniglie.
     public static func handles(for annotation: Annotation, rotationOffset: Double) -> [(handle: Handle, point: CGPoint)] {
@@ -140,6 +152,12 @@ public enum HitTesting {
             local = [(.lineStart, data.line.start), (.lineEnd, data.line.end)]
         case .step:
             local = Handle.boxHandles.filter(\.isCorner).map { ($0, boxPoint($0, of: bounds)) }
+        case .magnifier(let data):
+            // Otto maniglie sull'ingrandimento, quattro sugli angoli della sorgente, niente rotazione.
+            let target = data.target.standardized
+            let source = data.source.standardized
+            local = Handle.boxHandles.map { ($0, boxPoint($0, of: target)) }
+                + [Handle.sourceTopLeft, .sourceTopRight, .sourceBottomRight, .sourceBottomLeft].map { ($0, boxPoint($0, of: source)) }
         case .callout(let data):
             // Niente rotazione: maniglie sul fumetto e sulla punta della coda.
             let rect = data.rect.standardized
