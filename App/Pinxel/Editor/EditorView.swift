@@ -31,6 +31,14 @@ struct EditorView: View {
                     .labelStyle(.iconOnly)
                 }
                 ToolbarItem(placement: .primaryAction) {
+                    Image(systemName: "photo.on.rectangle")
+                        .frame(width: 28, height: 22)
+                        .contentShape(Rectangle())
+                        .draggable(DraggedCapture(model: model))
+                        .help("Trascina l'immagine in un'altra app o nel Finder")
+                        .accessibilityLabel("Trascina l'immagine")
+                }
+                ToolbarItem(placement: .primaryAction) {
                     ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))
                         .help("Condividi l'immagine")
                 }
