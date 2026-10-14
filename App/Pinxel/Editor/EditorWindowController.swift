@@ -28,6 +28,19 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
+    // I menu seguono l'editor della finestra principale (un foglio come Esporta lascia la finestra principale).
+    func windowDidBecomeMain(_ notification: Notification) {
+        EditorFocus.shared.focus(model)
+    }
+
+    func windowDidResignMain(_ notification: Notification) {
+        EditorFocus.shared.resign(model)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        EditorFocus.shared.resign(model)
+    }
+
     /// Immagine al 100% più il pannello, entro il 90% dello schermo.
     static func initialContentSize(for document: PinxelDocument) -> NSSize {
         let visible = NSScreen.main?.visibleFrame.size ?? NSSize(width: 1440, height: 900)

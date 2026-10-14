@@ -515,6 +515,16 @@ public final class CanvasView: NSView, EditorActions {
         }
     }
 
+    public override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // ⌘= ingrandisce come ⌘+, che sulle tastiere americane richiederebbe ⇧.
+        if event.type == .keyDown, event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+           event.charactersIgnoringModifiers == "=" {
+            zoomIn(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
     public override func keyUp(with event: NSEvent) {
         guard event.keyCode == 49 else {
             super.keyUp(with: event)
