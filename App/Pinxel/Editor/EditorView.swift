@@ -8,6 +8,9 @@ struct EditorView: View {
     var body: some View {
         CanvasRepresentable(model: model)
             .frame(minWidth: 320, minHeight: 240)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if model.session.isReadOnly { ReadOnlyBanner() }
+            }
             .inspector(isPresented: $model.isInspectorPresented) {
                 InspectorView(model: model)
                     .inspectorColumnWidth(min: 240, ideal: 260, max: 340)
@@ -29,6 +32,7 @@ struct EditorView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelStyle(.iconOnly)
+                    .disabled(model.session.isReadOnly)
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Image(systemName: "photo.on.rectangle")
@@ -62,4 +66,19 @@ struct CanvasRepresentable: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: CanvasView, context: Context) {}
+}
+
+
+/// Avviso sopra la tela per i documenti di una versione più recente (spec §8, §10).
+private struct ReadOnlyBanner: View {
+    var body: some View {
+        Label("Creato con una versione più recente di Pinxel: puoi guardarlo ed esportarlo, ma non modificarlo.", systemImage: "lock.fill")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.bar)
+            .overlay(alignment: .bottom) { Divider() }
+    }
 }

@@ -174,7 +174,8 @@ public final class EditorModel {
     /// Attiva lo strumento del tasto premuto; `false` se il tasto non è di nessuno strumento.
     @discardableResult
     public func selectTool(forKey characters: String) -> Bool {
-        guard characters.count == 1, let first = characters.first, let tool = EditorTool.forShortcut(first) else { return false }
+        guard !session.isReadOnly, characters.count == 1, let first = characters.first,
+              let tool = EditorTool.forShortcut(first) else { return false }
         self.tool = tool
         return true
     }

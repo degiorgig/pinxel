@@ -483,8 +483,9 @@ public final class CanvasView: NSView, EditorActions {
         guides = result.guides
         defer { needsDisplay = true }
         guard !session.isReadOnly else {
-            // Sola lettura: si può selezionare, non modificare.
-            if let selection = result.selection { session.selection = selection }
+            // Sola lettura: si seleziona con lo strumento Selezione, nient'altro (niente selezioni fantasma
+            // dagli strumenti di disegno).
+            if controller.tool == .select, let selection = result.selection { session.selection = selection }
             session.preview = nil
             return
         }

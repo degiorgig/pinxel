@@ -103,7 +103,9 @@ final class PinxelFileDocument: NSDocument {
         }
         var info: [String: Any] = [NSLocalizedDescriptionKey: reason]
         if PinxelArchive.recoverBackground(data) != nil {
-            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra e si può recuperare."
+            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra: puoi aprirla in un documento nuovo."
+            info[NSLocalizedRecoveryOptionsErrorKey] = ["Apri l'immagine", "Annulla"]
+            info[NSRecoveryAttempterErrorKey] = RecoveryAttempter(data: data)
         }
         return NSError(domain: "com.degiorgi.pinxel", code: 2, userInfo: info)
     }
