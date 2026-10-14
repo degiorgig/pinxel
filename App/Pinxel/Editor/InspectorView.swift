@@ -19,6 +19,7 @@ struct InspectorView: View {
                     .foregroundStyle(.secondary)
             } else {
                 if kind.showsStyleSection { styleSection(kind) }
+                QuickStylesSection(model: model)
                 kindSection(kind)
             }
         }

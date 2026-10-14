@@ -415,6 +415,9 @@ public final class CanvasView: NSView, EditorActions {
         model.editingText = nil
         editor.container.removeFromSuperview()
         if let command = TextEditing.commit(request, text: text, minimumHeight: height, document: session.document) {
+            if request.isNew, command is AddAnnotations, let tool = EditorTool(kind: request.annotation.kind) {
+                model.quickStyles.record(request.annotation.style, for: tool)
+            }
             session.perform(command)
             let id = request.annotation.id
             session.selection = session.document.annotations.contains { $0.id == id } ? [id] : []
@@ -487,11 +490,22 @@ public final class CanvasView: NSView, EditorActions {
         }
         session.preview = result.preview
         // Prima il comando: un oggetto nuovo deve esistere per poter essere selezionato.
-        if let command = result.command { session.perform(command) }
+        if let command = result.command {
+            recordQuickStyles(command)
+            session.perform(command)
+        }
         if let selection = result.selection { session.selection = selection }
         if let delta = result.nudge { session.nudge(by: delta) }
         if let request = result.editText { beginTextEditing(request) }
         if let tool = result.tool { model.tool = tool }
+    }
+
+    /// Gli oggetti creati con uno strumento entrano negli stili rapidi di quello strumento.
+    private func recordQuickStyles(_ command: any EditCommand) {
+        guard controller.tool.createsAnnotations, let add = command as? AddAnnotations else { return }
+        for annotation in add.annotations {
+            if let tool = EditorTool(kind: annotation.kind) { model.quickStyles.record(annotation.style, for: tool) }
+        }
     }
 
     public override func mouseDown(with event: NSEvent) {

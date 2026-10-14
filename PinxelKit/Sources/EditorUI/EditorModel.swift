@@ -67,8 +67,27 @@ public final class EditorModel {
     /// Il testo in modifica, a cui il pannello manda le sue modifiche.
     @ObservationIgnored public internal(set) weak var textEditing: (any TextEditingControl)?
 
-    public init(session: EditorSession) {
+    public let quickStyles: QuickStyleStore
+
+    public init(session: EditorSession, quickStyles: QuickStyleStore = .shared) {
         self.session = session
+        self.quickStyles = quickStyles
+    }
+
+    /// Lo strumento di cui il pannello mostra gli stili rapidi: quello dell'oggetto selezionato o quello attivo.
+    public var quickStyleTool: EditorTool? {
+        if let annotation = inspectedAnnotation { return EditorTool(kind: annotation.kind) }
+        return tool.createsAnnotations ? tool : nil
+    }
+
+    /// Applica uno stile rapido agli oggetti selezionati dello stesso strumento, o allo strumento.
+    public func applyQuickStyle(_ style: Style) {
+        guard let target = quickStyleTool else { return }
+        update(name: "Stile rapido", selection: { annotation in
+            if EditorTool(kind: annotation.kind) == target { annotation.style = style }
+        }, tool: { styles in
+            styles.styles[target] = style
+        })
     }
 
     public var inspectedAnnotation: Annotation? { session.selectedAnnotations.first }
