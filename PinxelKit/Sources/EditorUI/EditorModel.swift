@@ -60,6 +60,8 @@ public final class EditorModel {
     public var tool: EditorTool = .select
     public var toolStyles = ToolStyles()
     public var isInspectorPresented = true
+    /// Foglio del menu Immagine aperto sulla finestra.
+    public var presentedSheet: EditorSheet?
     /// Testo in modifica sulla tela (copia osservabile per il pannello); `nil` fuori dalla modifica.
     public internal(set) var editingText: RichText?
     /// Il testo in modifica, a cui il pannello manda le sue modifiche.

@@ -64,6 +64,17 @@ struct EditorCommands: Commands {
             }
             .disabled(!state.hasEditor)
         }
+        CommandMenu("Immagine") {
+            Group {
+                Button("Ritaglia") { focus.model?.tool = .crop }
+                Button("Taglia e ricuci") { focus.model?.tool = .cutOut }
+                Divider()
+                Button("Ridimensiona immagine…") { focus.model?.presentedSheet = .resizeImage }
+                    .keyboardShortcut("r", modifiers: [.command, .option])
+                Button("Bordo, ombra e margini…") { focus.model?.presentedSheet = .canvasStyle }
+            }
+            .disabled(!state.canEdit || state.isEditingText)
+        }
         CommandMenu("Disponi") {
             Group {
                 Button("Porta in primo piano") { send(#selector(EditorActions.bringToFront(_:))) }

@@ -12,6 +12,12 @@ struct EditorView: View {
                 InspectorView(model: model)
                     .inspectorColumnWidth(min: 240, ideal: 260, max: 340)
             }
+            .sheet(item: $model.presentedSheet) { sheet in
+                switch sheet {
+                case .resizeImage: ResizeImageSheet(model: model)
+                case .canvasStyle: CanvasStyleSheet(model: model)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("Strumento", selection: $model.tool) {

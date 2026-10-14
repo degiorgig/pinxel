@@ -72,8 +72,15 @@ public final class CanvasView: NSView, EditorActions {
 
     // MARK: Coordinate
 
-    var canvasSize: CGSize { renderer.canvasSize(for: session.document) }
-    private var padding: Double { session.document.canvasStyle.padding }
+    /// Il documento con lo stile della tela in anteprima, se lo si sta regolando.
+    private var displayedDocument: PinxelDocument {
+        var document = session.document
+        if let style = session.canvasStylePreview { document.canvasStyle = style }
+        return document
+    }
+
+    var canvasSize: CGSize { renderer.canvasSize(for: displayedDocument) }
+    private var padding: Double { displayedDocument.canvasStyle.padding }
     private var viewCenter: CGPoint { CGPoint(x: bounds.midX, y: bounds.midY) }
 
     /// Punto del documento (spazio delle annotazioni) sotto un punto della vista.
@@ -99,6 +106,7 @@ public final class CanvasView: NSView, EditorActions {
             _ = session.document
             _ = session.selection
             _ = session.preview
+            _ = session.canvasStylePreview
             _ = model.tool
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -135,7 +143,7 @@ public final class CanvasView: NSView, EditorActions {
         let canvasRect = viewport.viewRect(fromCanvas: CGRect(origin: .zero, size: size))
         drawCheckerboard(in: canvasRect, context: ctx)
 
-        var document = session.document
+        var document = displayedDocument
         document.annotations = annotationsForDrawing()
         ctx.saveGState()
         ctx.clip(to: canvasRect)

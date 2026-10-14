@@ -25,6 +25,8 @@ public final class EditorSession {
     public var selection: Set<UUID> = []
     /// Annotazioni mostrate al posto di quelle del documento durante un gesto (non registrate).
     public var preview: [Annotation]?
+    /// Stile della tela mostrato al posto di quello del documento mentre lo si regola (non registrato).
+    public var canvasStylePreview: CanvasStyle?
     public let isReadOnly: Bool
 
     @ObservationIgnored public let assets: any AssetProvider
@@ -97,6 +99,7 @@ public final class EditorSession {
         document = newDocument
         finishHistoryStep()
         selection = []
+        canvasStylePreview = nil
     }
 
     private func registerUndo(_ box: CommandBox) {
