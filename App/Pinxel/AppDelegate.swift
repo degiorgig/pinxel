@@ -7,6 +7,7 @@ import Persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        AppEnvironment.shared.start()
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { _ in
             // Dopo la chiusura, senza documenti aperti l'app torna agente (niente icona nel Dock).
             DispatchQueue.main.async {
