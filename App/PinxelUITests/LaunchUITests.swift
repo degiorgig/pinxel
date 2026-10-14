@@ -10,4 +10,13 @@ final class LaunchUITests: XCTestCase {
         XCTAssertEqual(app.windows.count, 0)
         app.terminate()
     }
+
+    func testSampleDocumentOpensViewerWindow() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
+        app.launch()
+        XCTAssertTrue(app.images["pinxel.viewer.image"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.windows.count, 1)
+        app.terminate()
+    }
 }
