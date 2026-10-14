@@ -178,17 +178,15 @@ public final class CanvasView: NSView, EditorActions {
         for annotation in selected {
             let bounds = annotation.bounds
             guard !bounds.isNull else { continue }
-            switch annotation.kind {
-            case .arrow, .line: continue // bastano le maniglie agli estremi
-            default: break
-            }
-            let corners = HitTesting.corners(of: bounds).map {
-                viewPoint(fromDocument: $0.rotated(around: bounds.center, by: annotation.rotation))
-            }
             ctx.setLineDash(phase: 0, lengths: annotation.isLocked ? [4, 3] : [])
-            ctx.addLines(between: corners)
-            ctx.closePath()
-            ctx.strokePath()
+            for frame in HitTesting.selectionFrames(for: annotation) {
+                let corners = HitTesting.corners(of: frame).map {
+                    viewPoint(fromDocument: $0.rotated(around: bounds.center, by: annotation.rotation))
+                }
+                ctx.addLines(between: corners)
+                ctx.closePath()
+                ctx.strokePath()
+            }
         }
         ctx.setLineDash(phase: 0, lengths: [])
         if selected.count == 1, let annotation = selected.first {
@@ -310,6 +308,7 @@ public final class CanvasView: NSView, EditorActions {
         switch event.keyCode {
         case 51, 117: send(.key(.delete, modifiers))
         case 53: send(.key(.escape, modifiers))
+        case 36, 76: send(.key(.enter, modifiers))
         case 123: send(.key(.left, modifiers))
         case 124: send(.key(.right, modifiers))
         case 125: send(.key(.down, modifiers))

@@ -4,18 +4,22 @@ import Observation
 
 /// Tipo di oggetto a cui si riferisce il pannello proprietà.
 public enum InspectedKind: Equatable, Sendable {
-    case arrow, line, shape, pen, highlight, step, effect, none
+    case arrow, line, shape, text, callout, pen, highlight, step, effect, magnifier, image, crop, cutOut, none
 
     init(_ kind: Annotation.Kind) {
         switch kind {
         case .arrow: self = .arrow
         case .line: self = .line
         case .shape: self = .shape
+        case .text: self = .text
+        case .callout: self = .callout
         case .pen: self = .pen
         case .highlight: self = .highlight
         case .step: self = .step
         case .blur, .pixelate: self = .effect
-        default: self = .none
+        case .magnifier: self = .magnifier
+        case .image: self = .image
+        case .unknown: self = .none
         }
     }
 
@@ -25,19 +29,27 @@ public enum InspectedKind: Equatable, Sendable {
         case .arrow: self = .arrow
         case .line: self = .line
         case .shape: self = .shape
+        case .text: self = .text
+        case .callout: self = .callout
         case .pen: self = .pen
         case .highlight: self = .highlight
         case .step: self = .step
         case .blur: self = .effect
+        case .magnifier: self = .magnifier
+        case .crop: self = .crop
+        case .cutOut: self = .cutOut
         }
     }
 
-    public var showsStroke: Bool { ![.step, .effect, .none].contains(self) }
-    public var showsFill: Bool { self == .shape || self == .step }
+    public var showsStroke: Bool { [.arrow, .line, .shape, .callout, .pen, .highlight, .magnifier].contains(self) }
+    public var showsFill: Bool { [.shape, .step, .text, .callout].contains(self) }
     public var showsLineWidth: Bool { showsStroke }
-    public var showsDash: Bool { [.arrow, .line, .shape].contains(self) }
-    public var showsOpacity: Bool { self != .effect && self != .none }
-    public var showsShadow: Bool { ![.effect, .highlight, .none].contains(self) }
+    public var showsDash: Bool { [.arrow, .line, .shape, .callout].contains(self) }
+    public var showsOpacity: Bool { ![.effect, .crop, .cutOut, .none].contains(self) }
+    public var showsShadow: Bool { ![.effect, .highlight, .crop, .cutOut, .none].contains(self) }
+    public var showsText: Bool { self == .text || self == .callout }
+    /// Ritaglio e taglio non hanno colori né tratti: il pannello mostra solo le loro opzioni.
+    public var showsStyleSection: Bool { showsStroke || showsFill || showsOpacity || showsShadow }
 }
 
 /// Stato della finestra dell'editor oltre al documento: strumento attivo, stili degli strumenti, pannello.

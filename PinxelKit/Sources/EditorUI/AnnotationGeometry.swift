@@ -19,7 +19,17 @@ public enum AnnotationGeometry {
         switch handle {
         case .lineStart, .lineEnd: return movingEndpoint(annotation, handle, to: point, constrain: keepAspect)
         case .rotation: return annotation
+        case .calloutTail: return movingTail(annotation, to: point)
         default: break
+        }
+        if case .callout(var data) = annotation.kind {
+            // Si ridimensiona il fumetto; la punta della coda resta dov'è.
+            let old = data.rect.standardized
+            data.rect = frame(anchor: HitTesting.boxPoint(handle.opposite, of: old), dragged: point, handle: handle,
+                              old: old, keepAspect: keepAspect && handle.isCorner)
+            var copy = annotation
+            copy.kind = .callout(data)
+            return copy
         }
         let old = annotation.bounds
         guard !old.isNull else { return annotation }
@@ -124,6 +134,14 @@ public enum AnnotationGeometry {
         default:
             break
         }
+        return copy
+    }
+
+    private static func movingTail(_ annotation: Annotation, to point: CGPoint) -> Annotation {
+        guard case .callout(var data) = annotation.kind else { return annotation }
+        data.tail.tip = point
+        var copy = annotation
+        copy.kind = .callout(data)
         return copy
     }
 

@@ -13,64 +13,69 @@ struct InspectorView: View {
 
     var body: some View {
         let kind = model.inspectedKind
-        let style = model.inspectedStyle
         Form {
             if kind == .none {
                 Text("Seleziona un oggetto o scegli uno strumento per vederne le proprietà.")
                     .foregroundStyle(.secondary)
             } else {
-                Section("Stile") {
-                    if kind.showsStroke {
-                        ColorPicker("Colore", selection: Binding(
-                            get: { Color(nsColor: (model.inspectedStyle.stroke ?? .accentRed).nsColor) },
-                            set: { model.setStyle(\.stroke, RGBA(nsColor: NSColor($0)), coalescing: true) }
-                        ), supportsOpacity: false)
-                    }
-                    if kind.showsFill {
-                        Toggle("Riempimento", isOn: Binding(
-                            get: { model.inspectedStyle.fill != nil },
-                            set: { model.setStyle(\.fill, $0 ? (model.inspectedStyle.stroke ?? .accentRed) : nil) }
-                        ))
-                        if style.fill != nil {
-                            ColorPicker("Colore riempimento", selection: Binding(
-                                get: { Color(nsColor: (model.inspectedStyle.fill ?? .accentRed).nsColor) },
-                                set: { model.setStyle(\.fill, RGBA(nsColor: NSColor($0)), coalescing: true) }
-                            ), supportsOpacity: true)
-                        }
-                    }
-                    if kind.showsLineWidth {
-                        LabeledContent("Spessore") {
-                            CommittingSlider(value: style.lineWidth, range: 1...40,
-                                             preview: { model.previewStyle(\.lineWidth, $0) },
-                                             commit: { model.setStyle(\.lineWidth, $0) })
-                        }
-                    }
-                    if kind.showsDash {
-                        Picker("Tratto", selection: Binding(get: { model.inspectedStyle.dash }, set: { model.setStyle(\.dash, $0) })) {
-                            Text("Continuo").tag(DashPattern.solid)
-                            Text("Tratteggiato").tag(DashPattern.dashed)
-                            Text("Punteggiato").tag(DashPattern.dotted)
-                        }
-                    }
-                    if kind.showsOpacity {
-                        LabeledContent("Opacità") {
-                            CommittingSlider(value: style.opacity, range: 0.1...1,
-                                             preview: { model.previewStyle(\.opacity, $0) },
-                                             commit: { model.setStyle(\.opacity, $0) })
-                        }
-                    }
-                    if kind.showsShadow {
-                        Toggle("Ombra", isOn: Binding(
-                            get: { model.inspectedStyle.shadow != nil },
-                            set: { model.setStyle(\.shadow, $0 ? Shadow() : nil) }
-                        ))
-                    }
-                }
+                if kind.showsStyleSection { styleSection(kind) }
                 kindSection(kind)
             }
         }
         .formStyle(.grouped)
         .disabled(model.session.isReadOnly)
+    }
+
+    @ViewBuilder
+    private func styleSection(_ kind: InspectedKind) -> some View {
+        let style = model.inspectedStyle
+        Section("Stile") {
+            if kind.showsStroke {
+                ColorPicker("Colore", selection: Binding(
+                    get: { Color(nsColor: (model.inspectedStyle.stroke ?? .accentRed).nsColor) },
+                    set: { model.setStyle(\.stroke, RGBA(nsColor: NSColor($0)), coalescing: true) }
+                ), supportsOpacity: false)
+            }
+            if kind.showsFill {
+                Toggle("Riempimento", isOn: Binding(
+                    get: { model.inspectedStyle.fill != nil },
+                    set: { model.setStyle(\.fill, $0 ? (model.inspectedStyle.stroke ?? .accentRed) : nil) }
+                ))
+                if style.fill != nil {
+                    ColorPicker("Colore riempimento", selection: Binding(
+                        get: { Color(nsColor: (model.inspectedStyle.fill ?? .accentRed).nsColor) },
+                        set: { model.setStyle(\.fill, RGBA(nsColor: NSColor($0)), coalescing: true) }
+                    ), supportsOpacity: true)
+                }
+            }
+            if kind.showsLineWidth {
+                LabeledContent("Spessore") {
+                    CommittingSlider(value: style.lineWidth, range: 1...40,
+                                     preview: { model.previewStyle(\.lineWidth, $0) },
+                                     commit: { model.setStyle(\.lineWidth, $0) })
+                }
+            }
+            if kind.showsDash {
+                Picker("Tratto", selection: Binding(get: { model.inspectedStyle.dash }, set: { model.setStyle(\.dash, $0) })) {
+                    Text("Continuo").tag(DashPattern.solid)
+                    Text("Tratteggiato").tag(DashPattern.dashed)
+                    Text("Punteggiato").tag(DashPattern.dotted)
+                }
+            }
+            if kind.showsOpacity {
+                LabeledContent("Opacità") {
+                    CommittingSlider(value: style.opacity, range: 0.1...1,
+                                     preview: { model.previewStyle(\.opacity, $0) },
+                                     commit: { model.setStyle(\.opacity, $0) })
+                }
+            }
+            if kind.showsShadow {
+                Toggle("Ombra", isOn: Binding(
+                    get: { model.inspectedStyle.shadow != nil },
+                    set: { model.setStyle(\.shadow, $0 ? Shadow() : nil) }
+                ))
+            }
+        }
     }
 
     @ViewBuilder

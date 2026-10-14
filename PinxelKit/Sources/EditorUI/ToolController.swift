@@ -12,7 +12,7 @@ public struct ToolModifiers: OptionSet, Sendable {
 }
 
 public enum ToolKey: Sendable {
-    case delete, escape, left, right, up, down
+    case delete, escape, enter, left, right, up, down
 }
 
 /// Eventi astratti in coordinate del documento.
@@ -31,14 +31,32 @@ public struct ToolResult {
     public var selection: Set<UUID>?
     public var marquee: CGRect?
     public var nudge: CGSize?
+    /// Apri la modifica sulla tela di questo testo o callout.
+    public var editText: TextEditRequest?
+    /// Passa a questo strumento (es. Selezione dopo un ritaglio).
+    public var tool: EditorTool?
 
     public init(preview: [Annotation]? = nil, command: (any EditCommand)? = nil, selection: Set<UUID>? = nil,
-                marquee: CGRect? = nil, nudge: CGSize? = nil) {
+                marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil) {
         self.preview = preview
         self.command = command
         self.selection = selection
         self.marquee = marquee
         self.nudge = nudge
+        self.editText = editText
+        self.tool = tool
+    }
+}
+
+/// Testo o callout da modificare sulla tela. Se `isNew`, l'annotazione non è ancora nel documento:
+/// viene aggiunta alla fine della modifica, solo se il testo non è vuoto.
+public struct TextEditRequest: Equatable, Sendable {
+    public var annotation: Annotation
+    public var isNew: Bool
+
+    public init(annotation: Annotation, isNew: Bool) {
+        self.annotation = annotation
+        self.isNew = isNew
     }
 }
 
@@ -66,6 +84,8 @@ public final class ToolController {
     }
 
     private var gesture: Gesture = .idle
+    /// Dimensioni dell'immagine del documento dell'ultimo evento (lente, ritaglio, guide).
+    private var imageSize: CGSize = .zero
 
     public init() {}
 
@@ -75,12 +95,15 @@ public final class ToolController {
     }
 
     public func handle(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
+        imageSize = document.imageSize.cgSize
         if case .key(let key, let modifiers) = event {
             return handleKey(key, modifiers, document: document, selection: selection)
         }
-        return tool == .select
-            ? handleSelect(event, document: document, selection: selection)
-            : handleCreate(event, document: document)
+        switch tool {
+        case .select: return handleSelect(event, document: document, selection: selection)
+        case .text, .callout: return handleText(event, document: document)
+        default: return handleCreate(event, document: document)
+        }
     }
 
     // MARK: Tastiera
@@ -94,6 +117,14 @@ public final class ToolController {
                 return ToolResult()
             }
             return ToolResult(selection: [])
+        case .enter:
+            // Invio sul testo selezionato apre la modifica, come in Keynote.
+            if tool == .select, selection.count == 1,
+               let selected = document.annotations.first(where: { selection.contains($0.id) }),
+               selected.richText != nil, !selected.isLocked {
+                return ToolResult(editText: TextEditRequest(annotation: selected, isNew: false))
+            }
+            return ToolResult()
         case .delete:
             let ids = Set(document.annotations.filter { selection.contains($0.id) && !$0.isLocked }.map(\.id))
             guard !ids.isEmpty else { return ToolResult() }
@@ -110,7 +141,7 @@ public final class ToolController {
     private func handleSelect(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         let annotations = document.annotations
         switch event {
-        case .down(let point, let modifiers, _):
+        case .down(let point, let modifiers, let clickCount):
             if selection.count == 1, let selected = annotations.first(where: { selection.contains($0.id) }),
                let handle = HitTesting.handle(at: point, for: selected, tolerance: hitTolerance, rotationOffset: rotationHandleOffset),
                let handlePoint = HitTesting.handles(for: selected, rotationOffset: rotationHandleOffset).first(where: { $0.handle == handle })?.point {
@@ -121,6 +152,10 @@ public final class ToolController {
                 return ToolResult()
             }
             if let hit = HitTesting.annotation(at: point, in: annotations, tolerance: hitTolerance) {
+                if clickCount >= 2, hit.richText != nil, !hit.isLocked {
+                    gesture = .idle
+                    return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
+                }
                 var newSelection = selection
                 if modifiers.contains(.shift) {
                     if newSelection.contains(hit.id) { newSelection.remove(hit.id) } else { newSelection.insert(hit.id) }
@@ -201,6 +236,53 @@ public final class ToolController {
         }
     }
 
+    // MARK: Testo e callout
+
+    private func handleText(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        switch event {
+        case .down(let point, _, _):
+            if let hit = HitTesting.annotation(at: point, in: document.annotations, tolerance: hitTolerance),
+               hit.richText != nil, !hit.isLocked {
+                gesture = .idle
+                return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
+            }
+            gesture = .create(start: point, id: makeID(), points: [point])
+            return ToolResult(selection: [])
+        case .drag(let point, _):
+            guard case .create(let start, _, _) = gesture else { return ToolResult() }
+            return ToolResult(marquee: CGRect.bounding([start, point]))
+        case .up(let point, _):
+            guard case .create(let start, let id, _) = gesture else { return ToolResult() }
+            gesture = .idle
+            return ToolResult(editText: TextEditRequest(annotation: newTextAnnotation(id: id, start: start, end: point), isNew: true))
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    /// Riquadro di un testo creato con un clic: una riga di circa dieci caratteri.
+    static func defaultTextFrame(at point: CGPoint, template: RichText, callout: Bool) -> CGRect {
+        let inset = callout ? 10.0 : 4.0
+        let width = (template.fontSize * (callout ? 9 : 10)).rounded()
+        let height = (template.fontSize * 1.3 + 2 * inset).rounded(.up)
+        return CGRect(x: point.x, y: point.y, width: width, height: height)
+    }
+
+    private func newTextAnnotation(id: UUID, start: CGPoint, end: CGPoint) -> Annotation {
+        let callout = tool == .callout
+        let template = callout ? styles.calloutText : styles.text
+        let dragged = CGRect.bounding([start, end])
+        let rect = dragged.width >= dragThreshold && dragged.height >= dragThreshold
+            ? dragged
+            : Self.defaultTextFrame(at: start, template: template, callout: callout)
+        let style = styles.style(for: tool)
+        guard callout else {
+            return Annotation(id: id, kind: .text(TextData(rect: rect, text: template)), style: style)
+        }
+        let tip = CGPoint(x: rect.minX + rect.width * 0.3, y: rect.maxY + max(30, template.fontSize * 2))
+        return Annotation(id: id, kind: .callout(CalloutData(rect: rect, text: template, tail: CalloutTail(tip: tip))), style: style)
+    }
+
     // MARK: Creazione
 
     private func handleCreate(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
@@ -268,7 +350,7 @@ public final class ToolController {
         case .step:
             let label = StepLabel(sequence: styles.stepSequence)
             return Annotation(id: id, kind: .step(StepData(center: end, diameter: styles.stepDiameter, label: label)), style: style)
-        case .select:
+        case .text, .callout, .magnifier, .crop, .cutOut, .select:
             return nil
         }
     }
