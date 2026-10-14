@@ -1,13 +1,17 @@
 import AppKit
 import AppCore
 import DocumentModel
+import EditorUI
 import Persistence
 import Rendering
 
 @objc(PinxelFileDocument)
 final class PinxelFileDocument: NSDocument {
-    // NSDocument legge sul thread principale (canConcurrentlyReadDocuments è false), ma `read(from:)` non è isolato.
+    // NSDocument legge e scrive sul thread principale (canConcurrentlyReadDocuments e
+    // canAsynchronouslyWrite sono false), ma i metodi non sono isolati.
     nonisolated(unsafe) private(set) var contents: PinxelFileContents?
+    /// Creato con la finestra: da lì in poi il documento aggiornato è `editorModel.session.document`.
+    nonisolated(unsafe) private(set) var editorModel: EditorModel?
 
     convenience init(contents: PinxelFileContents) {
         self.init()
@@ -16,6 +20,10 @@ final class PinxelFileDocument: NSDocument {
     }
 
     override class var autosavesInPlace: Bool { true }
+
+    override func canAsynchronouslyWrite(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType) -> Bool {
+        false
+    }
 
     override func read(from data: Data, ofType typeName: String) throws {
         do {
@@ -26,7 +34,10 @@ final class PinxelFileDocument: NSDocument {
     }
 
     override func data(ofType typeName: String) throws -> Data {
-        guard let contents else { throw CocoaError(.fileWriteUnknown) }
+        guard var contents else { throw CocoaError(.fileWriteUnknown) }
+        if let edited = MainActor.assumeIsolated({ editorModel?.session.document }) {
+            contents.document = edited
+        }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",
@@ -42,10 +53,19 @@ final class PinxelFileDocument: NSDocument {
         MainActor.assumeIsolated {
             guard let contents else { return }
             do {
-                let image = try DocumentRenderer().renderImage(contents.document, assets: try contents.assetProvider())
-                addWindowController(ViewerWindowController(image: image, scale: contents.document.scale))
+                let session = EditorSession(
+                    document: contents.document,
+                    assets: try contents.assetProvider(),
+                    undoManager: undoManager ?? UndoManager(),
+                    isReadOnly: contents.isReadOnly
+                )
+                let model = EditorModel(session: session)
+                editorModel = model
+                addWindowController(EditorWindowController(model: model))
             } catch {
+                // Senza immagini il documento non si può mostrare: avvisa e chiudi, niente documenti senza finestra.
                 presentError(error)
+                perform(#selector(NSDocument.close), with: nil, afterDelay: 0)
             }
         }
     }

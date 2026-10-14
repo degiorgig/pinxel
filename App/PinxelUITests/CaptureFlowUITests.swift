@@ -10,7 +10,7 @@ final class CaptureFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
         app.launch()
-        XCTAssertTrue(app.images["pinxel.viewer.image"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
         app.terminate()
     }
 
