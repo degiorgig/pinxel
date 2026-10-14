@@ -9,6 +9,7 @@ struct PinxelApp: App {
         MenuBarExtra("Pinxel", systemImage: "camera.viewfinder") {
             MenuContent(environment: environment)
         }
+        .commands { EditorCommands() }
         Settings {
             SettingsView(environment: environment)
         }
