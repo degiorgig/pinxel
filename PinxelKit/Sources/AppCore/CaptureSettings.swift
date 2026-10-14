@@ -29,6 +29,38 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
 
     public init() {}
 
+    private enum CodingKeys: String, CodingKey {
+        case postCaptureAction, autoSave, saveFolderPath, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys
+    }
+
+    /// Ogni campo illeggibile torna al valore predefinito senza perdere gli altri (es. un valore di una
+    /// versione futura); le scorciatoie non valide o doppie tornano a quelle predefinite.
+    public init(from decoder: Decoder) throws {
+        self.init()
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let value = try? c.decode(PostCaptureAction.self, forKey: .postCaptureAction) { postCaptureAction = value }
+        if let value = try? c.decode(Bool.self, forKey: .autoSave) { autoSave = value }
+        if let value = try? c.decode(String.self, forKey: .saveFolderPath) { saveFolderPath = value }
+        if let value = try? c.decode(SaveFormat.self, forKey: .saveFormat) { saveFormat = value }
+        if let value = try? c.decode(String.self, forKey: .fileNameTemplate) { fileNameTemplate = value }
+        if let value = try? c.decode(Bool.self, forKey: .includeWindowShadow) { includeWindowShadow = value }
+        if let value = try? c.decode([HotKeyAction: KeyCombo].self, forKey: .hotKeys) { hotKeys = value }
+        sanitizeHotKeys()
+    }
+
+    /// Toglie le scorciatoie senza ⌃, ⌥ o ⌘ e quelle uguali a un'azione precedente: tornano alle predefinite.
+    public mutating func sanitizeHotKeys() {
+        var seen = Set<KeyCombo>()
+        for action in HotKeyAction.allCases {
+            guard let combo = hotKeys[action] else { continue }
+            if !combo.hasModifier || seen.contains(combo) {
+                hotKeys[action] = nil
+            } else {
+                seen.insert(combo)
+            }
+        }
+    }
+
     public var saveFolderURL: URL {
         URL(fileURLWithPath: (saveFolderPath as NSString).expandingTildeInPath, isDirectory: true)
     }

@@ -41,9 +41,16 @@ public struct AutoSaver {
                 let image = try DocumentRenderer().renderImage(contents.document, assets: assets)
                 data = try ImageCodec.encode(image, type: .png)
             }
-            // `.withoutOverwriting`: se nel frattempo il file è comparso, fallisce invece di sovrascrivere.
-            // (Foundation non permette di combinarlo con `.atomic`.)
-            try data.write(to: url, options: .withoutOverwriting)
+            // Scrittura atomica in un file nascosto, poi spostamento: un disco pieno non lascia un file a metà,
+            // e `moveItem` fallisce se nel frattempo il file è comparso, quindi non sovrascrive mai.
+            let temporary = folder.appendingPathComponent(".\(UUID().uuidString).tmp")
+            try data.write(to: temporary, options: .atomic)
+            do {
+                try fileManager.moveItem(at: temporary, to: url)
+            } catch {
+                try? fileManager.removeItem(at: temporary)
+                throw error
+            }
         } catch {
             throw AutoSaveError.writeFailed(url.path)
         }

@@ -101,8 +101,9 @@ public struct SelectionModel: Sendable {
         }
     }
 
-    public mutating func key(_ key: SelectionKey, shift: Bool) -> SelectionResult? {
-        let step: CGFloat = shift ? 10 : 1
+    /// `pixelSize`: punti per pixel dello schermo (0.5 su Retina), così le frecce spostano di 1 pixel (spec §7.2).
+    public mutating func key(_ key: SelectionKey, shift: Bool, pixelSize: CGFloat = 1) -> SelectionResult? {
+        let step: CGFloat = (shift ? 10 : 1) * pixelSize
         let delta: CGSize
         switch key {
         case .escape:

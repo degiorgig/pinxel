@@ -46,4 +46,31 @@ struct SettingsTests {
         settings.hotKeys = [:]
         #expect(settings.combo(for: .screen) == HotKeyAction.screen.defaultCombo)
     }
+
+    @Test func oneUnreadableFieldKeepsTheOthers() throws {
+        let defaults = freshDefaults()
+        var settings = CaptureSettings()
+        settings.autoSave = true
+        settings.saveFormat = .png
+        var object = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(settings)) as? [String: Any])
+        object["postCaptureAction"] = "dimenticata"
+        defaults.set(try JSONSerialization.data(withJSONObject: object), forKey: SettingsStore.key)
+        let loaded = SettingsStore(defaults: defaults).load()
+        #expect(loaded.autoSave && loaded.saveFormat == .png)
+        #expect(loaded.postCaptureAction == .openEditor)
+    }
+
+    @Test func invalidAndDuplicateShortcutsFallBackToDefaults() {
+        let store = SettingsStore(defaults: freshDefaults())
+        var settings = CaptureSettings()
+        let custom = KeyCombo(keyCode: 0x0D, modifiers: KeyCombo.command | KeyCombo.option)
+        settings.hotKeys[.area] = KeyCombo(keyCode: 0x00, modifiers: KeyCombo.shift)
+        settings.hotKeys[.window] = custom
+        settings.hotKeys[.screen] = custom
+        store.save(settings)
+        let loaded = store.load()
+        #expect(loaded.combo(for: .area) == HotKeyAction.area.defaultCombo)
+        #expect(loaded.combo(for: .window) == custom)
+        #expect(loaded.combo(for: .screen) == HotKeyAction.screen.defaultCombo)
+    }
 }

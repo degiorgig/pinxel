@@ -81,7 +81,8 @@ final class SelectionView: NSView {
             key = nil
         default: key = nil
         }
-        if let key { controller?.update { $0.key(key, shift: shift) } }
+        let pixelSize = 1 / max(display.info.scale, 1)
+        if let key { controller?.update { $0.key(key, shift: shift, pixelSize: pixelSize) } }
     }
 
     override func keyUp(with event: NSEvent) {
