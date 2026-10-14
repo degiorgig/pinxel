@@ -2,6 +2,7 @@ import AppCore
 import AppKit
 import CaptureKit
 import DocumentModel
+import os
 
 @MainActor
 final class CaptureCoordinator {
@@ -13,6 +14,7 @@ final class CaptureCoordinator {
     private var isCapturing = false
     private var lastArea: CGRect?
     private var permissionWindow: PermissionWindowController?
+    private let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "capture")
 
     init(engine: any CaptureEngine, permission: any ScreenRecordingPermission, selection: any SelectionProvider,
          actions: PostCaptureActions, settings: @escaping () -> CaptureSettings) {
@@ -36,17 +38,22 @@ final class CaptureCoordinator {
     }
 
     private func run(_ choose: (CaptureSnapshot) async -> SelectionResult) async {
-        guard !isCapturing else { return }
+        guard !isCapturing else {
+            logger.info("capture ignored: already capturing")
+            return
+        }
         isCapturing = true
         defer { isCapturing = false }
 
         guard permission.isGranted else {
+            logger.info("capture blocked: screen recording permission not granted")
             showPermissionWindow()
             return
         }
         let frontmost = NSWorkspace.shared.frontmostApplication
         let current = settings()
         do {
+            logger.info("capture: taking snapshot")
             let snapshot = try await engine.snapshot(excludingBundleIdentifier: Bundle.main.bundleIdentifier ?? "com.degiorgi.pinxel")
             let image: CGImage
             let scale: Double
@@ -81,6 +88,7 @@ final class CaptureCoordinator {
                 frontmost?.activate()
             }
         } catch {
+            logger.error("capture failed: \(String(describing: error), privacy: .public)")
             AppEnvironment.shared.notifier.failure(error)
             frontmost?.activate()
         }
@@ -90,6 +98,9 @@ final class CaptureCoordinator {
         let controller = permissionWindow ?? PermissionWindowController(permission: permission)
         permissionWindow = controller
         controller.showWindow(nil)
+        // Un'app agente non sempre viene attivata: la finestra va comunque davanti alle altre.
+        controller.window?.level = .floating
+        controller.window?.orderFrontRegardless()
         NSApp.activate()
     }
 }
