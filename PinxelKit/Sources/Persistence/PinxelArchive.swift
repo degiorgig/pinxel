@@ -22,6 +22,13 @@ public struct PinxelFileContents: Sendable {
     /// Il file è di una versione più recente: va aperto in sola lettura.
     public var isReadOnly: Bool
 
+    public init(document: PinxelDocument, images: [ImageAssetRef: Data], thumbnail: Data? = nil, isReadOnly: Bool = false) {
+        self.document = document
+        self.images = images
+        self.thumbnail = thumbnail
+        self.isReadOnly = isReadOnly
+    }
+
     public func assetProvider() throws -> DictionaryAssetProvider {
         var decoded: [ImageAssetRef: CGImage] = [:]
         for (ref, data) in images { decoded[ref] = try ImageCodec.decode(data) }
