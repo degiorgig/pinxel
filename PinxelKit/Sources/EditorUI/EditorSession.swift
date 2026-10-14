@@ -29,7 +29,8 @@ public final class EditorSession {
     public var canvasStylePreview: CanvasStyle?
     public let isReadOnly: Bool
 
-    @ObservationIgnored public let assets: any AssetProvider
+    /// Immagini del documento più quelle incollate.
+    @ObservationIgnored public let assets: AssetStore
     @ObservationIgnored public let undoManager: UndoManager
     @ObservationIgnored var now: () -> Date = { Date() }
     @ObservationIgnored private var lastBox: CommandBox?
@@ -37,7 +38,7 @@ public final class EditorSession {
 
     public init(document: PinxelDocument, assets: any AssetProvider, undoManager: UndoManager = UndoManager(), isReadOnly: Bool = false) {
         self.document = document
-        self.assets = assets
+        self.assets = AssetStore(base: assets)
         self.undoManager = undoManager
         self.isReadOnly = isReadOnly
     }

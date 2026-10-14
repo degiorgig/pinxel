@@ -706,15 +706,45 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     @objc public func paste(_ sender: Any?) {
-        guard !session.isReadOnly, let data = pasteboard.data(forType: Self.annotationsType),
-              let annotations = try? AnnotationClipboard.decode(data) else {
+        guard !session.isReadOnly else {
             NSSound.beep()
             return
         }
-        let copies = AnnotationClipboard.prepareForPaste(annotations)
-        guard !copies.isEmpty else { return }
-        session.perform(AddAnnotations(copies, name: "Incolla"))
-        session.selection = Set(copies.map(\.id))
+        if let data = pasteboard.data(forType: Self.annotationsType), let annotations = try? AnnotationClipboard.decode(data) {
+            let copies = AnnotationClipboard.prepareForPaste(annotations)
+            guard !copies.isEmpty else { return }
+            session.perform(AddAnnotations(copies, name: "Incolla"))
+            session.selection = Set(copies.map(\.id))
+            return
+        }
+        if !pasteImage() { NSSound.beep() }
+    }
+
+    /// Un'immagine negli appunti diventa un'annotazione immagine (spec §6.3).
+    private func pasteImage() -> Bool {
+        guard let image = NSImage(pasteboard: pasteboard),
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let asset = session.assets.add(cgImage) else { return false }
+        let document = session.document
+        let rect = ImagePlacement.rect(
+            pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
+            imageScale: PixelDensity.scale(pixelWidth: cgImage.width, pointWidth: image.size.width),
+            documentScale: document.scale,
+            center: visibleDocumentCenter(),
+            imageSize: document.imageSize.cgSize
+        )
+        let annotation = Annotation(kind: .image(PlacedImageData(rect: rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
+        session.perform(AddAnnotations([annotation], name: "Incolla immagine"))
+        session.selection = [annotation.id]
+        return true
+    }
+
+    /// Centro della parte di immagine visibile nella finestra, o dell'immagine se non se ne vede niente.
+    private func visibleDocumentCenter() -> CGPoint {
+        let image = CGRect(origin: .zero, size: session.document.imageSize.cgSize)
+        let visible = CGRect.bounding([documentPoint(fromView: bounds.origin), documentPoint(fromView: CGPoint(x: bounds.maxX, y: bounds.maxY))])
+            .intersection(image)
+        return visible.isNull || visible.isEmpty ? image.center : visible.center
     }
 
     @objc public func delete(_ sender: Any?) {

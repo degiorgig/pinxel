@@ -40,12 +40,17 @@ final class PinxelFileDocument: NSDocument {
 
     override func data(ofType typeName: String) throws -> Data {
         guard var contents else { throw CocoaError(.fileWriteUnknown) }
-        let edited = MainActor.assumeIsolated { () -> PinxelDocument? in
+        let edited = MainActor.assumeIsolated { () -> (document: PinxelDocument, pasted: [ImageAssetRef: Data])? in
+            guard let session = editorModel?.session else { return nil }
             // Dopo il salvataggio una nuova modifica deve essere un passo nuovo, o NSDocument non la vede.
-            editorModel?.session.breakCoalescing()
-            return editorModel?.session.document
+            session.breakCoalescing()
+            return (session.document, session.assets.addedData)
         }
-        if let edited { contents.document = edited }
+        if let edited {
+            contents.document = edited.document
+            // Le immagini incollate entrano nell'archivio; `PinxelArchive.write` scrive solo quelle usate.
+            contents.images.merge(edited.pasted) { current, _ in current }
+        }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",

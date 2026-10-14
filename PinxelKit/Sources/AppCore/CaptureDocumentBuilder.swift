@@ -18,7 +18,6 @@ public enum CaptureDocumentBuilder {
     /// Scala di un'immagine incollata: pixel per punto, arrotondata e limitata a 1...3.
     /// Uno screenshot Retina negli appunti (144 dpi) risulta 2x.
     public static func pastedScale(pixelWidth: Int, pointWidth: Double) -> Double {
-        guard pointWidth > 0 else { return 1 }
-        return min(3, max(1, (Double(pixelWidth) / pointWidth).rounded()))
+        PixelDensity.scale(pixelWidth: pixelWidth, pointWidth: pointWidth)
     }
 }
