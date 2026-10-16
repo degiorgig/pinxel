@@ -22,7 +22,7 @@ Segna ogni voce con ✅ / ❌ e note.
 | E15 | Toolbar → Condividi → AirDrop o Messaggi | Viene proposto un PNG con le annotazioni | |
 | E16 | Aspetto chiaro e scuro; Accessibilità → Riduci movimento | Toolbar, pannello e maniglie leggibili in entrambi; nessuna animazione che blocca | |
 | E17 | Con "Solo appunti": cattura, poi icona nella barra dei menu → Modifica ultima cattura | La cattura si apre nell'editor; prima di qualsiasi cattura la voce è disattivata | |
-| E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
+| E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⇧⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
 | E19 | T, clic sull'immagine, scrivi "Ciao" con una parola in ⌘B, Esc; doppio clic sul testo, cambia una parola, clic fuori | Il testo resta formattato; ogni modifica è un solo ⌘Z; un testo nuovo lasciato vuoto non lascia nulla | |
 | E20 | Durante la scrittura: dimensione, colore e allineamento dal pannello; poi cambia strumento con un tasto | Il testo cambia subito; cambiare strumento conferma il testo | |
 | E21 | C, trascina un fumetto, scrivi; trascina la maniglia della coda e un angolo del fumetto | La coda segue il puntatore; il fumetto si ridimensiona senza spostare la punta | |
@@ -43,4 +43,5 @@ Segna ogni voce con ✅ / ❌ e note.
 | E36 | File → Apri… su un PNG, un JPEG di iPhone e un HEIC; poi doppio clic su un PNG nel Finder con Apri con → Pinxel | Si apre un documento nuovo con il nome del file e la foto dritta; Salva propone un `.pinxel` e il file originale resta intatto |
 | E37 | Cattura una piccola area (finestra iniziale) | Tutti gli strumenti sono visibili nella toolbar, senza il menu » |
 | E38 | Ingrandisci e riduci con ⌘+ / ⌘−, pinch o ⌘ + rotella; poi trascina con Spazio | I quadretti dello sfondo crescono e calano con l'immagine e scorrono con lei; con ⌘0 tornano piccoli |
-| E39 | Apri dagli appunti un'immagine piccola; poi fai uno screenshot più grande negli appunti e incollalo con ⌘V | La tela si allarga alle dimensioni dello screenshot, che resta a grandezza piena; un ⌘Z annulla incolla e allargamento insieme |
+| E39 | Apri dagli appunti un'immagine piccola e incollaci con ⌘V uno screenshot più grande; poi incolla uno screenshot più piccolo | La tela prende ogni volta le dimensioni dello screenshot incollato, più grande o più piccolo; un ⌘Z annulla incolla e adattamento insieme. Con ⌥⌘V l'immagine va sopra senza cambiare la tela |
+| E40 | Icona → Nuovo, oppure ⌘N | Si apre un editor vuoto (solo quadretti), senza rettangoli di prova; incollando uno screenshot la tela prende le sue dimensioni |

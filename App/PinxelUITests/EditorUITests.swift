@@ -2,8 +2,15 @@ import AppKit
 import XCTest
 
 final class EditorUITests: XCTestCase {
+    private var pasteboardGuard: PasteboardGuard?
+
     override func setUp() {
         continueAfterFailure = false
+        pasteboardGuard = PasteboardGuard()
+    }
+
+    override func tearDown() {
+        pasteboardGuard?.restore()
     }
 
     private func launchWithSample() -> XCUIApplication {

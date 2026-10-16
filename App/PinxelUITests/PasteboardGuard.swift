@@ -1,0 +1,23 @@
+import AppKit
+
+/// I test scrivono negli appunti di sistema (catture finte, immagini da incollare): alla fine si rimette
+/// quello che c'era, così l'utente non si ritrova negli appunti un rettangolo rosso di prova.
+final class PasteboardGuard {
+    private let items: [[NSPasteboard.PasteboardType: Data]]
+
+    init(_ pasteboard: NSPasteboard = .general) {
+        items = (pasteboard.pasteboardItems ?? []).map { item in
+            Dictionary(uniqueKeysWithValues: item.types.compactMap { type in item.data(forType: type).map { (type, $0) } })
+        }
+    }
+
+    func restore(_ pasteboard: NSPasteboard = .general) {
+        pasteboard.clearContents()
+        let restored = items.map { entries -> NSPasteboardItem in
+            let item = NSPasteboardItem()
+            for (type, data) in entries { item.setData(data, forType: type) }
+            return item
+        }
+        if !restored.isEmpty { pasteboard.writeObjects(restored) }
+    }
+}

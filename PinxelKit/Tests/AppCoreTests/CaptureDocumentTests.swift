@@ -23,6 +23,20 @@ struct CaptureDocumentTests {
     }
 }
 
+struct BlankDocumentTests {
+    @Test func blankDocumentIsTransparentAtTheScreenScale() throws {
+        let contents = try CaptureDocumentBuilder.blank(pointSize: CGSize(width: 800, height: 500), scale: 2)
+        #expect(contents.document.canvasSize == PixelSize(width: 1600, height: 1000))
+        #expect(contents.document.scale == 2)
+        #expect(contents.document.annotations.isEmpty)
+        #expect(contents.document.validationError() == nil)
+        let background = try #require(contents.assetProvider().image(for: contents.document.background))
+        let pixels = PixelBuffer(background)
+        #expect(pixels.pixel(x: 0, y: 0).a == 0)
+        #expect(pixels.pixel(x: 800, y: 500).a == 0)
+    }
+}
+
 struct PastedImageScaleTests {
     @Test func retinaScreenshotIsTwoX() {
         #expect(CaptureDocumentBuilder.pastedScale(pixelWidth: 800, pointWidth: 400) == 2)

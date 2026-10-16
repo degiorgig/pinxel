@@ -19,6 +19,7 @@ import Rendering
     func unlockSelection(_ sender: Any?)
     func commitCrop(_ sender: Any?)
     func cancelCrop(_ sender: Any?)
+    func pasteKeepingCanvas(_ sender: Any?)
 }
 
 /// Tela dell'editor: disegna il documento con `DocumentRenderer` e trasforma mouse e tastiera in eventi
@@ -805,7 +806,17 @@ public final class CanvasView: NSView, EditorActions {
         }
     }
 
+    /// Incolla: uno screenshot dà le sue dimensioni alla cattura, più grande o più piccola che sia.
     @objc public func paste(_ sender: Any?) {
+        paste(adaptCanvas: true)
+    }
+
+    /// Incolla un'immagine sopra la cattura senza cambiarne le dimensioni (un logo, un dettaglio).
+    @objc public func pasteKeepingCanvas(_ sender: Any?) {
+        paste(adaptCanvas: false)
+    }
+
+    private func paste(adaptCanvas: Bool) {
         guard !session.isReadOnly else {
             NSSound.beep()
             return
@@ -821,18 +832,18 @@ public final class CanvasView: NSView, EditorActions {
             let copies = AnnotationClipboard.prepareForPaste(annotations, times: count, keepImage: { assets.image(for: $0) != nil })
             guard !copies.isEmpty else {
                 // Solo immagini di cui non è arrivato il file: resta il PNG negli appunti.
-                if !pasteImage() { NSSound.beep() }
+                if !pasteImage(adaptCanvas: adaptCanvas) { NSSound.beep() }
                 return
             }
             session.perform(AddAnnotations(copies, name: "Incolla"))
             session.selection = Set(copies.map(\.id))
             return
         }
-        if !pasteImage() { NSSound.beep() }
+        if !pasteImage(adaptCanvas: adaptCanvas) { NSSound.beep() }
     }
 
     /// Un'immagine negli appunti diventa un'annotazione immagine (spec §6.3).
-    private func pasteImage() -> Bool {
+    private func pasteImage(adaptCanvas: Bool) -> Bool {
         guard let image = NSImage(pasteboard: pasteboard),
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               // Oltre il limite dei documenti il file salvato non si riaprirebbe: si riduce.
@@ -844,13 +855,22 @@ public final class CanvasView: NSView, EditorActions {
             imageScale: PixelDensity.scale(pixelWidth: original.width, pointWidth: image.size.width),
             documentScale: document.scale,
             center: visibleDocumentCenter(),
-            imageSize: document.imageSize
+            imageSize: document.imageSize,
+            adaptCanvas: adaptCanvas
         )
         let annotation = Annotation(kind: .image(PlacedImageData(rect: placement.rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
         var commands: [any EditCommand] = []
-        // Uno screenshot più grande della cattura la allarga, invece di essere rimpicciolito.
-        if placement.imageSize != document.imageSize {
-            commands.append(ApplyImageOperation(.extend(placement.imageSize), in: document))
+        var resized = document
+        let current = document.imageSize, target = placement.imageSize
+        // La cattura si adatta allo screenshot: si ritaglia dall'alto a sinistra se è più piccolo, si allarga se è più grande.
+        if target.width < current.width || target.height < current.height {
+            let crop = ApplyImageOperation(.crop(PixelRect(x: 0, y: 0, width: min(current.width, target.width),
+                                                           height: min(current.height, target.height))), in: resized)
+            crop.apply(to: &resized)
+            commands.append(crop)
+        }
+        if target.width > resized.imageSize.width || target.height > resized.imageSize.height {
+            commands.append(ApplyImageOperation(.extend(target), in: resized))
         }
         commands.append(AddAnnotations([annotation], name: "Incolla immagine"))
         session.perform(CommandGroup(name: "Incolla immagine", commands: commands))

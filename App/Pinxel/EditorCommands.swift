@@ -11,8 +11,10 @@ struct EditorCommands: Commands {
     var body: some Commands {
         let state = focus.state
         CommandGroup(replacing: .newItem) {
-            Button("Nuova dagli appunti") { AppEnvironment.shared.openClipboard() }
+            Button("Nuovo") { AppEnvironment.shared.openBlank() }
                 .keyboardShortcut("n")
+            Button("Nuova dagli appunti") { AppEnvironment.shared.openClipboard() }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
             Button("Apri…") { NSDocumentController.shared.openDocument(nil) }
                 .keyboardShortcut("o")
         }
@@ -46,6 +48,9 @@ struct EditorCommands: Commands {
             Button("Incolla") { send(#selector(NSText.paste(_:))) }
                 .keyboardShortcut("v")
                 .disabled(!state.allows(state.canEdit))
+            Button("Incolla senza adattare la tela") { send(#selector(EditorActions.pasteKeepingCanvas(_:))) }
+                .keyboardShortcut("v", modifiers: [.command, .option])
+                .disabled(!state.canEdit)
             Button("Elimina") { send(#selector(NSText.delete(_:))) }
                 .disabled(!state.allows(state.hasEditableSelection))
             Button("Seleziona tutto") { send(#selector(NSText.selectAll(_:))) }

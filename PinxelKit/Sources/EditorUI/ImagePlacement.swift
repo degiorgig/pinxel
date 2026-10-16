@@ -25,20 +25,23 @@ public enum ImagePlacement {
         public var imageSize: PixelSize
     }
 
-    /// Dove va un'immagine incollata: alla stessa densità del documento (uno screenshot Retina in una cattura Retina
-    /// mantiene i suoi pixel) e a grandezza piena. Se è più grande della cattura, la cattura si allarga per contenerla;
-    /// altrimenti va centrata in `center` e tenuta dentro la cattura.
+    /// Dove va un'immagine incollata, alla stessa densità del documento (uno screenshot Retina in una cattura Retina
+    /// mantiene i suoi pixel). Con `adaptCanvas` la cattura prende le dimensioni dell'immagine, più grande o più piccola,
+    /// e l'immagine la copre tutta; altrimenti la cattura resta com'è e l'immagine ci entra, centrata in `center`.
     public static func place(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint, imageSize: PixelSize,
-                             maxSide: Int = PinxelDocument.maxImageSide) -> Placement {
+                             adaptCanvas: Bool, maxSide: Int = PinxelDocument.maxImageSide) -> Placement {
         let factor = documentScale / max(imageScale, 1)
         var width = pixelSize.width * factor
         var height = pixelSize.height * factor
-        let shrink = min(1, Double(maxSide) / max(width, 1), Double(maxSide) / max(height, 1))
+        let limit = adaptCanvas ? CGSize(width: maxSide, height: maxSide) : imageSize.cgSize
+        let shrink = min(1, limit.width / max(width, 1), limit.height / max(height, 1))
         width = max(1, (width * shrink).rounded())
         height = max(1, (height * shrink).rounded())
-        let canvas = PixelSize(width: max(imageSize.width, Int(width)), height: max(imageSize.height, Int(height)))
-        let x = min(max((center.x - width / 2).rounded(), 0), Double(canvas.width) - width)
-        let y = min(max((center.y - height / 2).rounded(), 0), Double(canvas.height) - height)
-        return Placement(rect: CGRect(x: x, y: y, width: width, height: height), imageSize: canvas)
+        if adaptCanvas {
+            return Placement(rect: CGRect(x: 0, y: 0, width: width, height: height), imageSize: PixelSize(width: Int(width), height: Int(height)))
+        }
+        let x = min(max((center.x - width / 2).rounded(), 0), Double(imageSize.width) - width)
+        let y = min(max((center.y - height / 2).rounded(), 0), Double(imageSize.height) - height)
+        return Placement(rect: CGRect(x: x, y: y, width: width, height: height), imageSize: imageSize)
     }
 }
