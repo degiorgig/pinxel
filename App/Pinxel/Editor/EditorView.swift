@@ -8,6 +8,9 @@ struct EditorView: View {
     var body: some View {
         CanvasRepresentable(model: model)
             .frame(minWidth: 320, minHeight: 240)
+            .overlay(alignment: .bottomTrailing) {
+                CaptureDragHandle(model: model).padding(12)
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if model.session.isReadOnly { ReadOnlyBanner() }
             }
@@ -33,14 +36,6 @@ struct EditorView: View {
                     .pickerStyle(.segmented)
                     .labelStyle(.iconOnly)
                     .disabled(model.session.isReadOnly)
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Image(systemName: "photo.on.rectangle")
-                        .frame(width: 28, height: 22)
-                        .contentShape(Rectangle())
-                        .draggable(DraggedCapture(model: model))
-                        .help("Trascina l'immagine in un'altra app o nel Finder")
-                        .accessibilityLabel("Trascina l'immagine")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))

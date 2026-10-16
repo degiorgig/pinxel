@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 
 final class EditorUITests: XCTestCase {
@@ -95,6 +96,38 @@ final class EditorUITests: XCTestCase {
         arrange.click()
         XCTAssertTrue(arrange.menuItems["Duplica"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
+        app.terminate()
+    }
+
+    func testToolsAreVisibleAtTheInitialWindowSize() {
+        let app = launchWithSample()
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 10))
+        // Sotto una certa larghezza la toolbar va tutta nel menu di overflow.
+        XCTAssertTrue(app.radioButtons["Selezione"].isHittable)
+        XCTAssertTrue(app.radioButtons["Taglia e ricuci"].isHittable)
+        XCTAssertTrue(app.images["Trascina l'immagine"].isHittable)
+        app.terminate()
+    }
+
+    func testOpeningAPNGOpensItInANewDocument() throws {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("pinxel-open-test.png")
+        let image = NSImage(size: NSSize(width: 120, height: 80), flipped: false) { rect in
+            NSColor.systemOrange.setFill()
+            rect.fill()
+            return true
+        }
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
+        let pixels = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+        try pixels.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launch()
+        app.open(url)
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.windows["pinxel-open-test"].exists)
         app.terminate()
     }
 }

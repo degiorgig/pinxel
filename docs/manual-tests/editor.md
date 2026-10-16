@@ -32,7 +32,7 @@ Segna ogni voce con ✅ / ❌ e note.
 | E25 | Immagine → Ridimensiona immagine… al 50%; Immagine → Bordo, ombra e margini…: ombra, margine 40, sfondo | Anteprima dal vivo sulla tela; Annulla non cambia niente; Applica è un solo ⌘Z; l'export include ombra e margini | |
 | E26 | Sposta un oggetto vicino al bordo di un altro e al centro dell'immagine; ripeti tenendo ⌘ | Compaiono guide rosa e l'oggetto si aggancia; con ⌘ niente guide | |
 | E27 | Crea tre frecce con stili diversi; seleziona una forma; clicca uno stile rapido | Gli ultimi stili compaiono nel pannello per strumento e restano dopo il riavvio | |
-| E28 | Copia un'immagine in Safari e incollala (⌘V); salva, chiudi, riapri; trascina l'icona foto della toolbar sulla Scrivania | L'immagine incollata è centrata e resta dopo la riapertura; sulla Scrivania compare un PNG con le annotazioni | |
+| E28 | Copia un'immagine in Safari e incollala (⌘V); salva, chiudi, riapri; trascina il riquadro con la foto nell'angolo in basso a destra della tela sulla Scrivania, anche con la finestra in secondo piano | L'immagine incollata è centrata e resta dopo la riapertura; sulla Scrivania compare un PNG con le annotazioni | |
 | E29 | Apri un file danneggiato (vedi Task 13 Step 6 del piano 4) | L'errore offre "Apri l'immagine", che apre la cattura in un documento nuovo | |
 | E30 | Apri un file di versione futura (modifica `manifest.json` a `"version": 99`) | Banner "solo leggere" sopra la tela; strumenti e menu di modifica grigi; Esporta funziona | |
 | E31 | Menu Modifica e Disponi senza selezione, con un oggetto bloccato, e nelle Preferenze | Voci grigie quando non possono agire; "Annulla <azione>"; nelle Preferenze ⌘C/⌘V funzionano nei campi | |
@@ -40,3 +40,5 @@ Segna ogni voce con ✅ / ❌ e note.
 | E33 | Ruota un testo di 90°, doppio clic, scrivi; poi ⌘+ durante la scrittura | Il testo resta ruotato mentre lo scrivi, anche dopo lo zoom; il riquadro tratteggiato è ruotato | |
 | E34 | Seleziona una forma, premi K | Il pannello mostra le opzioni del ritaglio; dopo aver disegnato il riquadro compaiono Ritaglia e Annulla | |
 | E35 | Incolla un'immagine e disegna una forma; selezionale entrambe, ⌘X; ⌘V in un altro documento; salva, chiudi, riapri | Arrivano sia l'immagine sia la forma, e l'immagine c'è ancora dopo la riapertura | |
+| E36 | File → Apri… su un PNG, un JPEG di iPhone e un HEIC; poi doppio clic su un PNG nel Finder con Apri con → Pinxel | Si apre un documento nuovo con il nome del file e la foto dritta; Salva propone un `.pinxel` e il file originale resta intatto |
+| E37 | Cattura una piccola area (finestra iniziale) | Tutti gli strumenti sono visibili nella toolbar, senza il menu » |
