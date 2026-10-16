@@ -147,12 +147,12 @@ public final class CanvasView: NSView, EditorActions {
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         syncController()
-        NSColor.underPageBackgroundColor.setFill()
-        bounds.fill()
+        // Tutta la finestra è a quadretti, fermi mentre l'immagine scorre: l'area di lavoro si vede sempre.
+        drawCheckerboard(in: bounds, context: ctx)
 
         let size = canvasSize
         let canvasRect = viewport.viewRect(fromCanvas: CGRect(origin: .zero, size: size))
-        drawCheckerboard(in: canvasRect, context: ctx)
+        drawCanvasEdge(canvasRect, in: ctx)
 
         var document = displayedDocument
         document.annotations = annotationsForDrawing()
@@ -181,15 +181,23 @@ public final class CanvasView: NSView, EditorActions {
         if let textEditor { drawTextFrame(textEditor, in: ctx) }
     }
 
+    /// Quadretti grigi; in modalità scura più scuri, per non abbagliare.
+    private static let checkerLight = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(white: 0.24, alpha: 1) : .white
+    }
+    private static let checkerDark = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(white: 0.18, alpha: 1) : NSColor(white: 0.85, alpha: 1)
+    }
+
     private func drawCheckerboard(in rect: CGRect, context ctx: CGContext) {
         let visible = rect.intersection(bounds)
         guard !visible.isNull, !visible.isEmpty else { return }
         let square: CGFloat = 8
         ctx.saveGState()
         ctx.clip(to: visible)
-        ctx.setFillColor(NSColor.white.cgColor)
+        ctx.setFillColor(Self.checkerLight.cgColor)
         ctx.fill(visible)
-        ctx.setFillColor(NSColor(white: 0.85, alpha: 1).cgColor)
+        ctx.setFillColor(Self.checkerDark.cgColor)
         let firstRow = Int(((visible.minY - rect.minY) / square).rounded(.down))
         let firstColumn = Int(((visible.minX - rect.minX) / square).rounded(.down))
         var row = firstRow
@@ -203,6 +211,25 @@ public final class CanvasView: NSView, EditorActions {
             }
             row += 1
         }
+        ctx.restoreGState()
+    }
+
+    /// Ombra morbida e filo sottile attorno all'immagine: le sue parti trasparenti restano distinguibili dal fondo.
+    private func drawCanvasEdge(_ rect: CGRect, in ctx: CGContext) {
+        guard !rect.isEmpty else { return }
+        ctx.saveGState()
+        // L'ombra cade solo fuori dall'immagine, così dentro restano i quadretti della trasparenza.
+        ctx.addRect(bounds)
+        ctx.addRect(rect)
+        ctx.clip(using: .evenOdd)
+        ctx.setShadow(offset: CGSize(width: 0, height: 2), blur: 12, color: NSColor.black.withAlphaComponent(0.35).cgColor)
+        ctx.setFillColor(NSColor.black.cgColor)
+        ctx.fill(rect)
+        ctx.restoreGState()
+        ctx.saveGState()
+        ctx.setStrokeColor(NSColor.separatorColor.cgColor)
+        ctx.setLineWidth(1)
+        ctx.stroke(rect.insetBy(dx: -0.5, dy: -0.5))
         ctx.restoreGState()
     }
 
