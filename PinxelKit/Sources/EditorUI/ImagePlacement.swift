@@ -1,4 +1,5 @@
 import CoreGraphics
+import DocumentModel
 
 public enum ImagePlacement {
     /// L'immagine ridotta perché il lato maggiore non superi `maxSide` (i documenti non accettano immagini più
@@ -17,16 +18,27 @@ public enum ImagePlacement {
         return ctx.makeImage()
     }
 
-    /// Riquadro di un'immagine incollata, in pixel del documento: alla stessa densità del documento
-    /// (uno screenshot Retina in una cattura Retina mantiene i suoi pixel), ridotta entro l'80% della cattura,
-    /// centrata in `center`.
-    public static func rect(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint, imageSize: CGSize) -> CGRect {
+    public struct Placement: Equatable, Sendable {
+        /// Riquadro dell'immagine incollata, in pixel del documento.
+        public var rect: CGRect
+        /// Dimensioni della cattura dopo l'incolla: più grandi delle attuali se l'immagine non ci stava.
+        public var imageSize: PixelSize
+    }
+
+    /// Dove va un'immagine incollata: alla stessa densità del documento (uno screenshot Retina in una cattura Retina
+    /// mantiene i suoi pixel) e a grandezza piena. Se è più grande della cattura, la cattura si allarga per contenerla;
+    /// altrimenti va centrata in `center` e tenuta dentro la cattura.
+    public static func place(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint, imageSize: PixelSize,
+                             maxSide: Int = PinxelDocument.maxImageSide) -> Placement {
         let factor = documentScale / max(imageScale, 1)
         var width = pixelSize.width * factor
         var height = pixelSize.height * factor
-        let shrink = min(1, imageSize.width * 0.8 / max(width, 1), imageSize.height * 0.8 / max(height, 1))
+        let shrink = min(1, Double(maxSide) / max(width, 1), Double(maxSide) / max(height, 1))
         width = max(1, (width * shrink).rounded())
         height = max(1, (height * shrink).rounded())
-        return CGRect(x: (center.x - width / 2).rounded(), y: (center.y - height / 2).rounded(), width: width, height: height)
+        let canvas = PixelSize(width: max(imageSize.width, Int(width)), height: max(imageSize.height, Int(height)))
+        let x = min(max((center.x - width / 2).rounded(), 0), Double(canvas.width) - width)
+        let y = min(max((center.y - height / 2).rounded(), 0), Double(canvas.height) - height)
+        return Placement(rect: CGRect(x: x, y: y, width: width, height: height), imageSize: canvas)
     }
 }

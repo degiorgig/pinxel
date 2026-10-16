@@ -102,4 +102,14 @@ struct BackgroundTests {
         #expect(image.width == 200 && image.height == 150)
         #expect(PixelBuffer(image).pixel(x: 100, y: 75) == blue)
     }
+
+    @Test func extendKeepsTheImageTopLeftAndLeavesTheRestTransparent() throws {
+        let result = try #require(BackgroundProcessor.process(quadrants, operations: [.extend(PixelSize(width: 600, height: 400))]))
+        #expect(result.width == 600 && result.height == 400)
+        let pixels = PixelBuffer(result)
+        #expect(pixels.pixel(x: 5, y: 5) == red)
+        #expect(pixels.pixel(x: 395, y: 295) == yellow)
+        #expect(pixels.pixel(x: 500, y: 100).a == 0)
+        #expect(pixels.pixel(x: 100, y: 350).a == 0)
+    }
 }

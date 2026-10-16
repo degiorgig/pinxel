@@ -839,15 +839,21 @@ public final class CanvasView: NSView, EditorActions {
               let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide),
               let asset = session.assets.add(cgImage) else { return false }
         let document = session.document
-        let rect = ImagePlacement.rect(
+        let placement = ImagePlacement.place(
             pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
             imageScale: PixelDensity.scale(pixelWidth: original.width, pointWidth: image.size.width),
             documentScale: document.scale,
             center: visibleDocumentCenter(),
-            imageSize: document.imageSize.cgSize
+            imageSize: document.imageSize
         )
-        let annotation = Annotation(kind: .image(PlacedImageData(rect: rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
-        session.perform(AddAnnotations([annotation], name: "Incolla immagine"))
+        let annotation = Annotation(kind: .image(PlacedImageData(rect: placement.rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
+        var commands: [any EditCommand] = []
+        // Uno screenshot più grande della cattura la allarga, invece di essere rimpicciolito.
+        if placement.imageSize != document.imageSize {
+            commands.append(ApplyImageOperation(.extend(placement.imageSize), in: document))
+        }
+        commands.append(AddAnnotations([annotation], name: "Incolla immagine"))
+        session.perform(CommandGroup(name: "Incolla immagine", commands: commands))
         session.selection = [annotation.id]
         return true
     }

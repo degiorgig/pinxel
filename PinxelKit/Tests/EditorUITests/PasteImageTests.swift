@@ -40,18 +40,48 @@ struct PasteImageTests {
     }
 
     @Test func placementKeepsRetinaPixelsAndScalesOneXImages() {
-        #expect(ImagePlacement.rect(pixelSize: CGSize(width: 200, height: 100), imageScale: 2, documentScale: 2,
-                                    center: CGPoint(x: 300, y: 200), imageSize: CGSize(width: 800, height: 600))
-                == CGRect(x: 200, y: 150, width: 200, height: 100))
-        #expect(ImagePlacement.rect(pixelSize: CGSize(width: 100, height: 50), imageScale: 1, documentScale: 2,
-                                    center: CGPoint(x: 300, y: 200), imageSize: CGSize(width: 800, height: 600)).size
+        #expect(ImagePlacement.place(pixelSize: CGSize(width: 200, height: 100), imageScale: 2, documentScale: 2,
+                                     center: CGPoint(x: 300, y: 200), imageSize: PixelSize(width: 800, height: 600))
+                == ImagePlacement.Placement(rect: CGRect(x: 200, y: 150, width: 200, height: 100), imageSize: PixelSize(width: 800, height: 600)))
+        #expect(ImagePlacement.place(pixelSize: CGSize(width: 100, height: 50), imageScale: 1, documentScale: 2,
+                                     center: CGPoint(x: 300, y: 200), imageSize: PixelSize(width: 800, height: 600)).rect.size
                 == CGSize(width: 200, height: 100))
     }
 
-    @Test func hugeImageFitsInsideTheCapture() {
-        let rect = ImagePlacement.rect(pixelSize: CGSize(width: 10_000, height: 5_000), imageScale: 1, documentScale: 1,
-                                       center: CGPoint(x: 200, y: 150), imageSize: CGSize(width: 400, height: 300))
-        #expect(rect.size == CGSize(width: 320, height: 160))
+    @Test func largerImageExtendsTheCanvasAtFullSize() {
+        let placement = ImagePlacement.place(pixelSize: CGSize(width: 1000, height: 200), imageScale: 1, documentScale: 1,
+                                             center: CGPoint(x: 200, y: 150), imageSize: PixelSize(width: 400, height: 300))
+        #expect(placement.imageSize == PixelSize(width: 1000, height: 300))
+        #expect(placement.rect == CGRect(x: 0, y: 50, width: 1000, height: 200))
+    }
+
+    @Test func imageNearTheEdgeStaysInsideTheCapture() {
+        let placement = ImagePlacement.place(pixelSize: CGSize(width: 100, height: 100), imageScale: 1, documentScale: 1,
+                                             center: CGPoint(x: 390, y: 10), imageSize: PixelSize(width: 400, height: 300))
+        #expect(placement.rect == CGRect(x: 300, y: 0, width: 100, height: 100))
+        #expect(placement.imageSize == PixelSize(width: 400, height: 300))
+    }
+
+    @Test func extensionNeverPassesTheDocumentLimit() {
+        let placement = ImagePlacement.place(pixelSize: CGSize(width: 30_000, height: 100), imageScale: 1, documentScale: 2,
+                                             center: .zero, imageSize: PixelSize(width: 400, height: 300))
+        #expect(placement.imageSize.width == PinxelDocument.maxImageSide)
+        #expect(placement.rect.width == CGFloat(PinxelDocument.maxImageSide))
+    }
+
+    @Test func pastingALargerScreenshotGrowsTheCanvasInOneUndoStep() throws {
+        let canvas = makeCanvas()
+        canvas.pasteboard.clearContents()
+        canvas.pasteboard.setData(pngData(width: 900, height: 700), forType: .png)
+        canvas.paste(nil)
+        let session = canvas.model.session
+        #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
+        let pasted = try #require(session.document.annotations.first)
+        guard case .image(let data) = pasted.kind else { Issue.record("no image"); return }
+        #expect(data.rect == CGRect(x: 0, y: 0, width: 900, height: 700))
+        session.undoManager.undo()
+        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
     }
 
     @Test func pastedImageIsCenteredInTheVisibleArea() throws {

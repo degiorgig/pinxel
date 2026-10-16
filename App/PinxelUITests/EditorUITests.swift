@@ -130,4 +130,32 @@ final class EditorUITests: XCTestCase {
         XCTAssertTrue(app.windows["pinxel-open-test"].exists)
         app.terminate()
     }
+
+    func testPastingALargerScreenshotGrowsTheCanvas() throws {
+        let image = NSImage(size: NSSize(width: 900, height: 700), flipped: false) { rect in
+            NSColor.systemGreen.setFill()
+            rect.fill()
+            return true
+        }
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
+        let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        waitForValue(canvas, prefix: "Annotazioni: 0")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setData(png, forType: .png)
+        canvas.click()
+        app.typeKey("v", modifierFlags: .command)
+        // Il campione è 200x200: lo screenshot incollato la porta alle sue dimensioni, a grandezza piena.
+        let grown = NSPredicate(format: "value ENDSWITH %@", "immagine: \(rep.pixelsWide)\u{00D7}\(rep.pixelsHigh)")
+        wait(for: [expectation(for: grown, evaluatedWith: canvas)], timeout: 5)
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        shot.lifetime = .keepAlways
+        add(shot)
+        app.typeKey("z", modifierFlags: .command)
+        let restored = NSPredicate(format: "value ENDSWITH %@", "immagine: 200\u{00D7}200")
+        wait(for: [expectation(for: restored, evaluatedWith: canvas)], timeout: 5)
+        app.terminate()
+    }
 }
