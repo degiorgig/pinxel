@@ -147,8 +147,8 @@ public final class CanvasView: NSView, EditorActions {
     public override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         syncController()
-        // Tutta la finestra è a quadretti, fermi mentre l'immagine scorre: l'area di lavoro si vede sempre.
-        drawCheckerboard(in: bounds, context: ctx)
+        // Tutta la finestra è a quadretti, ancorati all'immagine: seguono zoom e scorrimento.
+        drawCheckerboard(context: ctx)
 
         let size = canvasSize
         let canvasRect = viewport.viewRect(fromCanvas: CGRect(origin: .zero, size: size))
@@ -189,23 +189,22 @@ public final class CanvasView: NSView, EditorActions {
         appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor(white: 0.18, alpha: 1) : NSColor(white: 0.85, alpha: 1)
     }
 
-    private func drawCheckerboard(in rect: CGRect, context ctx: CGContext) {
-        let visible = rect.intersection(bounds)
-        guard !visible.isNull, !visible.isEmpty else { return }
-        let square: CGFloat = 8
+    private func drawCheckerboard(context ctx: CGContext) {
+        guard !bounds.isEmpty else { return }
+        let square = CGFloat(viewport.checkerSquare)
+        let anchor = viewport.origin
         ctx.saveGState()
-        ctx.clip(to: visible)
         ctx.setFillColor(Self.checkerLight.cgColor)
-        ctx.fill(visible)
+        ctx.fill(bounds)
         ctx.setFillColor(Self.checkerDark.cgColor)
-        let firstRow = Int(((visible.minY - rect.minY) / square).rounded(.down))
-        let firstColumn = Int(((visible.minX - rect.minX) / square).rounded(.down))
+        let firstRow = Int(((bounds.minY - anchor.y) / square).rounded(.down))
+        let firstColumn = Int(((bounds.minX - anchor.x) / square).rounded(.down))
         var row = firstRow
-        while rect.minY + CGFloat(row) * square < visible.maxY {
+        while anchor.y + CGFloat(row) * square < bounds.maxY {
             var column = firstColumn
-            while rect.minX + CGFloat(column) * square < visible.maxX {
-                if (row + column) % 2 != 0 {
-                    ctx.fill(CGRect(x: rect.minX + CGFloat(column) * square, y: rect.minY + CGFloat(row) * square, width: square, height: square))
+            while anchor.x + CGFloat(column) * square < bounds.maxX {
+                if (row + column) & 1 != 0 {
+                    ctx.fill(CGRect(x: anchor.x + CGFloat(column) * square, y: anchor.y + CGFloat(row) * square, width: square, height: square))
                 }
                 column += 1
             }

@@ -42,3 +42,4 @@ Segna ogni voce con ✅ / ❌ e note.
 | E35 | Incolla un'immagine e disegna una forma; selezionale entrambe, ⌘X; ⌘V in un altro documento; salva, chiudi, riapri | Arrivano sia l'immagine sia la forma, e l'immagine c'è ancora dopo la riapertura | |
 | E36 | File → Apri… su un PNG, un JPEG di iPhone e un HEIC; poi doppio clic su un PNG nel Finder con Apri con → Pinxel | Si apre un documento nuovo con il nome del file e la foto dritta; Salva propone un `.pinxel` e il file originale resta intatto |
 | E37 | Cattura una piccola area (finestra iniziale) | Tutti gli strumenti sono visibili nella toolbar, senza il menu » |
+| E38 | Ingrandisci e riduci con ⌘+ / ⌘−, pinch o ⌘ + rotella; poi trascina con Spazio | I quadretti dello sfondo crescono e calano con l'immagine e scorrono con lei; con ⌘0 tornano piccoli |
