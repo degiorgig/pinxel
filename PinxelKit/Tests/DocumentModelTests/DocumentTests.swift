@@ -78,4 +78,17 @@ struct DocumentTests {
         #expect(data.center == CGPoint(x: 50, y: 50))
         #expect(abs(data.diameter - 20) < 1e-9)
     }
+
+    @Test func extendGrowsTheCanvasAndKeepsPoints() {
+        let op = ImageOperation.extend(PixelSize(width: 600, height: 200))
+        #expect(op.resultSize(from: size) == PixelSize(width: 600, height: 300))
+        #expect(op.mapping(from: size).map(CGPoint(x: 12, y: 34)) == CGPoint(x: 12, y: 34))
+        #expect(op.name == "Estendi tela")
+    }
+
+    @Test func extendRoundTripsThroughJSON() throws {
+        let op = ImageOperation.extend(PixelSize(width: 640, height: 480))
+        let decoded = try JSONDecoder().decode(ImageOperation.self, from: JSONEncoder().encode(op))
+        #expect(decoded == op)
+    }
 }

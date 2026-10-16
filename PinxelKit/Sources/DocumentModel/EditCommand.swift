@@ -169,6 +169,38 @@ public struct ApplyImageOperation: EditCommand {
     }
 }
 
+/// Un'altra immagine prende il posto della cattura (uno screenshot incollato): nuove dimensioni e nessuna
+/// operazione sull'immagine; le annotazioni restano dove sono.
+public struct ReplaceBackground: EditCommand {
+    public let name: String
+    public let background: ImageAssetRef
+    public let size: PixelSize
+    private let backgroundBefore: ImageAssetRef
+    private let sizeBefore: PixelSize
+    private let operationsBefore: [ImageOperation]
+
+    public init(_ background: ImageAssetRef, size: PixelSize, in document: PinxelDocument, name: String = "Sostituisci immagine") {
+        self.name = name
+        self.background = background
+        self.size = size
+        backgroundBefore = document.background
+        sizeBefore = document.canvasSize
+        operationsBefore = document.imageOperations
+    }
+
+    public func apply(to document: inout PinxelDocument) {
+        document.background = background
+        document.canvasSize = size
+        document.imageOperations = []
+    }
+
+    public func revert(on document: inout PinxelDocument) {
+        document.background = backgroundBefore
+        document.canvasSize = sizeBefore
+        document.imageOperations = operationsBefore
+    }
+}
+
 public struct UpdateCanvasStyle: EditCommand {
     public let name: String
     public let before: CanvasStyle

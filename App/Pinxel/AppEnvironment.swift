@@ -1,4 +1,5 @@
 import AppCore
+import AppKit
 import CaptureKit
 import DocumentModel
 import Foundation
@@ -85,6 +86,16 @@ final class AppEnvironment {
     func openLastCapture() {
         guard let lastCapture else { return }
         DocumentOpener.open(lastCapture)
+    }
+
+    /// Apre un editor vuoto e trasparente, grande quanto una finestra media: poi ci si incolla uno screenshot.
+    func openBlank() {
+        do {
+            DocumentOpener.open(try CaptureDocumentBuilder.blank(pointSize: CGSize(width: 800, height: 500),
+                                                                 scale: Double(NSScreen.main?.backingScaleFactor ?? 2)))
+        } catch {
+            notifier.failure(error)
+        }
     }
 
     /// Apre nell'editor l'immagine negli appunti.

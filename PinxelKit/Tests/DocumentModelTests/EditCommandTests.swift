@@ -21,6 +21,20 @@ struct EditCommandTests {
         Annotation(kind: .shape(ShapeData(rect: CGRect(x: 1, y: 2, width: 3, height: 4), shape: .rectangle)))
     }
 
+    @Test func replaceBackgroundSwapsImageSizeAndOperations() {
+        var document = base
+        ApplyImageOperation(.crop(PixelRect(x: 0, y: 0, width: 50, height: 40)), in: document).apply(to: &document)
+        let pasted = ImageAssetRef(name: "assets/pasted.png")
+        let command = ReplaceBackground(pasted, size: PixelSize(width: 120, height: 90), in: document)
+        expectReversible(command, on: document)
+        var replaced = document
+        command.apply(to: &replaced)
+        #expect(replaced.background == pasted)
+        #expect(replaced.imageSize == PixelSize(width: 120, height: 90))
+        #expect(replaced.imageOperations.isEmpty)
+        #expect(replaced.annotations == document.annotations)
+    }
+
     @Test func addAppendsOrInserts() {
         let shape = newShape()
         var document = base

@@ -2,13 +2,20 @@ import AppKit
 import XCTest
 
 final class CaptureFlowUITests: XCTestCase {
+    private var pasteboardGuard: PasteboardGuard?
+
     override func setUp() {
         continueAfterFailure = false
+        pasteboardGuard = PasteboardGuard()
+    }
+
+    override func tearDown() {
+        pasteboardGuard?.restore()
     }
 
     func testAreaCaptureOpensDocumentWindow() {
         let app = XCUIApplication()
-        app.launchArguments = ["-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
         app.launch()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
         app.terminate()
@@ -17,7 +24,7 @@ final class CaptureFlowUITests: XCTestCase {
     func testClipboardOnlyPutsCaptureOnPasteboard() {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()
-        app.launchArguments = ["-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
         app.launch()
         let deadline = Date().addingTimeInterval(15)
         var png = NSPasteboard.general.data(forType: .png)
@@ -67,6 +74,23 @@ final class CaptureFlowUITests: XCTestCase {
         statusItem.click()
         statusItem.menuItems["Nuova dagli appunti"].click()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 10))
+        app.terminate()
+    }
+
+    func testMenuBarNewOpensAnEmptyEditor() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launch()
+        let statusItem = app.statusItems.firstMatch
+        XCTAssertTrue(statusItem.waitForExistence(timeout: 10))
+        statusItem.click()
+        statusItem.menuItems["Nuovo"].click()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        XCTAssertTrue((canvas.value as? String)?.hasPrefix("Annotazioni: 0") == true)
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        shot.lifetime = .keepAlways
+        add(shot)
         app.terminate()
     }
 }

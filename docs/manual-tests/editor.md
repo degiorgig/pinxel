@@ -22,4 +22,27 @@ Segna ogni voce con ✅ / ❌ e note.
 | E15 | Toolbar → Condividi → AirDrop o Messaggi | Viene proposto un PNG con le annotazioni | |
 | E16 | Aspetto chiaro e scuro; Accessibilità → Riduci movimento | Toolbar, pannello e maniglie leggibili in entrambi; nessuna animazione che blocca | |
 | E17 | Con "Solo appunti": cattura, poi icona nella barra dei menu → Modifica ultima cattura | La cattura si apre nell'editor; prima di qualsiasi cattura la voce è disattivata | |
-| E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
+| E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⇧⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
+| E19 | T, clic sull'immagine, scrivi "Ciao" con una parola in ⌘B, Esc; doppio clic sul testo, cambia una parola, clic fuori | Il testo resta formattato; ogni modifica è un solo ⌘Z; un testo nuovo lasciato vuoto non lascia nulla | |
+| E20 | Durante la scrittura: dimensione, colore e allineamento dal pannello; poi cambia strumento con un tasto | Il testo cambia subito; cambiare strumento conferma il testo | |
+| E21 | C, trascina un fumetto, scrivi; trascina la maniglia della coda e un angolo del fumetto | La coda segue il puntatore; il fumetto si ridimensiona senza spostare la punta | |
+| E22 | M, trascina su un dettaglio; sposta la sorgente, poi l'ingrandimento; cambia Ingrandimento e Forma | Le due parti si spostano da sole; l'ingrandimento mostra sempre la zona sotto la sorgente | |
+| E23 | K, trascina un riquadro, sposta e ridimensiona con ⇧, Invio; poi ⌘Z | L'immagine e le annotazioni vengono ritagliate insieme; ⌘Z ripristina tutto; Esc annulla senza ritagliare | |
+| E24 | X, trascina in verticale su una fascia; poi in orizzontale; prova Dritto e Zig-zag | Durante il trascinamento la fascia è rossa; al rilascio sparisce e le parti si ricuciono | |
+| E25 | Immagine → Ridimensiona immagine… al 50%; Immagine → Bordo, ombra e margini…: ombra, margine 40, sfondo | Anteprima dal vivo sulla tela; Annulla non cambia niente; Applica è un solo ⌘Z; l'export include ombra e margini | |
+| E26 | Sposta un oggetto vicino al bordo di un altro e al centro dell'immagine; ripeti tenendo ⌘ | Compaiono guide rosa e l'oggetto si aggancia; con ⌘ niente guide | |
+| E27 | Crea tre frecce con stili diversi; seleziona una forma; clicca uno stile rapido | Gli ultimi stili compaiono nel pannello per strumento e restano dopo il riavvio | |
+| E28 | Copia un'immagine in Safari e incollala (⌘V); salva, chiudi, riapri; trascina il riquadro con la foto nell'angolo in basso a destra della tela sulla Scrivania, anche con la finestra in secondo piano | L'immagine incollata è centrata e resta dopo la riapertura; sulla Scrivania compare un PNG con le annotazioni | |
+| E29 | Apri un file danneggiato (vedi Task 13 Step 6 del piano 4) | L'errore offre "Apri l'immagine", che apre la cattura in un documento nuovo | |
+| E30 | Apri un file di versione futura (modifica `manifest.json` a `"version": 99`) | Banner "solo leggere" sopra la tela; strumenti e menu di modifica grigi; Esporta funziona | |
+| E31 | Menu Modifica e Disponi senza selezione, con un oggetto bloccato, e nelle Preferenze | Voci grigie quando non possono agire; "Annulla <azione>"; nelle Preferenze ⌘C/⌘V funzionano nei campi | |
+| E32 | Cattura area su un Retina, poi frecce durante la selezione | Le dimensioni cambiano di 1 pixel per freccia (10 con ⇧) | |
+| E33 | Ruota un testo di 90°, doppio clic, scrivi; poi ⌘+ durante la scrittura | Il testo resta ruotato mentre lo scrivi, anche dopo lo zoom; il riquadro tratteggiato è ruotato | |
+| E34 | Seleziona una forma, premi K | Il pannello mostra le opzioni del ritaglio; dopo aver disegnato il riquadro compaiono Ritaglia e Annulla | |
+| E35 | Incolla un'immagine e disegna una forma; selezionale entrambe, ⌘X; ⌘V in un altro documento; salva, chiudi, riapri | Arrivano sia l'immagine sia la forma, e l'immagine c'è ancora dopo la riapertura | |
+| E36 | File → Apri… su un PNG, un JPEG di iPhone e un HEIC; poi doppio clic su un PNG nel Finder con Apri con → Pinxel | Si apre un documento nuovo con il nome del file e la foto dritta; Salva propone un `.pinxel` e il file originale resta intatto |
+| E37 | Cattura una piccola area (finestra iniziale) | Tutti gli strumenti sono visibili nella toolbar, senza il menu » |
+| E38 | Ingrandisci e riduci con ⌘+ / ⌘−, pinch o ⌘ + rotella; poi trascina con Spazio | I quadretti dello sfondo crescono e calano con l'immagine e scorrono con lei; con ⌘0 tornano piccoli |
+| E39 | Apri dagli appunti un'immagine piccola e incollaci con ⌘V uno screenshot più grande; poi incolla uno screenshot più piccolo | La tela prende ogni volta le dimensioni dello screenshot incollato, più grande o più piccolo; un ⌘Z annulla incolla e adattamento insieme. Con ⌥⌘V l'immagine va sopra senza cambiare la tela |
+| E40 | Icona → Nuovo, oppure ⌘N | Si apre un editor vuoto: solo quadretti e l'invito “Incolla uno screenshot con ⌘V”, nessun riquadro o bordo di tela; incollando uno screenshot la tela prende le sue dimensioni |
+| E41 | Incolla uno screenshot con ⌘V, poi forbici (Taglia e ricuci) e trascina in verticale su una parte | La fascia sparisce e le due parti si ricuciono (bordo dritto o zig-zag); lo screenshot non si schiaccia. Anche Ritaglia ed effetti lavorano sui pixel dello screenshot |

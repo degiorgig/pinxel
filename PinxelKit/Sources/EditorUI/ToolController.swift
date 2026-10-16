@@ -12,7 +12,7 @@ public struct ToolModifiers: OptionSet, Sendable {
 }
 
 public enum ToolKey: Sendable {
-    case delete, escape, left, right, up, down
+    case delete, escape, enter, left, right, up, down
 }
 
 /// Eventi astratti in coordinate del documento.
@@ -31,14 +31,36 @@ public struct ToolResult {
     public var selection: Set<UUID>?
     public var marquee: CGRect?
     public var nudge: CGSize?
+    /// Apri la modifica sulla tela di questo testo o callout.
+    public var editText: TextEditRequest?
+    /// Passa a questo strumento (es. Selezione dopo un ritaglio).
+    public var tool: EditorTool?
+    /// Guide magnetiche da disegnare durante lo spostamento.
+    public var guides: [GuideLine]
 
     public init(preview: [Annotation]? = nil, command: (any EditCommand)? = nil, selection: Set<UUID>? = nil,
-                marquee: CGRect? = nil, nudge: CGSize? = nil) {
+                marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil,
+                guides: [GuideLine] = []) {
         self.preview = preview
         self.command = command
         self.selection = selection
         self.marquee = marquee
         self.nudge = nudge
+        self.editText = editText
+        self.tool = tool
+        self.guides = guides
+    }
+}
+
+/// Testo o callout da modificare sulla tela. Se `isNew`, l'annotazione non è ancora nel documento:
+/// viene aggiunta alla fine della modifica, solo se il testo non è vuoto.
+public struct TextEditRequest: Equatable, Sendable {
+    public var annotation: Annotation
+    public var isNew: Bool
+
+    public init(annotation: Annotation, isNew: Bool) {
+        self.annotation = annotation
+        self.isNew = isNew
     }
 }
 
@@ -46,13 +68,19 @@ public struct ToolResult {
 /// e comandi. Non conosce viste né finestre (spec §6.3).
 public final class ToolController {
     public var tool: EditorTool = .select {
-        didSet { if tool != oldValue { gesture = .idle } }
+        didSet {
+            guard tool != oldValue else { return }
+            cancelGesture()
+            cropRect = nil
+        }
     }
     public var styles = ToolStyles()
     /// Distanze in pixel del documento; il canvas le aggiorna con lo zoom.
     public var hitTolerance: Double = 4
     public var rotationHandleOffset: Double = 30
     public var dragThreshold: Double = 3
+    /// Distanza entro cui uno spostamento si aggancia a una guida.
+    public var snapTolerance: Double = 6
     var makeID: () -> UUID = { UUID() }
 
     private enum Gesture {
@@ -62,38 +90,107 @@ public final class ToolController {
         /// `grab`: distanza fra la maniglia e il punto premuto, mantenuta per tutto il gesto.
         case resize(Handle, original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
         case rotate(original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
+        /// Spostamento di una sola parte di una lente.
+        case movePart(start: CGPoint, original: Annotation, part: MagnifierPart, started: Bool)
         case create(start: CGPoint, id: UUID, points: [CGPoint])
     }
 
     private var gesture: Gesture = .idle
+    /// Dimensioni dell'immagine del documento dell'ultimo evento (lente, ritaglio, guide).
+    private var imageSize: CGSize = .zero
+    /// Riquadro del ritaglio in corso, in coordinate del documento; `nil` = tutta l'immagine.
+    public private(set) var cropRect: CGRect?
+    private var cropDrag: (mode: CropGeometry.DragMode, start: CGPoint, original: CGRect)?
+    /// Fascia che il taglio toglierebbe, mentre la si trascina.
+    public private(set) var cutPreview: CutOut?
+    private var cutStart: CGPoint?
+    /// Annotazioni del documento quando è iniziato il gesto.
+    private var gestureAnnotations: [Annotation]?
 
     public init() {}
 
     public var isGestureActive: Bool {
+        if cropDrag != nil || cutStart != nil { return true }
         if case .idle = gesture { return false }
         return true
     }
 
+    /// Interrompe il gesto in corso senza produrre comandi.
+    private func cancelGesture() {
+        gesture = .idle
+        cropDrag = nil
+        cutStart = nil
+        cutPreview = nil
+        gestureAnnotations = nil
+    }
+
+    /// Riquadro da mostrare sopra l'immagine con lo strumento Ritaglio; `nil` con gli altri strumenti.
+    public func cropOverlay(imageSize: PixelSize) -> CGRect? {
+        guard tool == .crop else { return nil }
+        return cropRect ?? CGRect(origin: .zero, size: imageSize.cgSize)
+    }
+
     public func handle(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
+        imageSize = document.imageSize.cgSize
+        switch event {
+        case .down:
+            gestureAnnotations = document.annotations
+        case .drag, .up:
+            // Un annulla o un'altra modifica arrivata durante il gesto: gli originali sarebbero vecchi.
+            if isGestureActive, let base = gestureAnnotations, base != document.annotations {
+                cancelGesture()
+                return ToolResult()
+            }
+        case .key:
+            break
+        }
         if case .key(let key, let modifiers) = event {
             return handleKey(key, modifiers, document: document, selection: selection)
         }
-        return tool == .select
-            ? handleSelect(event, document: document, selection: selection)
-            : handleCreate(event, document: document)
+        switch tool {
+        case .select: return handleSelect(event, document: document, selection: selection)
+        case .text, .callout: return handleText(event, document: document)
+        case .crop: return handleCrop(event, document: document)
+        case .cutOut: return handleCut(event, document: document)
+        default: return handleCreate(event, document: document)
+        }
     }
 
     // MARK: Tastiera
 
     private func handleKey(_ key: ToolKey, _ modifiers: ToolModifiers, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         let step: Double = modifiers.contains(.shift) ? 10 : 1
+        // Durante un trascinamento conta solo Esc: altri tasti lavorerebbero su uno stato a metà.
+        if isGestureActive, key != .escape { return ToolResult() }
+        if tool == .crop {
+            switch key {
+            case .enter: return commitCrop(document: document)
+            case .escape:
+                cancelGesture()
+                cropRect = nil
+                return ToolResult(tool: .select)
+            default: return ToolResult()
+            }
+        }
         switch key {
         case .escape:
             if isGestureActive {
-                gesture = .idle
+                if case .marquee(_, let base) = gesture {
+                    cancelGesture()
+                    return ToolResult(selection: base)
+                }
+                cancelGesture()
                 return ToolResult()
             }
             return ToolResult(selection: [])
+        case .enter:
+            // Invio sul testo selezionato apre la modifica, come in Keynote.
+            if tool == .select, selection.count == 1,
+               let selected = document.annotations.first(where: { selection.contains($0.id) }),
+               selected.richText != nil, !selected.isLocked {
+                return ToolResult(editText: TextEditRequest(annotation: selected, isNew: false))
+            }
+            return ToolResult()
         case .delete:
             let ids = Set(document.annotations.filter { selection.contains($0.id) && !$0.isLocked }.map(\.id))
             guard !ids.isEmpty else { return ToolResult() }
@@ -110,7 +207,7 @@ public final class ToolController {
     private func handleSelect(_ event: ToolEvent, document: PinxelDocument, selection: Set<UUID>) -> ToolResult {
         let annotations = document.annotations
         switch event {
-        case .down(let point, let modifiers, _):
+        case .down(let point, let modifiers, let clickCount):
             if selection.count == 1, let selected = annotations.first(where: { selection.contains($0.id) }),
                let handle = HitTesting.handle(at: point, for: selected, tolerance: hitTolerance, rotationOffset: rotationHandleOffset),
                let handlePoint = HitTesting.handles(for: selected, rotationOffset: rotationHandleOffset).first(where: { $0.handle == handle })?.point {
@@ -121,6 +218,10 @@ public final class ToolController {
                 return ToolResult()
             }
             if let hit = HitTesting.annotation(at: point, in: annotations, tolerance: hitTolerance) {
+                if clickCount >= 2, hit.richText != nil, !hit.isLocked {
+                    gesture = .idle
+                    return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
+                }
                 var newSelection = selection
                 if modifiers.contains(.shift) {
                     if newSelection.contains(hit.id) { newSelection.remove(hit.id) } else { newSelection.insert(hit.id) }
@@ -130,7 +231,13 @@ public final class ToolController {
                 let movable = annotations.filter { newSelection.contains($0.id) && !$0.isLocked }
                 if newSelection.contains(hit.id), !movable.isEmpty {
                     let copies = modifiers.contains(.option) ? movable.map { _ in makeID() } : nil
-                    gesture = .move(start: point, originals: movable, copyIDs: copies, started: false)
+                    if copies == nil, movable.count == 1, case .magnifier(let data) = movable[0].kind,
+                       let part = HitTesting.magnifierPart(at: point, in: data, tolerance: hitTolerance) {
+                        // Si sposta solo la parte presa: la sorgente o l'ingrandimento.
+                        gesture = .movePart(start: point, original: movable[0], part: part, started: false)
+                    } else {
+                        gesture = .move(start: point, originals: movable, copyIDs: copies, started: false)
+                    }
                 } else {
                     gesture = .idle
                 }
@@ -146,10 +253,12 @@ public final class ToolController {
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
             case .move(let start, let originals, let copyIDs, let started):
-                let delta = constrainedDelta(from: start, to: point, modifiers)
                 guard started || hypot(point.x - start.x, point.y - start.y) >= dragThreshold else { return ToolResult() }
                 gesture = .move(start: start, originals: originals, copyIDs: copyIDs, started: true)
-                return ToolResult(preview: movedPreview(originals, copyIDs: copyIDs, delta: delta, in: annotations))
+                let snapped = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,
+                                           in: annotations, modifiers: modifiers, copying: copyIDs != nil)
+                return ToolResult(preview: movedPreview(originals, copyIDs: copyIDs, delta: snapped.delta, in: annotations),
+                                  guides: snapped.guides)
             case .resize(let handle, let original, let start, let grab, let started):
                 guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
                 gesture = .resize(handle, original: original, start: start, grab: grab, started: true)
@@ -160,6 +269,11 @@ public final class ToolController {
                 gesture = .rotate(original: original, start: start, grab: grab, started: true)
                 let rotated = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 return ToolResult(preview: replacing([rotated], in: annotations))
+            case .movePart(let start, let original, let part, let started):
+                guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .movePart(start: start, original: original, part: part, started: true)
+                let moved = AnnotationGeometry.moved(original, part: part, by: constrainedDelta(from: start, to: point, modifiers))
+                return ToolResult(preview: replacing([moved], in: annotations))
             case .idle, .create:
                 return ToolResult()
             }
@@ -172,7 +286,8 @@ public final class ToolController {
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)))
             case .move(let start, let originals, let copyIDs, let started):
                 guard started else { return ToolResult() }
-                let delta = constrainedDelta(from: start, to: point, modifiers)
+                let delta = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,
+                                         in: annotations, modifiers: modifiers, copying: copyIDs != nil).delta
                 let after = originals.map { AnnotationGeometry.moved($0, by: delta) }
                 if let copyIDs {
                     let copies = zip(after, copyIDs).map { moved, id in
@@ -192,6 +307,11 @@ public final class ToolController {
                 let after = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
                 return ToolResult(command: UpdateAnnotations(name: "Ruota", before: [original], after: [after]))
+            case .movePart(let start, let original, let part, let started):
+                guard started else { return ToolResult() }
+                let after = AnnotationGeometry.moved(original, part: part, by: constrainedDelta(from: start, to: point, modifiers))
+                guard after != original else { return ToolResult() }
+                return ToolResult(command: UpdateAnnotations(name: "Sposta", before: [original], after: [after]))
             case .idle, .create:
                 return ToolResult()
             }
@@ -199,6 +319,122 @@ public final class ToolController {
         case .key:
             return ToolResult()
         }
+    }
+
+    // MARK: Ritaglio
+
+    private func handleCrop(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        let image = CGRect(origin: .zero, size: document.imageSize.cgSize)
+        let current = cropRect ?? image
+        switch event {
+        case .down(let point, _, _):
+            let reach = hitTolerance * 1.5
+            if let handle = Handle.boxHandles.first(where: { HitTesting.boxPoint($0, of: current).distance(to: point) <= reach }) {
+                cropDrag = (.resize(handle), point, current)
+            } else if cropRect != nil, current.contains(point) {
+                cropDrag = (.move, point, current)
+            } else {
+                // Senza un riquadro scelto, trascinare sull'immagine ne disegna uno nuovo.
+                cropDrag = (.new, point, current)
+            }
+            return ToolResult()
+        case .drag(let point, let modifiers), .up(let point, let modifiers):
+            guard let drag = cropDrag else { return ToolResult() }
+            let rect = CropGeometry.dragged(drag.mode, from: drag.start, to: point, original: drag.original,
+                                            image: image, keepAspect: modifiers.contains(.shift))
+            if drag.mode != .new || (rect.width >= dragThreshold && rect.height >= dragThreshold) { cropRect = rect }
+            if case .up = event { cropDrag = nil }
+            return ToolResult()
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    private func commitCrop(document: PinxelDocument) -> ToolResult {
+        defer {
+            cropRect = nil
+            cropDrag = nil
+        }
+        let size = document.imageSize
+        guard let rect = cropRect, let pixel = CropGeometry.pixelRect(rect, imageSize: size),
+              pixel != PixelRect(x: 0, y: 0, width: size.width, height: size.height) else {
+            return ToolResult(tool: .select)
+        }
+        return ToolResult(command: ApplyImageOperation(.crop(pixel), in: document), selection: [], tool: .select)
+    }
+
+    // MARK: Taglia e ricuci
+
+    private func handleCut(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        switch event {
+        case .down(let point, _, _):
+            cutStart = point
+            cutPreview = nil
+            return ToolResult()
+        case .drag(let point, _):
+            guard let start = cutStart else { return ToolResult() }
+            cutPreview = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge)
+            return ToolResult()
+        case .up(let point, _):
+            defer {
+                cutStart = nil
+                cutPreview = nil
+            }
+            guard let start = cutStart,
+                  let cut = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge) else {
+                return ToolResult()
+            }
+            return ToolResult(command: ApplyImageOperation(.cutOut(cut), in: document), selection: [])
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    // MARK: Testo e callout
+
+    private func handleText(_ event: ToolEvent, document: PinxelDocument) -> ToolResult {
+        switch event {
+        case .down(let point, _, _):
+            if let hit = HitTesting.annotation(at: point, in: document.annotations, tolerance: hitTolerance),
+               hit.richText != nil, !hit.isLocked {
+                gesture = .idle
+                return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
+            }
+            gesture = .create(start: point, id: makeID(), points: [point])
+            return ToolResult(selection: [])
+        case .drag(let point, _):
+            guard case .create(let start, _, _) = gesture else { return ToolResult() }
+            return ToolResult(marquee: CGRect.bounding([start, point]))
+        case .up(let point, _):
+            guard case .create(let start, let id, _) = gesture else { return ToolResult() }
+            gesture = .idle
+            return ToolResult(editText: TextEditRequest(annotation: newTextAnnotation(id: id, start: start, end: point), isNew: true))
+        case .key:
+            return ToolResult()
+        }
+    }
+
+    /// Riquadro di un testo creato con un clic: una riga di circa dieci caratteri.
+    static func defaultTextFrame(at point: CGPoint, template: RichText, callout: Bool) -> CGRect {
+        let inset = callout ? 10.0 : 4.0
+        let width = (template.fontSize * (callout ? 9 : 10)).rounded()
+        let height = (template.fontSize * 1.3 + 2 * inset).rounded(.up)
+        return CGRect(x: point.x, y: point.y, width: width, height: height)
+    }
+
+    private func newTextAnnotation(id: UUID, start: CGPoint, end: CGPoint) -> Annotation {
+        let callout = tool == .callout
+        let template = callout ? styles.calloutText : styles.text
+        let dragged = CGRect.bounding([start, end])
+        let rect = dragged.width >= dragThreshold && dragged.height >= dragThreshold
+            ? dragged
+            : Self.defaultTextFrame(at: start, template: template, callout: callout)
+        let style = styles.style(for: tool)
+        guard callout else {
+            return Annotation(id: id, kind: .text(TextData(rect: rect, text: template)), style: style)
+        }
+        let tip = CGPoint(x: rect.minX + rect.width * 0.3, y: rect.maxY + max(30, template.fontSize * 2))
+        return Annotation(id: id, kind: .callout(CalloutData(rect: rect, text: template, tail: CalloutTail(tip: tip))), style: style)
     }
 
     // MARK: Creazione
@@ -268,7 +504,14 @@ public final class ToolController {
         case .step:
             let label = StepLabel(sequence: styles.stepSequence)
             return Annotation(id: id, kind: .step(StepData(center: end, diameter: styles.stepDiameter, label: label)), style: style)
-        case .select:
+        case .magnifier:
+            let corner = modifiers.contains(.shift) ? AnnotationGeometry.squared(from: start, to: end) : end
+            let source = CGRect.bounding([start, corner])
+            guard source.width >= dragThreshold, source.height >= dragThreshold else { return nil }
+            let target = MagnifierPlacement.target(for: source, zoom: styles.magnifierZoom, imageSize: imageSize)
+            let data = MagnifierData(source: source, target: target, shape: styles.magnifierShape, showsConnector: styles.magnifierConnector)
+            return Annotation(id: id, kind: .magnifier(data), style: style)
+        case .text, .callout, .crop, .cutOut, .select:
             return nil
         }
     }
@@ -281,6 +524,33 @@ public final class ToolController {
             if abs(delta.width) >= abs(delta.height) { delta.height = 0 } else { delta.width = 0 }
         }
         return delta
+    }
+
+    /// Aggancia lo spostamento a bordi e centri degli altri oggetti e dell'immagine; `⌘` lo disattiva.
+    /// L'asse bloccato da `⇧` resta fermo.
+    private func snappedDelta(_ delta: CGSize, moving originals: [Annotation], in annotations: [Annotation],
+                              modifiers: ToolModifiers, copying: Bool) -> (delta: CGSize, guides: [GuideLine]) {
+        guard !modifiers.contains(.command) else { return (delta, []) }
+        let union = originals.map(HitTesting.worldBounds).filter { !$0.isNull }.reduce(CGRect.null) { $0.union($1) }
+        guard !union.isNull else { return (delta, []) }
+        // Con ⌥ gli originali restano dove sono: fanno da riferimento anche loro.
+        let movingIDs = copying ? Set<UUID>() : Set(originals.map(\.id))
+        var targets = annotations.filter { !movingIDs.contains($0.id) }.map(HitTesting.worldBounds).filter { !$0.isNull }
+        targets.append(CGRect(origin: .zero, size: imageSize))
+        let snap = SmartGuides.snap(union.offsetBy(dx: delta.width, dy: delta.height), to: targets, tolerance: snapTolerance)
+        var adjusted = CGSize(width: delta.width + snap.offset.width, height: delta.height + snap.offset.height)
+        var guides = snap.guides
+        if modifiers.contains(.shift) {
+            if delta.width == 0 {
+                adjusted.width = 0
+                guides.removeAll { $0.orientation == .vertical }
+            }
+            if delta.height == 0 {
+                adjusted.height = 0
+                guides.removeAll { $0.orientation == .horizontal }
+            }
+        }
+        return (adjusted, guides)
     }
 
     private func movedPreview(_ originals: [Annotation], copyIDs: [UUID]?, delta: CGSize, in annotations: [Annotation]) -> [Annotation] {

@@ -27,6 +27,18 @@ struct PinxelArchiveTests {
         #expect(!contents.isReadOnly)
     }
 
+    @Test func aPastedBackgroundIsSavedAndReopened() throws {
+        let pasted = ImageAssetRef(name: "assets/00000000-0000-0000-0000-000000000009.png")
+        var document = TestDocuments.document()
+        let image = TestImages.solid(width: 30, height: 20, red: 1, green: 0, blue: 0)
+        ReplaceBackground(pasted, size: PixelSize(width: 30, height: 20), in: document).apply(to: &document)
+        var files = try images()
+        files[pasted] = try ImageCodec.encode(image, type: .png)
+        let contents = try PinxelArchive.read(PinxelArchive.write(document: document, images: files, thumbnail: Data(), appVersion: "0.1.0"))
+        #expect(contents.document == document)
+        #expect(contents.images[pasted] != nil)
+    }
+
     @Test func archiveLayout() throws {
         let reader = try ZipReader(write())
         #expect(Set(reader.entries.map(\.name)) == ["manifest.json", "document.json", "background.png", TestDocuments.placedImage.name, "thumbnail.png"])

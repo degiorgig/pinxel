@@ -14,6 +14,7 @@ struct MenuContent: View {
         Divider()
         Button("Modifica ultima cattura") { environment.openLastCapture() }
             .disabled(environment.lastCapture == nil)
+        Button("Nuovo") { environment.openBlank() }
         Button("Nuova dagli appunti") { environment.openClipboard() }
         Button("Apri…") {
             NSApp.setActivationPolicy(.regular)

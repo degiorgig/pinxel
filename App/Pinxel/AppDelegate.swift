@@ -5,6 +5,11 @@ import Persistence
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Il primo controller creato diventa `NSDocumentController.shared`: deve essere il nostro, prima dei file da aprire.
+        _ = PinxelDocumentController()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         AppEnvironment.shared.start()
@@ -20,6 +25,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if ProcessInfo.processInfo.arguments.contains("-PinxelUITestOpenSample") {
             openSample()
+        }
+        if ProcessInfo.processInfo.arguments.contains("-PinxelUITestOpenBlank") {
+            AppEnvironment.shared.openBlank()
         }
         if ProcessInfo.processInfo.arguments.contains("-PinxelUITestCaptureOnLaunch") {
             AppEnvironment.shared.capture(.area)

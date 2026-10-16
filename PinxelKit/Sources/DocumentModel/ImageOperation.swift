@@ -53,12 +53,15 @@ public enum ImageOperation: Codable, Equatable, Sendable {
     case crop(PixelRect)
     case resize(PixelSize)
     case cutOut(CutOut)
+    /// Allarga la tela almeno fino a queste dimensioni: l'immagine resta in alto a sinistra, il resto è trasparente.
+    case extend(PixelSize)
 
     public var name: String {
         switch self {
         case .crop: "Ritaglia"
         case .resize: "Ridimensiona"
         case .cutOut: "Taglia e ricuci"
+        case .extend: "Estendi tela"
         }
     }
 
@@ -75,6 +78,8 @@ public enum ImageOperation: Codable, Equatable, Sendable {
             case .horizontal: return PixelSize(width: size.width, height: size.height - length)
             case .vertical: return PixelSize(width: size.width - length, height: size.height)
             }
+        case .extend(let target):
+            return PixelSize(width: max(size.width, target.width), height: max(size.height, target.height))
         }
     }
 
@@ -97,6 +102,8 @@ public enum ImageOperation: Codable, Equatable, Sendable {
             case .vertical:
                 return PointMapping { CGPoint(x: collapse($0.x, start: start, length: length), y: $0.y) }
             }
+        case .extend:
+            return PointMapping { $0 }
         }
     }
 }

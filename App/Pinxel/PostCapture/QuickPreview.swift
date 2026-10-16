@@ -1,3 +1,4 @@
+import AppCore
 import AppKit
 import UniformTypeIdentifiers
 
@@ -148,10 +149,10 @@ final class QuickPreviewView: NSView, NSDraggingSource {
     }
 
     private func writeTemporaryPNG() -> URL? {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Pinxel", isDirectory: true)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appendingPathComponent("Pinxel \(Int(Date().timeIntervalSince1970)).png")
-        guard let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]),
+        // Cartella unica per ogni trascinamento: due catture nello stesso secondo non si sovrascrivono.
+        let name = FileNamer.baseName(template: FileNamer.defaultTemplate, date: Date())
+        guard let url = try? TemporaryFiles.uniqueURL(fileName: "\(name).png"),
+              let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]),
               (try? png.write(to: url)) != nil else { return nil }
         return url
     }

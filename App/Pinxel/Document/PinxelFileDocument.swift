@@ -40,12 +40,17 @@ final class PinxelFileDocument: NSDocument {
 
     override func data(ofType typeName: String) throws -> Data {
         guard var contents else { throw CocoaError(.fileWriteUnknown) }
-        let edited = MainActor.assumeIsolated { () -> PinxelDocument? in
+        let edited = MainActor.assumeIsolated { () -> (document: PinxelDocument, pasted: [ImageAssetRef: Data])? in
+            guard let session = editorModel?.session else { return nil }
             // Dopo il salvataggio una nuova modifica deve essere un passo nuovo, o NSDocument non la vede.
-            editorModel?.session.breakCoalescing()
-            return editorModel?.session.document
+            session.breakCoalescing()
+            return (session.document, session.assets.addedData)
         }
-        if let edited { contents.document = edited }
+        if let edited {
+            contents.document = edited.document
+            // Le immagini incollate entrano nell'archivio; `PinxelArchive.write` scrive solo quelle usate.
+            contents.images.merge(edited.pasted) { current, _ in current }
+        }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",
@@ -55,6 +60,19 @@ final class PinxelFileDocument: NSDocument {
         let thumbnail = try Thumbnailer.make(contents.document, assets: assets)
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
         return try PinxelArchive.write(document: contents.document, images: contents.images, thumbnail: thumbnail, appVersion: version)
+    }
+
+    // Il testo che si sta scrivendo sulla tela entra nel documento prima di salvare (anche in automatico)
+    // e prima di decidere se chiedere di salvare alla chiusura.
+    override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
+                       completionHandler: @escaping (Error?) -> Void) {
+        MainActor.assumeIsolated { editorModel?.commitTextEditing() }
+        super.save(to: url, ofType: typeName, for: saveOperation, completionHandler: completionHandler)
+    }
+
+    override func canClose(withDelegate delegate: Any, shouldClose shouldCloseSelector: Selector?, contextInfo: UnsafeMutableRawPointer?) {
+        MainActor.assumeIsolated { editorModel?.commitTextEditing() }
+        super.canClose(withDelegate: delegate, shouldClose: shouldCloseSelector, contextInfo: contextInfo)
     }
 
     override func makeWindowControllers() {
@@ -82,6 +100,7 @@ final class PinxelFileDocument: NSDocument {
     @objc func exportImage(_ sender: Any?) {
         MainActor.assumeIsolated {
             guard let model = editorModel, let window = windowControllers.first?.window else { return }
+            model.commitTextEditing()
             let session = model.session
             let name = displayName ?? "Pinxel"
             Task { await ExportPanel.run(document: session.document, assets: session.assets, suggestedName: name, window: window) }
@@ -98,7 +117,9 @@ final class PinxelFileDocument: NSDocument {
         }
         var info: [String: Any] = [NSLocalizedDescriptionKey: reason]
         if PinxelArchive.recoverBackground(data) != nil {
-            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra e si può recuperare."
+            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra: puoi aprirla in un documento nuovo."
+            info[NSLocalizedRecoveryOptionsErrorKey] = ["Apri l'immagine", "Annulla"]
+            info[NSRecoveryAttempterErrorKey] = RecoveryAttempter(data: data)
         }
         return NSError(domain: "com.degiorgi.pinxel", code: 2, userInfo: info)
     }

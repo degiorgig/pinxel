@@ -7,6 +7,10 @@ public enum Handle: Hashable, Sendable {
     case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
     case lineStart, lineEnd
     case rotation
+    /// Punta della coda di un callout.
+    case calloutTail
+    /// Angoli della sorgente di una lente (le otto maniglie del riquadro stanno sulla destinazione).
+    case sourceTopLeft, sourceTopRight, sourceBottomRight, sourceBottomLeft
 
     /// Le otto maniglie del riquadro, in senso orario dall'angolo in alto a sinistra.
     public static let boxHandles: [Handle] = [.topLeft, .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left]
@@ -27,11 +31,34 @@ public enum Handle: Hashable, Sendable {
         case .lineStart: .lineEnd
         case .lineEnd: .lineStart
         case .rotation: .rotation
+        case .calloutTail: .calloutTail
+        case .sourceTopLeft: .sourceBottomRight
+        case .sourceTopRight: .sourceBottomLeft
+        case .sourceBottomRight: .sourceTopLeft
+        case .sourceBottomLeft: .sourceTopRight
         }
     }
 
+    /// La maniglia del riquadro che corrisponde a un angolo della sorgente; le altre restano se stesse.
+    public var boxEquivalent: Handle {
+        switch self {
+        case .sourceTopLeft: .topLeft
+        case .sourceTopRight: .topRight
+        case .sourceBottomRight: .bottomRight
+        case .sourceBottomLeft: .bottomLeft
+        default: self
+        }
+    }
+
+    public var isSourceHandle: Bool { boxEquivalent != self }
+
     public var movesX: Bool { [.topLeft, .topRight, .bottomRight, .bottomLeft, .left, .right].contains(self) }
     public var movesY: Bool { [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .bottom].contains(self) }
+}
+
+/// Le due parti di una lente, che si spostano separatamente.
+public enum MagnifierPart: Sendable {
+    case source, target
 }
 
 public enum HitTesting {
@@ -63,7 +90,12 @@ public enum HitTesting {
         case .magnifier(let data):
             return data.source.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
                 || data.target.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
-        case .text, .callout, .step, .blur, .pixelate, .image:
+        case .callout(let data):
+            // Il fumetto o la coda, non lo spazio vuoto fra i due.
+            let rect = data.rect.standardized
+            return rect.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
+                || local.distance(toSegment: rect.center, data.tail.tip) <= tolerance + 6
+        case .text, .step, .blur, .pixelate, .image:
             return bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
         case .unknown:
             return false
@@ -86,6 +118,26 @@ public enum HitTesting {
         return .bounding(corners(of: bounds).map { $0.rotated(around: bounds.center, by: annotation.rotation) })
     }
 
+    /// Contorni da disegnare attorno a un'annotazione selezionata (prima della rotazione).
+    /// Linee e frecce non ne hanno: bastano le maniglie agli estremi.
+    public static func selectionFrames(for annotation: Annotation) -> [CGRect] {
+        switch annotation.kind {
+        case .arrow, .line: return []
+        case .callout(let data): return [data.rect.standardized]
+        case .magnifier(let data): return [data.source.standardized, data.target.standardized]
+        default:
+            let bounds = annotation.bounds
+            return bounds.isNull ? [] : [bounds]
+        }
+    }
+
+    /// La parte di una lente sotto `point`; l'ingrandimento, disegnato sopra, vince.
+    public static func magnifierPart(at point: CGPoint, in data: MagnifierData, tolerance: Double) -> MagnifierPart? {
+        if data.target.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .target }
+        if data.source.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .source }
+        return nil
+    }
+
     /// Maniglie in coordinate del documento. `rotationOffset` è la distanza della maniglia di rotazione
     /// sopra il riquadro. Le annotazioni bloccate non hanno maniglie.
     public static func handles(for annotation: Annotation, rotationOffset: Double) -> [(handle: Handle, point: CGPoint)] {
@@ -100,6 +152,16 @@ public enum HitTesting {
             local = [(.lineStart, data.line.start), (.lineEnd, data.line.end)]
         case .step:
             local = Handle.boxHandles.filter(\.isCorner).map { ($0, boxPoint($0, of: bounds)) }
+        case .magnifier(let data):
+            // Otto maniglie sull'ingrandimento, quattro sugli angoli della sorgente, niente rotazione.
+            let target = data.target.standardized
+            let source = data.source.standardized
+            local = Handle.boxHandles.map { ($0, boxPoint($0, of: target)) }
+                + [Handle.sourceTopLeft, .sourceTopRight, .sourceBottomRight, .sourceBottomLeft].map { ($0, boxPoint($0, of: source)) }
+        case .callout(let data):
+            // Niente rotazione: maniglie sul fumetto e sulla punta della coda.
+            let rect = data.rect.standardized
+            local = Handle.boxHandles.map { ($0, boxPoint($0, of: rect)) } + [(.calloutTail, data.tail.tip)]
         case .unknown:
             return []
         default:
@@ -127,7 +189,8 @@ public enum HitTesting {
         case .bottom: CGPoint(x: rect.midX, y: rect.maxY)
         case .bottomLeft: CGPoint(x: rect.minX, y: rect.maxY)
         case .left: CGPoint(x: rect.minX, y: rect.midY)
-        case .lineStart, .lineEnd, .rotation: rect.center
+        case .sourceTopLeft, .sourceTopRight, .sourceBottomRight, .sourceBottomLeft: boxPoint(handle.boxEquivalent, of: rect)
+        case .lineStart, .lineEnd, .rotation, .calloutTail: rect.center
         }
     }
 

@@ -12,6 +12,15 @@ public struct Viewport: Equatable, Sendable {
     /// Posizione nella vista dell'origine della tela.
     public var origin: CGPoint
     public let documentScale: Double
+    /// Zoom dell'ultimo adattamento alla finestra: i quadretti dello sfondo vi misurano 8 punti.
+    public private(set) var fitZoom: Double = 1
+
+    public static let checkerSquareRange: ClosedRange<Double> = 3...128
+
+    /// Lato dei quadretti dello sfondo, in punti: crescono e calano con lo zoom, come se fossero sotto l'immagine.
+    public var checkerSquare: Double {
+        min(max(8 * zoom / fitZoom, Self.checkerSquareRange.lowerBound), Self.checkerSquareRange.upperBound)
+    }
 
     public init(documentScale: Double, zoom: Double = 1, origin: CGPoint = .zero) {
         self.documentScale = documentScale > 0 && documentScale.isFinite ? documentScale : 1
@@ -57,6 +66,7 @@ public struct Viewport: Equatable, Sendable {
         let availableHeight = max(viewSize.height - 2 * margin, 1)
         let fitting = min(availableWidth / canvasSize.width, availableHeight / canvasSize.height) * documentScale
         zoom = Self.clamp(min(1, fitting))
+        fitZoom = zoom
         center(canvasSize: canvasSize, in: viewSize)
     }
 

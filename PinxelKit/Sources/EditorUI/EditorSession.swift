@@ -25,9 +25,12 @@ public final class EditorSession {
     public var selection: Set<UUID> = []
     /// Annotazioni mostrate al posto di quelle del documento durante un gesto (non registrate).
     public var preview: [Annotation]?
+    /// Stile della tela mostrato al posto di quello del documento mentre lo si regola (non registrato).
+    public var canvasStylePreview: CanvasStyle?
     public let isReadOnly: Bool
 
-    @ObservationIgnored public let assets: any AssetProvider
+    /// Immagini del documento più quelle incollate.
+    @ObservationIgnored public let assets: AssetStore
     @ObservationIgnored public let undoManager: UndoManager
     @ObservationIgnored var now: () -> Date = { Date() }
     @ObservationIgnored private var lastBox: CommandBox?
@@ -35,7 +38,7 @@ public final class EditorSession {
 
     public init(document: PinxelDocument, assets: any AssetProvider, undoManager: UndoManager = UndoManager(), isReadOnly: Bool = false) {
         self.document = document
-        self.assets = assets
+        self.assets = AssetStore(base: assets)
         self.undoManager = undoManager
         self.isReadOnly = isReadOnly
     }
@@ -97,6 +100,7 @@ public final class EditorSession {
         document = newDocument
         finishHistoryStep()
         selection = []
+        canvasStylePreview = nil
     }
 
     private func registerUndo(_ box: CommandBox) {

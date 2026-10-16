@@ -87,4 +87,31 @@ struct ViewportTests {
         #expect(viewport.zoom == 1)
         #expect(viewport.origin == CGPoint(x: 200, y: 100))
     }
+
+    @Test func checkerSquaresAreEightPointsWhenFitted() {
+        var viewport = Viewport(documentScale: 1)
+        viewport.fit(canvasSize: CGSize(width: 4000, height: 3000), in: CGSize(width: 1000, height: 800))
+        #expect(viewport.checkerSquare == 8)
+    }
+
+    @Test func checkerSquaresFollowTheZoom() {
+        var viewport = Viewport(documentScale: 1)
+        viewport.fit(canvasSize: CGSize(width: 4000, height: 3000), in: CGSize(width: 1000, height: 800))
+        let fitted = viewport.zoom
+        viewport.setZoom(fitted * 2, anchor: .zero)
+        #expect(abs(viewport.checkerSquare - 16) < 1e-9)
+        viewport.setZoom(fitted / 2, anchor: .zero)
+        #expect(abs(viewport.checkerSquare - 4) < 1e-9)
+    }
+
+    @Test func checkerSquaresStayVisibleAndBounded() {
+        var large = Viewport(documentScale: 1)
+        large.fit(canvasSize: CGSize(width: 4000, height: 3000), in: CGSize(width: 1000, height: 800))
+        large.setZoom(8, anchor: .zero)
+        #expect(large.checkerSquare == Viewport.checkerSquareRange.upperBound)
+        var viewport = Viewport(documentScale: 1)
+        viewport.fit(canvasSize: CGSize(width: 100, height: 100), in: CGSize(width: 1000, height: 800))
+        viewport.setZoom(0.1, anchor: .zero)
+        #expect(viewport.checkerSquare == Viewport.checkerSquareRange.lowerBound)
+    }
 }

@@ -26,6 +26,12 @@ public enum BackgroundProcessor {
             return ctx.makeImage()
         case .cutOut(let cut):
             return cutOut(cut, from: image, size: size)
+        case .extend:
+            let result = operation.resultSize(from: size)
+            guard let ctx = ImageDrawing.makeContext(width: result.width, height: result.height) else { return nil }
+            // Il contesto ha origine in basso a sinistra: l'immagine va in alto.
+            ctx.draw(image, in: CGRect(x: 0, y: result.height - size.height, width: size.width, height: size.height))
+            return ctx.makeImage()
         }
     }
 
