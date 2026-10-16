@@ -37,3 +37,6 @@ Segna ogni voce con ✅ / ❌ e note.
 | E30 | Apri un file di versione futura (modifica `manifest.json` a `"version": 99`) | Banner "solo leggere" sopra la tela; strumenti e menu di modifica grigi; Esporta funziona | |
 | E31 | Menu Modifica e Disponi senza selezione, con un oggetto bloccato, e nelle Preferenze | Voci grigie quando non possono agire; "Annulla <azione>"; nelle Preferenze ⌘C/⌘V funzionano nei campi | |
 | E32 | Cattura area su un Retina, poi frecce durante la selezione | Le dimensioni cambiano di 1 pixel per freccia (10 con ⇧) | |
+| E33 | Ruota un testo di 90°, doppio clic, scrivi; poi ⌘+ durante la scrittura | Il testo resta ruotato mentre lo scrivi, anche dopo lo zoom; il riquadro tratteggiato è ruotato | |
+| E34 | Seleziona una forma, premi K | Il pannello mostra le opzioni del ritaglio; dopo aver disegnato il riquadro compaiono Ritaglia e Annulla | |
+| E35 | Incolla un'immagine e disegna una forma; selezionale entrambe, ⌘X; ⌘V in un altro documento; salva, chiudi, riapri | Arrivano sia l'immagine sia la forma, e l'immagine c'è ancora dopo la riapertura | |

@@ -48,6 +48,7 @@ public final class CanvasView: NSView, EditorActions {
     private var swallowNextMouseDown = false
 
     static let annotationsType = NSPasteboard.PasteboardType(AnnotationClipboard.typeIdentifier)
+    static let annotationImagesType = NSPasteboard.PasteboardType(AnnotationClipboard.imagesTypeIdentifier)
 
     private var session: EditorSession { model.session }
 
@@ -477,7 +478,13 @@ public final class CanvasView: NSView, EditorActions {
         ctx.setStrokeColor(NSColor.controlAccentColor.cgColor)
         ctx.setLineWidth(1)
         ctx.setLineDash(phase: 0, lengths: [4, 3])
-        ctx.stroke(editor.container.frame.insetBy(dx: -0.5, dy: -0.5))
+        // Gli angoli del contenitore, ruotato come il testo.
+        let box = editor.container.bounds.insetBy(dx: -0.5, dy: -0.5)
+        let corners = [CGPoint(x: box.minX, y: box.minY), CGPoint(x: box.maxX, y: box.minY),
+                       CGPoint(x: box.maxX, y: box.maxY), CGPoint(x: box.minX, y: box.maxY)]
+        ctx.addLines(between: corners.map { convert($0, from: editor.container) })
+        ctx.closePath()
+        ctx.strokePath()
         ctx.restoreGState()
     }
 
@@ -759,6 +766,13 @@ public final class CanvasView: NSView, EditorActions {
         if let data = try? AnnotationClipboard.encode(selected) {
             pasteboard.setData(data, forType: Self.annotationsType)
         }
+        let assets = session.assets
+        let images = AnnotationClipboard.imageAssets(of: selected).reduce(into: [ImageAssetRef: Data]()) { images, ref in
+            images[ref] = assets.pngData(for: ref)
+        }
+        if !images.isEmpty, let data = try? AnnotationClipboard.encodeImages(images) {
+            pasteboard.setData(data, forType: Self.annotationImagesType)
+        }
         if let rect = AnnotationClipboard.cropRect(for: selected, padding: padding, canvasSize: canvasSize),
            let crop = image.cropping(to: rect) {
             writeImage(crop)
@@ -774,9 +788,13 @@ public final class CanvasView: NSView, EditorActions {
             let count = lastPaste?.changeCount == pasteboard.changeCount ? (lastPaste?.count ?? 0) + 1 : 1
             lastPaste = (pasteboard.changeCount, count)
             let assets = session.assets
+            // Le immagini incollate in un altro documento arrivano con i loro file.
+            if let data = pasteboard.data(forType: Self.annotationImagesType), let images = try? AnnotationClipboard.decodeImages(data) {
+                for (ref, png) in images { assets.add(pngData: png, as: ref) }
+            }
             let copies = AnnotationClipboard.prepareForPaste(annotations, times: count, keepImage: { assets.image(for: $0) != nil })
             guard !copies.isEmpty else {
-                // Solo immagini di un altro documento: resta il PNG negli appunti.
+                // Solo immagini di cui non è arrivato il file: resta il PNG negli appunti.
                 if !pasteImage() { NSSound.beep() }
                 return
             }

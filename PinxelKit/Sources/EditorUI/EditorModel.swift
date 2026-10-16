@@ -90,7 +90,10 @@ public final class EditorModel {
         })
     }
 
-    public var inspectedAnnotation: Annotation? { session.selectedAnnotations.first }
+    /// Ritaglio e taglio lavorano sull'immagine intera: il pannello mostra le loro opzioni anche con una selezione.
+    public var inspectedAnnotation: Annotation? {
+        [.crop, .cutOut].contains(tool) ? nil : session.selectedAnnotations.first
+    }
 
     public var inspectedKind: InspectedKind {
         if let annotation = inspectedAnnotation { return InspectedKind(annotation.kind) }

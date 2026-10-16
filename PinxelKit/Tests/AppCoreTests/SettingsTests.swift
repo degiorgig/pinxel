@@ -73,4 +73,16 @@ struct SettingsTests {
         #expect(loaded.combo(for: .window) == custom)
         #expect(loaded.combo(for: .screen) == HotKeyAction.screen.defaultCombo)
     }
+
+    @Test func effectiveShortcutsStayUniqueWhenAFallbackCollides() {
+        var settings = CaptureSettings()
+        // L'area ha una combinazione non valida e torna alla predefinita, che la finestra ha preso per sé.
+        settings.hotKeys[.area] = KeyCombo(keyCode: 0x00, modifiers: KeyCombo.shift)
+        settings.hotKeys[.window] = HotKeyAction.area.defaultCombo
+        settings.sanitizeHotKeys()
+        let effective = HotKeyAction.allCases.map { settings.combo(for: $0) }
+        #expect(Set(effective).count == effective.count)
+        #expect(settings.combo(for: .area) == HotKeyAction.area.defaultCombo)
+        #expect(settings.combo(for: .window) == HotKeyAction.window.defaultCombo)
+    }
 }

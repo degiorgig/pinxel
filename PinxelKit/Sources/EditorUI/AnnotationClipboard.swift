@@ -15,10 +15,29 @@ public enum AnnotationClipboard {
         try JSONDecoder().decode([Annotation].self, from: data)
     }
 
-    /// Copie da incollare: ID nuovi, spostate di `pasteOffset`, sbloccate. Le immagini incollate restano
-    /// fuori perché i loro file non viaggiano negli appunti.
+    /// File delle immagini incollate che accompagnano le annotazioni, per incollarle in un altro documento.
+    public static let imagesTypeIdentifier = "com.degiorgi.pinxel.annotation-images"
+
+    public static func imageAssets(of annotations: [Annotation]) -> [ImageAssetRef] {
+        annotations.compactMap { annotation in
+            if case .image(let data) = annotation.kind { return data.asset }
+            return nil
+        }
+    }
+
+    public static func encodeImages(_ images: [ImageAssetRef: Data]) throws -> Data {
+        try JSONEncoder().encode(Dictionary(uniqueKeysWithValues: images.map { ($0.key.name, $0.value) }))
+    }
+
+    public static func decodeImages(_ data: Data) throws -> [ImageAssetRef: Data] {
+        let names = try JSONDecoder().decode([String: Data].self, from: data)
+        return Dictionary(uniqueKeysWithValues: names.map { (ImageAssetRef(name: $0.key), $0.value) })
+    }
+
+    /// Copie da incollare: ID nuovi, spostate di `pasteOffset`, sbloccate. Le immagini il cui file non è
+    /// disponibile restano fuori.
     /// `times`: quante volte si è incollato lo stesso contenuto; ogni copia si sposta di un passo in più.
-    /// `keepImage`: le immagini il cui file è disponibile qui (stesso documento o stessa sessione) restano.
+    /// `keepImage`: le immagini il cui file è disponibile qui (stesso documento, o arrivato con gli appunti) restano.
     public static func prepareForPaste(_ annotations: [Annotation], times: Int = 1, keepImage: (ImageAssetRef) -> Bool = { _ in false },
                                        makeID: () -> UUID = { UUID() }) -> [Annotation] {
         let offset = CGSize(width: pasteOffset.width * Double(max(times, 1)), height: pasteOffset.height * Double(max(times, 1)))

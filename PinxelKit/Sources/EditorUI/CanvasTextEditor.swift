@@ -15,6 +15,8 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
     /// Famiglia, dimensione, colore e allineamento (senza run).
     private var template: RichText
     private let inset: Double
+    /// Rotazione del testo (radianti, come nel documento): l'editor la segue, così si scrive com'è disegnato.
+    private let rotation: Double
     /// Le annullate della digitazione restano qui: alla fine conta un solo comando nel documento.
     private let typingUndo = UndoManager()
     private var finished = false
@@ -32,6 +34,7 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         template = text
         template.runs = []
         inset = annotation.textInset
+        rotation = annotation.rotation
         super.init()
         textView.frame = CGRect(origin: .zero, size: frame.size).insetBy(dx: inset, dy: inset)
         textView.isRichText = true
@@ -58,8 +61,18 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
 
     /// Mette il contenitore sulla tela; `convert` porta un rettangolo del documento in punti della vista.
     func place(in convert: (CGRect) -> CGRect) {
-        container.frame = convert(frame)
+        // La cornice si posa dritta, poi ruota attorno alla sua origine e torna con il centro al suo posto.
+        container.frameRotation = 0
+        let target = convert(frame)
+        container.frame = target
         container.bounds = CGRect(origin: .zero, size: frame.size)
+        if rotation != 0, let canvas = container.superview {
+            // La tela è capovolta come il documento: l'angolo positivo del renderer è orario anche qui.
+            container.frameRotation = rotation * 180 / .pi
+            let center = container.convert(CGPoint(x: frame.width / 2, y: frame.height / 2), to: canvas)
+            container.setFrameOrigin(CGPoint(x: container.frame.origin.x + target.midX - center.x,
+                                             y: container.frame.origin.y + target.midY - center.y))
+        }
         textView.frame = container.bounds.insetBy(dx: inset, dy: inset)
     }
 

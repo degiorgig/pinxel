@@ -15,7 +15,7 @@
 **Rulings at plan time** (each with its cost if wrong):
 
 - Callouts have no rotation handle; their eight handles sit on the bubble, a ninth on the tail tip. Cost: a rotated callout needs a manual file edit.
-- The text overlay is not rotated: a rotated text is edited upright and drawn rotated again on commit. Cost: brief visual jump on rotated texts.
+- The text overlay follows the text rotation (changed after review; originally edited upright).
 - Bold, italic and underline from the inspector apply to the whole text; per-word styling uses `⌘B`/`⌘I`/`⌘U` (Format menu) while typing. Cost: none, both paths exist.
 - Magnetic guides apply to moving objects (spec §6.3 "durante il trascinamento"), not to resize or creation. Cost: polish request later.
 - Quick styles record the style of every object created with a tool (the "last 8 used"); applying one changes the selection or the tool. Cost: none.

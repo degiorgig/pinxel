@@ -48,15 +48,32 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
         sanitizeHotKeys()
     }
 
-    /// Toglie le scorciatoie senza ⌃, ⌥ o ⌘ e quelle uguali a un'azione precedente: tornano alle predefinite.
+    /// Toglie le scorciatoie senza ⌃, ⌥ o ⌘ e risolve i doppioni fra quelle effettive (predefinite comprese):
+    /// fra due personalizzate resta la prima; una personalizzata che coincide con la predefinita di un'altra azione
+    /// torna alla sua. Le predefinite sono tutte diverse, quindi il ciclo finisce.
     public mutating func sanitizeHotKeys() {
-        var seen = Set<KeyCombo>()
-        for action in HotKeyAction.allCases {
-            guard let combo = hotKeys[action] else { continue }
-            if !combo.hasModifier || seen.contains(combo) {
-                hotKeys[action] = nil
-            } else {
-                seen.insert(combo)
+        for action in HotKeyAction.allCases where hotKeys[action]?.hasModifier == false {
+            hotKeys[action] = nil
+        }
+        var resolved = false
+        while !resolved {
+            resolved = true
+            var owners: [KeyCombo: HotKeyAction] = [:]
+            for action in HotKeyAction.allCases {
+                let combo = combo(for: action)
+                guard let other = owners[combo] else {
+                    owners[combo] = action
+                    continue
+                }
+                if hotKeys[action] != nil {
+                    hotKeys[action] = nil
+                } else if hotKeys[other] != nil {
+                    hotKeys[other] = nil
+                } else {
+                    continue
+                }
+                resolved = false
+                break
             }
         }
     }
