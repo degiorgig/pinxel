@@ -67,13 +67,14 @@ public struct KeyCombo: Codable, Hashable, Sendable {
 }
 
 public enum HotKeyAction: String, Codable, CaseIterable, Sendable {
-    case area, window, screen, repeatLastArea
+    case area, window, screen, scrolling, repeatLastArea
 
     public var title: String {
         switch self {
         case .area: "Cattura area"
         case .window: "Cattura finestra"
         case .screen: "Cattura schermo"
+        case .scrolling: "Cattura a scorrimento"
         case .repeatLastArea: "Ripeti ultima area"
         }
     }
@@ -84,6 +85,7 @@ public enum HotKeyAction: String, Codable, CaseIterable, Sendable {
         case .area: return KeyCombo(keyCode: 0x12, modifiers: modifiers)
         case .window: return KeyCombo(keyCode: 0x13, modifiers: modifiers)
         case .screen: return KeyCombo(keyCode: 0x14, modifiers: modifiers)
+        case .scrolling: return KeyCombo(keyCode: 0x17, modifiers: modifiers)
         case .repeatLastArea: return KeyCombo(keyCode: 0x15, modifiers: modifiers)
         }
     }

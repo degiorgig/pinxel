@@ -83,6 +83,8 @@ final class AppEnvironment {
         }
     }
 
+    func captureScrolling(fromMenu: Bool = false) {}
+
     func openLastCapture() {
         guard let lastCapture else { return }
         DocumentOpener.open(lastCapture)
@@ -129,6 +131,7 @@ final class AppEnvironment {
         case .area: capture(.area)
         case .window: capture(.window)
         case .screen: capture(.screen)
+        case .scrolling: captureScrolling()
         case .repeatLastArea: repeatLastArea()
         }
     }
