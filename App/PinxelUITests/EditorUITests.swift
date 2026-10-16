@@ -109,6 +109,8 @@ final class EditorUITests: XCTestCase {
     func testToolsAreVisibleAtTheInitialWindowSize() {
         let app = launchWithSample()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 10))
+        // Un'app agente non passa davanti da sola: senza, un'altra finestra può coprire la toolbar.
+        app.activate()
         // Sotto una certa larghezza la toolbar va tutta nel menu di overflow.
         XCTAssertTrue(app.radioButtons["Selezione"].isHittable)
         XCTAssertTrue(app.radioButtons["Taglia e ricuci"].isHittable)
@@ -135,6 +137,42 @@ final class EditorUITests: XCTestCase {
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
         XCTAssertTrue(app.windows["pinxel-open-test"].exists)
+        app.terminate()
+    }
+
+    func testNewEditorIsEmptyUntilAScreenshotIsPasted() throws {
+        let image = NSImage(size: NSSize(width: 640, height: 400), flipped: false) { rect in
+            NSColor.systemGreen.setFill()
+            rect.fill()
+            return true
+        }
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
+        let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launch()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        waitForValue(canvas, prefix: "Annotazioni: 0")
+        app.activate()
+        let blankValue = try XCTUnwrap(canvas.value as? String)
+        let empty = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        empty.name = "vuoto"
+        empty.lifetime = .keepAlways
+        add(empty)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setData(png, forType: .png)
+        canvas.click()
+        app.typeKey("v", modifierFlags: .command)
+        // La tela prende le dimensioni dello screenshot (in pixel del documento, che dipendono dalla scala dello schermo).
+        let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 1", blankValue)
+        wait(for: [expectation(for: pasted, evaluatedWith: canvas)], timeout: 5)
+        let size = try XCTUnwrap((canvas.value as? String)?.components(separatedBy: "immagine: ").last)
+        XCTAssertNotEqual(size, blankValue.components(separatedBy: "immagine: ").last)
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        shot.name = "incollato"
+        shot.lifetime = .keepAlways
+        add(shot)
         app.terminate()
     }
 

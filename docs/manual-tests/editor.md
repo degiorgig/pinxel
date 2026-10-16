@@ -44,4 +44,4 @@ Segna ogni voce con ✅ / ❌ e note.
 | E37 | Cattura una piccola area (finestra iniziale) | Tutti gli strumenti sono visibili nella toolbar, senza il menu » |
 | E38 | Ingrandisci e riduci con ⌘+ / ⌘−, pinch o ⌘ + rotella; poi trascina con Spazio | I quadretti dello sfondo crescono e calano con l'immagine e scorrono con lei; con ⌘0 tornano piccoli |
 | E39 | Apri dagli appunti un'immagine piccola e incollaci con ⌘V uno screenshot più grande; poi incolla uno screenshot più piccolo | La tela prende ogni volta le dimensioni dello screenshot incollato, più grande o più piccolo; un ⌘Z annulla incolla e adattamento insieme. Con ⌥⌘V l'immagine va sopra senza cambiare la tela |
-| E40 | Icona → Nuovo, oppure ⌘N | Si apre un editor vuoto (solo quadretti), senza rettangoli di prova; incollando uno screenshot la tela prende le sue dimensioni |
+| E40 | Icona → Nuovo, oppure ⌘N | Si apre un editor vuoto: solo quadretti e l'invito “Incolla uno screenshot con ⌘V”, nessun riquadro o bordo di tela; incollando uno screenshot la tela prende le sue dimensioni |

@@ -52,6 +52,7 @@ public final class CanvasView: NSView, EditorActions {
     static let annotationImagesType = NSPasteboard.PasteboardType(AnnotationClipboard.imagesTypeIdentifier)
 
     private var session: EditorSession { model.session }
+    private var blankBackground: (ref: ImageAssetRef, transparent: Bool)?
 
     public init(model: EditorModel) {
         self.model = model
@@ -153,7 +154,9 @@ public final class CanvasView: NSView, EditorActions {
 
         let size = canvasSize
         let canvasRect = viewport.viewRect(fromCanvas: CGRect(origin: .zero, size: size))
-        drawCanvasEdge(canvasRect, in: ctx)
+        let blank = isBlank
+        // Un editor nuovo è vuoto: niente bordo della tela, che sembrerebbe già un'immagine.
+        if !blank { drawCanvasEdge(canvasRect, in: ctx) }
 
         var document = displayedDocument
         document.annotations = annotationsForDrawing()
@@ -174,6 +177,7 @@ public final class CanvasView: NSView, EditorActions {
         ctx.restoreGState()
 
         if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
+        if blank, textEditor == nil { drawEmptyHint() }
         drawSelection(in: ctx)
         drawGuides(in: ctx)
         drawCropOverlay(in: ctx)
@@ -212,6 +216,50 @@ public final class CanvasView: NSView, EditorActions {
             row += 1
         }
         ctx.restoreGState()
+    }
+
+    /// Documento di Nuovo ancora intatto: nessuna annotazione o modifica e sfondo tutto trasparente.
+    var isBlank: Bool {
+        let document = session.document
+        guard document.annotations.isEmpty, document.imageOperations.isEmpty, document.canvasStyle == CanvasStyle() else { return false }
+        let ref = document.background
+        if let cached = blankBackground, cached.ref == ref { return cached.transparent }
+        let transparent = session.assets.image(for: ref).map(Self.isFullyTransparent) ?? false
+        blankBackground = (ref, transparent)
+        return transparent
+    }
+
+    /// Vero se nessun pixel ha opacità: si legge solo il canale alfa, una volta per sfondo.
+    static func isFullyTransparent(_ image: CGImage) -> Bool {
+        let width = image.width, height = image.height
+        guard width > 0, height > 0, width * height <= 64_000_000 else { return false }
+        if image.alphaInfo == .none || image.alphaInfo == .noneSkipFirst || image.alphaInfo == .noneSkipLast { return false }
+        var alpha = [UInt8](repeating: 0, count: width * height)
+        let drawn = alpha.withUnsafeMutableBytes { buffer -> Bool in
+            guard let ctx = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width,
+                                      space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { return false }
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        return drawn && !alpha.contains { $0 != 0 }
+    }
+
+    private func drawEmptyHint() {
+        let text = "Incolla uno screenshot con \u{2318}V" as NSString
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: NSColor.secondaryLabelColor,
+        ]
+        let size = text.size(withAttributes: attributes)
+        let box = CGRect(x: bounds.midX - size.width / 2 - 14, y: bounds.midY - size.height / 2 - 8,
+                         width: size.width + 28, height: size.height + 16).integral
+        NSColor.windowBackgroundColor.withAlphaComponent(0.9).setFill()
+        let pill = NSBezierPath(roundedRect: box, xRadius: box.height / 2, yRadius: box.height / 2)
+        pill.fill()
+        NSColor.separatorColor.setStroke()
+        pill.lineWidth = 0.5
+        pill.stroke()
+        text.draw(at: CGPoint(x: box.midX - size.width / 2, y: box.midY - size.height / 2), withAttributes: attributes)
     }
 
     /// Ombra morbida e filo sottile attorno all'immagine: le sue parti trasparenti restano distinguibili dal fondo.
