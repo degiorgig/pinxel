@@ -6,7 +6,7 @@ struct PinxelApp: App {
     private let environment = AppEnvironment.shared
 
     var body: some Scene {
-        MenuBarExtra("Pinxel", systemImage: "camera.viewfinder") {
+        MenuBarExtra("Pinxel", image: "MenuBarIcon") {
             MenuContent(environment: environment)
         }
         .commands { EditorCommands() }
