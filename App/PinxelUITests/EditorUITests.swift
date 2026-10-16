@@ -165,7 +165,7 @@ final class EditorUITests: XCTestCase {
         canvas.click()
         app.typeKey("v", modifierFlags: .command)
         // La tela prende le dimensioni dello screenshot (in pixel del documento, che dipendono dalla scala dello schermo).
-        let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 1", blankValue)
+        let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 0", blankValue)
         wait(for: [expectation(for: pasted, evaluatedWith: canvas)], timeout: 5)
         let size = try XCTUnwrap((canvas.value as? String)?.components(separatedBy: "immagine: ").last)
         XCTAssertNotEqual(size, blankValue.components(separatedBy: "immagine: ").last)
@@ -174,6 +174,56 @@ final class EditorUITests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
         app.terminate()
+    }
+
+    func testScissorsRemoveABandAndCloseTheGap() throws {
+        // Righe colorate numerate: dopo il taglio si vede quali sono sparite e come si ricuciono.
+        let image = NSImage(size: NSSize(width: 600, height: 400), flipped: true) { rect in
+            let colors: [NSColor] = [.systemRed, .systemOrange, .systemYellow, .systemGreen, .systemBlue, .systemPurple, .systemPink, .systemTeal]
+            for row in 0..<8 {
+                colors[row].setFill()
+                NSRect(x: 0, y: CGFloat(row) * 50, width: rect.width, height: 50).fill()
+                ("Riga \(row + 1)" as NSString).draw(at: NSPoint(x: 20, y: CGFloat(row) * 50 + 12),
+                                                     withAttributes: [.font: NSFont.boldSystemFont(ofSize: 22)])
+            }
+            return true
+        }
+        let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
+        let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launch()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        app.activate()
+        let blankValue = try XCTUnwrap(canvas.value as? String)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setData(png, forType: .png)
+        canvas.click()
+        app.typeKey("v", modifierFlags: .command)
+        wait(for: [expectation(for: NSPredicate(format: "value != %@", blankValue), evaluatedWith: canvas)], timeout: 5)
+        let pastedValue = try XCTUnwrap(canvas.value as? String)
+        snapshot(app, "1-incollato")
+        app.radioButtons["Taglia e ricuci"].click()
+        snapshot(app, "2-forbici")
+        let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.40))
+        let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+        start.click(forDuration: 0.2, thenDragTo: end)
+        // Lo screenshot è l'immagine della cattura: la fascia sparisce e l'altezza cala, senza oggetti schiacciati.
+        wait(for: [expectation(for: NSPredicate(format: "value != %@", pastedValue), evaluatedWith: canvas)], timeout: 5)
+        func height(_ value: String) -> Int? { value.components(separatedBy: "\u{00D7}").last.flatMap { Int($0) } }
+        let cutValue = try XCTUnwrap(canvas.value as? String)
+        XCTAssertTrue(cutValue.hasPrefix("Annotazioni: 0"))
+        XCTAssertLessThan(try XCTUnwrap(height(cutValue)), try XCTUnwrap(height(pastedValue)))
+        snapshot(app, "3-tagliato")
+        app.terminate()
+    }
+
+    private func snapshot(_ app: XCUIApplication, _ name: String) {
+        let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 
     func testPastingALargerScreenshotGrowsTheCanvas() throws {

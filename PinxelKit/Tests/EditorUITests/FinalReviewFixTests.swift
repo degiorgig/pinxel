@@ -100,7 +100,7 @@ struct FinalReviewFixTests {
         let (canvas, _) = makeCanvas()
         canvas.pasteboard.clearContents()
         canvas.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
-        canvas.paste(nil)
+        canvas.pasteKeepingCanvas(nil)
         let session = canvas.model.session
         let pasted = try #require(session.document.annotations.first)
         session.selection = [pasted.id]
@@ -125,7 +125,7 @@ struct FinalReviewFixTests {
         let (canvas, _) = makeCanvas()
         canvas.pasteboard.clearContents()
         canvas.pasteboard.setData(pngData(width: PinxelDocument.maxImageSide + 232, height: 2), forType: .png)
-        canvas.paste(nil)
+        canvas.pasteKeepingCanvas(nil)
         guard case .image(let data) = canvas.model.session.document.annotations.first?.kind else { Issue.record("no image"); return }
         let stored = try #require(canvas.model.session.assets.image(for: data.asset))
         #expect(stored.width <= PinxelDocument.maxImageSide)

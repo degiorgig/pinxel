@@ -83,11 +83,13 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 150, height: 100))
-        guard case .image(let data) = session.document.annotations.first?.kind else { Issue.record("no image"); return }
-        #expect(data.rect == CGRect(x: 0, y: 0, width: 150, height: 100))
+        // Lo screenshot diventa l'immagine della cattura, non un oggetto sopra.
+        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.background != TestDocuments.background)
+        #expect(session.assets.image(for: session.document.background)?.width == 150)
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.background == TestDocuments.background)
     }
 
     @Test func pastingWithoutAdaptingKeepsTheCanvas() throws {
@@ -108,12 +110,43 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
-        let pasted = try #require(session.document.annotations.first)
-        guard case .image(let data) = pasted.kind else { Issue.record("no image"); return }
-        #expect(data.rect == CGRect(x: 0, y: 0, width: 900, height: 700))
-        session.undoManager.undo()
         #expect(session.document.annotations.isEmpty)
+        #expect(session.undoManager.undoActionName == "Incolla immagine")
+        session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
+        #expect(session.document.background == TestDocuments.background)
+        session.undoManager.redo()
+        #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
+    }
+
+    /// Tre fasce: rossa 0..<30, verde 30..<70, blu 70..<100 (righe dall'alto).
+    private func bandsPNG() -> Data {
+        let ctx = CGContext(data: nil, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 70, width: 100, height: 30))
+        ctx.setFillColor(CGColor(srgbRed: 0, green: 1, blue: 0, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 30, width: 100, height: 40))
+        ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 100, height: 30))
+        return NSBitmapImageRep(cgImage: ctx.makeImage()!).representation(using: .png, properties: [:])!
+    }
+
+    @Test func scissorsCutAPastedScreenshotInsteadOfSquashingIt() throws {
+        let canvas = makeCanvas()
+        canvas.pasteboard.clearContents()
+        canvas.pasteboard.setData(bandsPNG(), forType: .png)
+        canvas.paste(nil)
+        let session = canvas.model.session
+        session.perform(ApplyImageOperation(.cutOut(CutOut(axis: .horizontal, start: 30, length: 40)), in: session.document))
+        #expect(session.document.imageSize == PixelSize(width: 100, height: 60))
+        let rendered = try DocumentRenderer().renderImage(session.document, assets: session.assets)
+        let rep = NSBitmapImageRep(cgImage: rendered)
+        func isGreen(_ y: Int) -> Bool { (rep.colorAt(x: 50, y: y)?.usingColorSpace(.sRGB)?.greenComponent ?? 0) > 0.5 }
+        // Via la fascia verde: restano rosso sopra e blu sotto, ricuciti, senza verde schiacciato in mezzo.
+        #expect(!(0..<60).contains(where: isGreen))
+        #expect((rep.colorAt(x: 50, y: 10)?.usingColorSpace(.sRGB)?.redComponent ?? 0) > 0.9)
+        #expect((rep.colorAt(x: 50, y: 50)?.usingColorSpace(.sRGB)?.blueComponent ?? 0) > 0.9)
     }
 
     @Test func pastedImageIsCenteredInTheVisibleArea() throws {

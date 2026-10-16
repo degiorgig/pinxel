@@ -39,7 +39,7 @@ struct ReviewFollowUpTests {
         let source = makeCanvas([shape])
         source.pasteboard.clearContents()
         source.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
-        source.paste(nil)
+        source.pasteKeepingCanvas(nil)
         source.model.session.selection = Set(source.model.session.document.annotations.map(\.id))
         source.cut(nil)
 

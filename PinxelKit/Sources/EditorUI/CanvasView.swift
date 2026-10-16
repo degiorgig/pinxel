@@ -890,13 +890,13 @@ public final class CanvasView: NSView, EditorActions {
         if !pasteImage(adaptCanvas: adaptCanvas) { NSSound.beep() }
     }
 
-    /// Un'immagine negli appunti diventa un'annotazione immagine (spec §6.3).
+    /// Con `adaptCanvas` lo screenshot negli appunti diventa l'immagine della cattura, così forbici, ritaglio ed effetti
+    /// lavorano sui suoi pixel; altrimenti diventa un'annotazione immagine sopra la cattura (spec §6.3).
     private func pasteImage(adaptCanvas: Bool) -> Bool {
         guard let image = NSImage(pasteboard: pasteboard),
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               // Oltre il limite dei documenti il file salvato non si riaprirebbe: si riduce.
-              let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide),
-              let asset = session.assets.add(cgImage) else { return false }
+              let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide) else { return false }
         let document = session.document
         let placement = ImagePlacement.place(
             pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
@@ -906,22 +906,16 @@ public final class CanvasView: NSView, EditorActions {
             imageSize: document.imageSize,
             adaptCanvas: adaptCanvas
         )
+        if adaptCanvas {
+            guard let background = ImagePlacement.resized(cgImage, to: placement.imageSize),
+                  let asset = session.assets.add(background) else { return false }
+            session.perform(ReplaceBackground(asset, size: placement.imageSize, in: document, name: "Incolla immagine"))
+            session.selection = []
+            return true
+        }
+        guard let asset = session.assets.add(cgImage) else { return false }
         let annotation = Annotation(kind: .image(PlacedImageData(rect: placement.rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
-        var commands: [any EditCommand] = []
-        var resized = document
-        let current = document.imageSize, target = placement.imageSize
-        // La cattura si adatta allo screenshot: si ritaglia dall'alto a sinistra se è più piccolo, si allarga se è più grande.
-        if target.width < current.width || target.height < current.height {
-            let crop = ApplyImageOperation(.crop(PixelRect(x: 0, y: 0, width: min(current.width, target.width),
-                                                           height: min(current.height, target.height))), in: resized)
-            crop.apply(to: &resized)
-            commands.append(crop)
-        }
-        if target.width > resized.imageSize.width || target.height > resized.imageSize.height {
-            commands.append(ApplyImageOperation(.extend(target), in: resized))
-        }
-        commands.append(AddAnnotations([annotation], name: "Incolla immagine"))
-        session.perform(CommandGroup(name: "Incolla immagine", commands: commands))
+        session.perform(AddAnnotations([annotation], name: "Incolla immagine"))
         session.selection = [annotation.id]
         return true
     }

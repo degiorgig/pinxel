@@ -8,9 +8,15 @@ public enum ImagePlacement {
         let longest = max(image.width, image.height)
         guard longest > maxSide else { return image }
         let factor = Double(maxSide) / Double(longest)
-        let width = max(1, Int((Double(image.width) * factor).rounded()))
-        let height = max(1, Int((Double(image.height) * factor).rounded()))
-        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+        return resized(image, to: PixelSize(width: max(1, Int((Double(image.width) * factor).rounded())),
+                                            height: max(1, Int((Double(image.height) * factor).rounded()))))
+    }
+
+    /// L'immagine ricampionata a `size` pixel; la stessa immagine se ha già quelle dimensioni.
+    public static func resized(_ image: CGImage, to size: PixelSize) -> CGImage? {
+        guard image.width != size.width || image.height != size.height else { return image }
+        let width = size.width, height = size.height
+        guard width > 0, height > 0, let space = CGColorSpace(name: CGColorSpace.sRGB),
               let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: space,
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
         ctx.interpolationQuality = .high
