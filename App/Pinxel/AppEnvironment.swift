@@ -54,7 +54,7 @@ final class AppEnvironment {
             let page = FakeScrollingPage(content: Self.fakeScrollingContent(), viewportHeight: 300, scale: 2)
             scrolling = ScrollCaptureDependencies(accessibility: FixedAccessibilityPermission(isGranted: true),
                                                   makeSource: { page }, makeDriver: { page },
-                                                  presenter: ScrollCaptureController(), defaults: store.defaults)
+                                                  presenter: ScrollCaptureController(), defaults: store.defaults, tracksPointer: false)
         } else {
             let bundle = Bundle.main.bundleIdentifier ?? "com.degiorgi.pinxel"
             scrolling = ScrollCaptureDependencies(accessibility: SystemAccessibilityPermission(),

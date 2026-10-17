@@ -12,6 +12,8 @@ struct ScrollCaptureDependencies {
     let makeDriver: () -> any ScrollDriver
     let presenter: any ScrollCapturePresenting
     let defaults: UserDefaults
+    /// Falso con la pagina finta dei UI test, dove il puntatore vero non c'entra.
+    var tracksPointer = true
 }
 
 @MainActor
@@ -140,7 +142,13 @@ final class CaptureCoordinator {
             frontmost?.activate()
             let session = ScrollCaptureSession(source: scrolling.makeSource(),
                                                driver: scrolling.accessibility.isGranted ? scrolling.makeDriver() : nil,
-                                               rect: prepared.rect, display: display, maxHeight: Self.maxScrollingHeight)
+                                               rect: prepared.rect, display: display, maxHeight: Self.maxScrollingHeight,
+                                               pointerInside: { [tracksPointer = scrolling.tracksPointer, area = prepared.rect] in
+                                                   guard tracksPointer else { return true }
+                                                   let mouse = NSEvent.mouseLocation
+                                                   let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+                                                   return area.contains(CGPoint(x: mouse.x, y: primaryHeight - mouse.y))
+                                               })
             guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else { return }
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)
             metadata.windowTitle = nil

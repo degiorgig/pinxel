@@ -36,6 +36,11 @@ struct ScrollCapturePanel: View {
     }
 
     private var message: String? {
+        switch session.pause {
+        case .pointerOutside: return "Riporta il puntatore sull'area per continuare lo scorrimento."
+        case .scrollBack: return "Scorrimento troppo veloce: torna un po' su."
+        case .none: break
+        }
         if !session.scrollsAutomatically { return "Per lo scorrimento automatico consenti Pinxel in Accessibilità." }
         if narrowed { return "Area ristretta in larghezza per non esaurire la memoria." }
         return nil

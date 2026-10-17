@@ -19,3 +19,8 @@ Prerequisiti: Pinxel firmato (Signing.local.xcconfig), Registrazione schermo con
 | S13 | Un video in riproduzione nell'area | La cattura si ferma con "Il contenuto cambia da solo"; resta la parte già cucita |
 | S14 | "Dopo la cattura" su Solo appunti / Editor / Anteprima rapida | L'immagine lunga segue l'impostazione |
 | S15 | Preferenze → Scorciatoie | C'è "Cattura a scorrimento" con ⌃⇧5, modificabile |
+| S16 | Durante S1 sposta il puntatore sul pannello | Lo scorrimento si ferma e il pannello dice "Riporta il puntatore sull'area…"; riportandolo dentro riprende, senza finire la cattura |
+| S17 | Finder in vista elenco con un file selezionato: Invio durante la cattura | La cattura finisce; il Finder non entra in modifica del nome. In una chat Invio non invia il messaggio |
+| S18 | Area che comprende la barra di scorrimento (scroller sovrapposti) | Nessun pezzo della barra ripetuto lungo il bordo destro dell'immagine |
+| S19 | Area con elenchi che si evidenziano al passaggio del puntatore o mostrano un suggerimento | Nessuna evidenziazione o suggerimento ripetuto nell'immagine |
+| S20 | Scorrendo a mano, un colpo veloce sul trackpad | Il pannello dice "Scorrimento troppo veloce: torna un po' su"; tornando su la cattura riprende senza righe doppie |

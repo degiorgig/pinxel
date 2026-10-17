@@ -12,6 +12,7 @@ protocol ScrollCapturePresenting {
 final class ScrollCaptureController: ScrollCapturePresenting {
     private var windows: [NSWindow] = []
     private var monitors: [Any] = []
+    private var keyTap: KeyTap?
 
     func run(_ session: ScrollCaptureSession, rect: CGRect, display: DisplayInfo, narrowed: Bool) async -> CGImage? {
         show(session, rect: rect, display: display, narrowed: narrowed)
@@ -55,16 +56,22 @@ final class ScrollCaptureController: ScrollCapturePresenting {
             CGWarpMouseCursorPosition(CGPoint(x: rect.midX, y: rect.midY))
         }
 
-        let keys: (NSEvent) -> Void = { event in
-            switch event.keyCode {
+        // Esc e Invio non devono arrivare anche all'app sotto (Invio in una chat invierebbe il messaggio): con
+        // Accessibilità un event tap li consuma; senza, un monitor globale li vede soltanto.
+        let keyTap = KeyTap { keyCode in
+            switch keyCode {
             case 53: session.cancel()
             case 36, 76: session.finish()
-            default: break
+            default: return false
             }
+            return true
         }
-        if let global = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { event in
-            MainActor.assumeIsolated { keys(event) }
+        if keyTap.start() {
+            self.keyTap = keyTap
+        } else if let global = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { event in
+            MainActor.assumeIsolated { _ = keyTap.handle(Int64(event.keyCode)) }
         }) { monitors.append(global) }
+        let keys: (NSEvent) -> Void = { event in _ = keyTap.handle(Int64(event.keyCode)) }
         if let local = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
             keys(event)
             return event
@@ -79,6 +86,8 @@ final class ScrollCaptureController: ScrollCapturePresenting {
     }
 
     private func close() {
+        keyTap?.stop()
+        keyTap = nil
         monitors.forEach(NSEvent.removeMonitor)
         monitors = []
         windows.forEach { $0.orderOut(nil) }
@@ -93,5 +102,57 @@ private final class ScrollFrameView: NSView {
         path.lineWidth = 2
         NSColor.controlAccentColor.setStroke()
         path.stroke()
+    }
+}
+
+/// Event tap sui tasti: consuma quelli che `handle` gestisce. Richiede il permesso Accessibilità.
+@MainActor
+final class KeyTap {
+    private let handler: (Int64) -> Bool
+    private var tap: CFMachPort?
+    private var source: CFRunLoopSource?
+
+    init(handler: @escaping (Int64) -> Bool) {
+        self.handler = handler
+    }
+
+    /// Esc e Invio senza ⌘, ⌥ o ⌃: con i modificatori restano all'app (per esempio ⌘Invio).
+    func handle(_ keyCode: Int64, flags: CGEventFlags = []) -> Bool {
+        guard flags.intersection([.maskCommand, .maskAlternate, .maskControl]).isEmpty else { return false }
+        return handler(keyCode)
+    }
+
+    func start() -> Bool {
+        let info = Unmanaged.passUnretained(self).toOpaque()
+        let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
+                                          eventsOfInterest: mask, callback: { _, type, event, info in
+            guard let info else { return Unmanaged.passUnretained(event) }
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            let flags = event.flags
+            // Il tap è sul run loop principale.
+            let consumed = MainActor.assumeIsolated {
+                let keyTap = Unmanaged<KeyTap>.fromOpaque(info).takeUnretainedValue()
+                if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+                    if let tap = keyTap.tap { CGEvent.tapEnable(tap: tap, enable: true) }
+                    return false
+                }
+                return type == .keyDown && keyTap.handle(keyCode, flags: flags)
+            }
+            return consumed ? nil : Unmanaged.passUnretained(event)
+        }, userInfo: info) else { return false }
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+        self.tap = tap
+        self.source = source
+        return true
+    }
+
+    func stop() {
+        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let source { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
+        tap = nil
+        source = nil
     }
 }
