@@ -22,18 +22,28 @@ public enum StitchStep: Equatable, Sendable {
 }
 
 /// Cuce i fotogrammi di un'area che scorre in verticale (spec §4). Logica pura: niente schermi né eventi.
-public struct ScrollStitcher {
+/// È una classe perché tiene l'immagine in un buffer riservato una volta sola (niente copie a ogni passo).
+public final class ScrollStitcher: @unchecked Sendable {
     static let blocks = 32
     /// Errore medio (0–255) sotto cui due righe combaciano.
-    static let matchThreshold: Float = 3
+    static let matchThreshold = 3.0
     /// Spostamenti con errore entro questa distanza dal migliore sono equivalenti.
-    static let tieTolerance: Float = 0.75
-    /// Righe confrontate al massimo per ogni spostamento provato.
-    static let maxSampledRows = 400
+    static let tieTolerance = 0.75
+    /// Una riga con differenza fra il blocco più chiaro e il più scuro sotto questa soglia è uniforme (bianca, a tinta unita):
+    /// non dice nulla sullo spostamento e non entra nel confronto.
+    static let uniformRowRange: Int16 = 4
+    /// Righe con dettagli necessarie perché uno spostamento sia giudicabile.
+    static let minimumInformativeRows = 4
+    /// Righe con dettagli confrontate al massimo, per fotogramma, nella ricerca grossolana e in quella fine.
+    static let coarseRows = 40
+    static let fineRows = 300
 
     struct Frame {
         let bytes: [UInt8]
-        let signatures: [Float]
+        /// Una firma per riga: il grigio medio di `blocks` blocchi orizzontali.
+        let signatures: [SIMD32<Int16>]
+        /// Righe con dettagli, dall'alto.
+        let informative: [Bool]
     }
 
     enum Match {
@@ -47,10 +57,12 @@ public struct ScrollStitcher {
     public private(set) var frameHeight = 0
     public private(set) var topBand = 0
     public private(set) var bottomBand = 0
+    /// Spostamento dell'ultimo fotogramma riconosciuto, in pixel.
+    public private(set) var lastShift: Int?
     private var bandsKnown = false
     /// Fascia superiore + contenuto che scorre, RGBA premoltiplicato sRGB, righe dall'alto.
-    private var canvas: [UInt8] = []
-    /// Fascia inferiore dell'ultimo fotogramma: va in fondo all'immagine.
+    private var canvas: PixelRows?
+    /// Fascia inferiore del fotogramma che ha raggiunto la fine della cattura: va in fondo all'immagine.
     private var bottomRows: [UInt8] = []
     private var previous: Frame?
     /// Riga del contenuto in cima alla zona che scorre del fotogramma di riferimento.
@@ -65,22 +77,28 @@ public struct ScrollStitcher {
     private var rowBytes: Int { width * 4 }
     /// Altezza in pixel della parte che scorre, senza fasce fisse.
     public var regionHeight: Int { frameHeight - topBand - bottomBand }
-    public var height: Int { rowBytes == 0 ? 0 : (canvas.count + bottomRows.count) / rowBytes }
+    /// Sovrapposizione minima fra due fotogrammi perché lo spostamento sia misurabile.
+    public var minimumOverlap: Int { max(8, regionHeight / 4) }
+    /// Spostamento massimo misurabile fra due fotogrammi: i passi automatici devono restare sotto.
+    public var maxShift: Int { max(0, regionHeight - minimumOverlap) }
+    public var height: Int { rowBytes == 0 ? 0 : (canvas?.rows ?? 0) + bottomRows.count / rowBytes }
 
-    public mutating func add(_ image: CGImage, hint: Int?) -> StitchStep {
+    public func add(_ image: CGImage, hint: Int?) -> StitchStep {
         guard let previous else {
             width = image.width
             frameHeight = image.height
             let frame = Self.makeFrame(image)
             let rows = min(frameHeight, maxHeight)
-            canvas = Array(frame.bytes[0..<rows * rowBytes])
+            let canvas = PixelRows(rowBytes: rowBytes, capacityRows: maxHeight)
+            frame.bytes.withUnsafeBytes { canvas.append($0.baseAddress!, rows: rows) }
+            self.canvas = canvas
             captured = rows
             self.previous = frame
             return rows < frameHeight ? .reachedLimit : .first
         }
         guard image.width == width, image.height == frameHeight else { return .sizeMismatch }
         let frame = Self.makeFrame(image)
-        if frame.bytes == previous.bytes { return .unchanged }
+        if Self.equal(frame.bytes, previous.bytes) { return .unchanged }
         if !bandsKnown { detectBands(previous, frame) }
 
         switch match(previous, frame, hint: hint) {
@@ -90,29 +108,37 @@ public struct ScrollStitcher {
             return .noMatch
         case .shift(let shift):
             self.previous = frame
-            bottomRows = Array(frame.bytes[(frameHeight - bottomBand) * rowBytes ..< frameHeight * rowBytes])
+            lastShift = shift
             if shift == 0 { return .unchanged }
             position += shift
             if shift < 0 { return .movedBack }
             let newBottom = position + regionHeight
-            guard newBottom > captured else { return .appended(0) }
+            guard newBottom >= captured else { return .appended(0) }
+            // Questo fotogramma arriva alla fine della cattura: la sua fascia inferiore è quella che chiude l'immagine.
+            bottomRows = Array(frame.bytes[(frameHeight - bottomBand) * rowBytes ..< frameHeight * rowBytes])
+            guard newBottom > captured, let canvas else { return .appended(0) }
             let wanted = newBottom - captured
             let room = max(0, maxHeight - (topBand + captured + bottomBand))
             let rows = min(wanted, room)
             let start = topBand + regionHeight - wanted
-            canvas += frame.bytes[start * rowBytes ..< (start + rows) * rowBytes]
+            frame.bytes.withUnsafeBytes { canvas.append($0.baseAddress! + start * rowBytes, rows: rows) }
             captured += rows
             return rows < wanted ? .reachedLimit : .appended(rows)
         }
     }
 
     /// Righe in cima e in fondo identiche alla stessa posizione mentre il centro cambia: intestazioni e barre fisse.
-    /// Al massimo un quarto del fotogramma ciascuna. Si decide una volta, al primo movimento.
-    private mutating func detectBands(_ old: Frame, _ new: Frame) {
+    /// Al massimo un quarto del fotogramma ciascuna. Si decide una volta, al primo movimento; se righe bianche del
+    /// contenuto vengono prese per una fascia il risultato resta giusto, perché la fascia inferiore finale viene
+    /// dall'ultimo fotogramma e quella superiore dal primo.
+    private func detectBands(_ old: Frame, _ new: Frame) {
         bandsKnown = true
         let limit = frameHeight / 4
+        let rowBytes = rowBytes
         func same(_ row: Int) -> Bool {
-            old.bytes[row * rowBytes ..< (row + 1) * rowBytes] == new.bytes[row * rowBytes ..< (row + 1) * rowBytes]
+            old.bytes.withUnsafeBytes { a in
+                new.bytes.withUnsafeBytes { b in memcmp(a.baseAddress! + row * rowBytes, b.baseAddress! + row * rowBytes, rowBytes) == 0 }
+            }
         }
         var top = 0
         while top < limit, same(top) { top += 1 }
@@ -121,48 +147,114 @@ public struct ScrollStitcher {
         topBand = top
         bottomBand = bottom
         // Finora l'immagine è il primo fotogramma intero: la fascia inferiore va tolta e rimessa in fondo alla fine.
-        let keep = min(canvas.count / rowBytes, frameHeight - bottom)
-        canvas.removeSubrange(keep * rowBytes ..< canvas.count)
+        guard let canvas else { return }
+        let keep = min(canvas.rows, frameHeight - bottom)
+        canvas.truncate(to: keep)
+        bottomRows = Array(old.bytes[(frameHeight - bottom) * rowBytes ..< frameHeight * rowBytes])
         captured = keep - top
         position = 0
     }
 
     private func match(_ old: Frame, _ new: Frame, hint: Int?) -> Match {
         let region = regionHeight
-        let minimumOverlap = max(8, region / 4)
-        guard region > minimumOverlap else { return .noMatch }
-        let range = -(region - minimumOverlap)...(region - minimumOverlap)
-        var errors: [(shift: Int, error: Float)] = []
-        errors.reserveCapacity(range.count)
-        for shift in range {
-            errors.append((shift, error(old, new, shift: shift)))
+        let limit = maxShift
+        guard limit > 0 else { return .noMatch }
+        let range = -limit...limit
+        // Righe con dettagli della zona che scorre, nei due fotogrammi (indici relativi alla zona).
+        let oldRows = (0..<region).filter { old.informative[topBand + $0] }
+        let newRows = (0..<region).filter { new.informative[topBand + $0] }
+        guard oldRows.count + newRows.count >= Self.minimumInformativeRows else {
+            // Nessun dettaglio (tratto bianco): decide l'indizio, se c'è ed è misurabile.
+            guard let hint, range.contains(hint) else { return hint == nil ? .ambiguous : .noMatch }
+            return .shift(hint)
         }
-        let best = errors.min { $0.error < $1.error }!
-        guard best.error <= Self.matchThreshold else { return .noMatch }
+        // Ricerca grossolana su poche righe, poi fine sui candidati vicini al migliore.
+        let coarseOld = Self.thin(oldRows, to: Self.coarseRows), coarseNew = Self.thin(newRows, to: Self.coarseRows)
+        var coarse: [(shift: Int, error: Double)] = []
+        coarse.reserveCapacity(range.count)
+        for shift in range {
+            if let error = error(old, new, shift: shift, oldRows: coarseOld, newRows: coarseNew) { coarse.append((shift, error)) }
+        }
+        guard let coarseBest = coarse.min(by: { $0.error < $1.error }) else { return hint == nil ? .ambiguous : .noMatch }
+        let fineOld = Self.thin(oldRows, to: Self.fineRows), fineNew = Self.thin(newRows, to: Self.fineRows)
+        var errors: [(shift: Int, error: Double)] = []
+        for candidate in coarse where candidate.error <= coarseBest.error + 4 * Self.tieTolerance + 1 {
+            if let error = error(old, new, shift: candidate.shift, oldRows: fineOld, newRows: fineNew) { errors.append((candidate.shift, error)) }
+        }
+        guard let best = errors.min(by: { $0.error < $1.error }), best.error <= Self.matchThreshold else {
+            // Nessuno spostamento verificabile combacia. Se quello atteso non è contraddetto da nessuna riga (le righe con
+            // dettagli finiscono fuori dalla sovrapposizione, come in un tratto bianco), è il più credibile.
+            if let hint, range.contains(hint),
+               error(old, new, shift: hint, oldRows: fineOld, newRows: fineNew) == nil,
+               !Self.contradicts(old, new, shift: hint, region: region, topBand: topBand) {
+                return .shift(hint)
+            }
+            return .noMatch
+        }
         let candidates = errors.filter { $0.error <= best.error + Self.tieTolerance }.map(\.shift)
         let spread = candidates.max()! - candidates.min()!
         guard spread > 2 else { return .shift(best.shift) }
-        // Più spostamenti equivalenti (contenuto uniforme o ripetuto): decide l'indizio, se c'è.
+        // Più spostamenti equivalenti (contenuto uniforme o ripetuto): decide l'indizio, se c'è e se è misurabile;
+        // fuori portata vuol dire che il contenuto è andato oltre, e il candidato sul bordo sarebbe sbagliato.
         guard let hint else { return .ambiguous }
+        guard range.contains(hint) else { return .noMatch }
         return .shift(candidates.min { abs($0 - hint) < abs($1 - hint) }!)
     }
 
-    /// Errore medio tra le righe vecchie da `shift` in giù e le nuove dall'inizio (o viceversa se `shift` < 0).
-    private func error(_ old: Frame, _ new: Frame, shift: Int) -> Float {
-        let overlap = regionHeight - abs(shift)
-        let stride = max(1, overlap / Self.maxSampledRows)
-        var total: Float = 0
-        var count = 0
-        var i = 0
-        while i < overlap {
-            let oldRow = topBand + (shift >= 0 ? i + shift : i)
-            let newRow = topBand + (shift >= 0 ? i : i - shift)
-            let a = oldRow * Self.blocks, b = newRow * Self.blocks
-            for k in 0..<Self.blocks { total += abs(old.signatures[a + k] - new.signatures[b + k]) }
-            count += Self.blocks
-            i += stride
+    /// Vero se almeno una riga con dettagli, in uno dei due fotogrammi, cade nella sovrapposizione su una riga diversa.
+    static func contradicts(_ old: Frame, _ new: Frame, shift: Int, region: Int, topBand: Int) -> Bool {
+        for r in 0..<region where old.informative[topBand + r] {
+            let n = r - shift
+            if n >= 0, n < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(blocks) {
+                return true
+            }
         }
-        return count == 0 ? .infinity : total / Float(count)
+        for n in 0..<region where new.informative[topBand + n] {
+            let r = n + shift
+            if r >= 0, r < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(blocks) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Righe distribuite in modo uniforme, al massimo `count`.
+    static func thin(_ rows: [Int], to count: Int) -> [Int] {
+        guard rows.count > count else { return rows }
+        return (0..<count).map { rows[$0 * rows.count / count] }
+    }
+
+    /// Errore medio fra le righe che si sovrappongono con questo spostamento, contando solo quelle con dettagli in
+    /// almeno uno dei due fotogrammi; `nil` se sono troppo poche per giudicare.
+    private func error(_ old: Frame, _ new: Frame, shift: Int, oldRows: [Int], newRows: [Int]) -> Double? {
+        let region = regionHeight
+        var total = 0
+        var count = 0
+        // Riga `r` del vecchio fotogramma ↔ riga `r - shift` del nuovo.
+        for r in oldRows {
+            let n = r - shift
+            guard n >= 0, n < region else { continue }
+            total += Int(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
+            count += 1
+        }
+        for n in newRows {
+            let r = n + shift
+            guard r >= 0, r < region, !old.informative[topBand + r] else { continue }
+            total += Int(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
+            count += 1
+        }
+        guard count >= Self.minimumInformativeRows else { return nil }
+        return Double(total) / Double(count * Self.blocks)
+    }
+
+    static func distance(_ a: SIMD32<Int16>, _ b: SIMD32<Int16>) -> Int16 {
+        let difference = a &- b
+        return difference.replacing(with: 0 &- difference, where: difference .< 0).wrappedSum()
+    }
+
+    static func equal(_ a: [UInt8], _ b: [UInt8]) -> Bool {
+        guard a.count == b.count else { return false }
+        return a.withUnsafeBytes { x in b.withUnsafeBytes { y in memcmp(x.baseAddress!, y.baseAddress!, a.count) == 0 } }
     }
 
     static func makeFrame(_ image: CGImage) -> Frame {
@@ -173,58 +265,126 @@ public struct ScrollStitcher {
                                 space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
             ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         }
-        var signatures = [Float](repeating: 0, count: height * blocks)
-        for y in 0..<height {
-            let row = y * width * 4
-            for block in 0..<blocks {
-                let x0 = min(width - 1, block * width / blocks)
-                let x1 = max(x0 + 1, (block + 1) * width / blocks)
-                var sum = 0
-                for x in x0..<x1 {
-                    let p = row + x * 4
-                    sum += (Int(bytes[p]) * 299 + Int(bytes[p + 1]) * 587 + Int(bytes[p + 2]) * 114) / 1000
+        var signatures = [SIMD32<Int16>](repeating: .zero, count: height)
+        var informative = [Bool](repeating: false, count: height)
+        let bounds = (0...blocks).map { min(width, $0 * width / blocks) }
+        bytes.withUnsafeBufferPointer { pixels in
+            for y in 0..<height {
+                let row = y * width * 4
+                var signature = SIMD32<Int16>.zero
+                for block in 0..<blocks {
+                    let x0 = min(bounds[block], width - 1)
+                    let x1 = max(x0 + 1, bounds[block + 1])
+                    var sum = 0
+                    var p = row + x0 * 4
+                    for _ in x0..<x1 {
+                        sum += (Int(pixels[p]) * 77 + Int(pixels[p + 1]) * 150 + Int(pixels[p + 2]) * 29) >> 8
+                        p += 4
+                    }
+                    signature[block] = Int16(sum / (x1 - x0))
                 }
-                signatures[y * blocks + block] = Float(sum) / Float(x1 - x0)
+                signatures[y] = signature
+                informative[y] = signature.max() - signature.min() >= uniformRowRange
             }
         }
-        return Frame(bytes: bytes, signatures: signatures)
+        return Frame(bytes: bytes, signatures: signatures, informative: informative)
     }
 
-    /// L'immagine cucita finora.
+    /// L'immagine cucita finora (una copia: la cattura può continuare).
     public func image() -> CGImage? {
-        guard rowBytes > 0 else { return nil }
-        return Self.makeImage(bytes: canvas + bottomRows, width: width)
+        guard let canvas, rowBytes > 0 else { return nil }
+        var bytes = Data(bytes: canvas.pointer, count: canvas.rows * rowBytes)
+        bytes.append(contentsOf: bottomRows)
+        return Self.makeImage(data: bytes, width: width)
+    }
+
+    /// L'immagine finale, senza copiarla: la fascia inferiore va in coda al buffer, che passa all'immagine.
+    /// Dopo questa chiamata non si aggiungono più fotogrammi.
+    public func finalImage() -> CGImage? {
+        guard let canvas, rowBytes > 0 else { return nil }
+        let bottom = bottomRows.count / rowBytes
+        if bottom > 0, canvas.rows + bottom <= canvas.capacityRows {
+            bottomRows.withUnsafeBytes { canvas.append($0.baseAddress!, rows: bottom) }
+            bottomRows = []
+        }
+        previous = nil
+        return canvas.makeImage(width: width)
     }
 
     /// Miniatura larga `width` pixel per il pannello, campionando le righe senza copiare l'immagine intera.
     public func thumbnail(width thumbnailWidth: Int) -> CGImage? {
         let total = height
-        guard rowBytes > 0, total > 0, thumbnailWidth > 0 else { return nil }
+        guard let canvas, rowBytes > 0, total > 0, thumbnailWidth > 0 else { return nil }
         let thumbnailHeight = max(1, total * thumbnailWidth / width)
         var bytes = [UInt8](repeating: 0, count: thumbnailWidth * thumbnailHeight * 4)
-        let canvasRows = canvas.count / rowBytes
-        for y in 0..<thumbnailHeight {
-            let sourceRow = min(total - 1, y * total / thumbnailHeight)
-            for x in 0..<thumbnailWidth {
-                let sourceX = min(width - 1, x * width / thumbnailWidth)
-                let offset = sourceX * 4
-                let target = (y * thumbnailWidth + x) * 4
-                if sourceRow < canvasRows {
-                    let p = sourceRow * rowBytes + offset
-                    bytes[target ..< target + 4] = canvas[p ..< p + 4]
-                } else {
-                    let p = (sourceRow - canvasRows) * rowBytes + offset
-                    bytes[target ..< target + 4] = bottomRows[p ..< p + 4]
+        let canvasRows = canvas.rows
+        bottomRows.withUnsafeBytes { bottom in
+            bytes.withUnsafeMutableBytes { target in
+                for y in 0..<thumbnailHeight {
+                    let sourceRow = min(total - 1, y * total / thumbnailHeight)
+                    let row = sourceRow < canvasRows
+                        ? UnsafeRawPointer(canvas.pointer + sourceRow * rowBytes)
+                        : bottom.baseAddress! + (sourceRow - canvasRows) * rowBytes
+                    for x in 0..<thumbnailWidth {
+                        let sourceX = min(width - 1, x * width / thumbnailWidth)
+                        memcpy(target.baseAddress! + (y * thumbnailWidth + x) * 4, row + sourceX * 4, 4)
+                    }
                 }
             }
         }
-        return Self.makeImage(bytes: bytes, width: thumbnailWidth)
+        return Self.makeImage(data: Data(bytes), width: thumbnailWidth)
     }
 
-    static func makeImage(bytes: [UInt8], width: Int) -> CGImage? {
-        let height = bytes.count / (width * 4)
-        guard height > 0, let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+    static func makeImage(data: Data, width: Int) -> CGImage? {
+        let height = data.count / (width * 4)
+        guard height > 0, let provider = CGDataProvider(data: data as CFData) else { return nil }
         return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
+                       space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                       bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+    }
+}
+
+/// Righe RGBA in un buffer riservato per l'altezza massima: la memoria virtuale si occupa solo quando si scrive,
+/// e l'immagine finale usa il buffer senza copiarlo.
+final class PixelRows: @unchecked Sendable {
+    let rowBytes: Int
+    let capacityRows: Int
+    let pointer: UnsafeMutableRawPointer
+    private(set) var rows = 0
+
+    init(rowBytes: Int, capacityRows: Int) {
+        self.rowBytes = rowBytes
+        self.capacityRows = capacityRows
+        pointer = UnsafeMutableRawPointer.allocate(byteCount: max(1, rowBytes * capacityRows), alignment: 16)
+    }
+
+    deinit {
+        pointer.deallocate()
+    }
+
+    func append(_ source: UnsafeRawPointer, rows count: Int) {
+        let count = min(count, capacityRows - rows)
+        guard count > 0 else { return }
+        memcpy(pointer + rows * rowBytes, source, count * rowBytes)
+        rows += count
+    }
+
+    func truncate(to count: Int) {
+        rows = max(0, min(rows, count))
+    }
+
+    /// Immagine che legge direttamente dal buffer e lo tiene vivo finché serve.
+    func makeImage(width: Int) -> CGImage? {
+        guard rows > 0 else { return nil }
+        let info = Unmanaged.passRetained(self).toOpaque()
+        guard let provider = CGDataProvider(dataInfo: info, data: pointer, size: rows * rowBytes, releaseData: { info, _, _ in
+            if let info { Unmanaged<PixelRows>.fromOpaque(info).release() }
+        }) else {
+            Unmanaged<PixelRows>.fromOpaque(info).release()
+            return nil
+        }
+        return CGImage(width: width, height: rows, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: rowBytes,
                        space: CGColorSpace(name: CGColorSpace.sRGB)!,
                        bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
                        provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
