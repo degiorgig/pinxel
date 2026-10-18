@@ -37,6 +37,12 @@ public final class ScrollStitcher: @unchecked Sendable {
     /// Righe con dettagli confrontate al massimo, per fotogramma, nella ricerca grossolana e in quella fine.
     static let coarseRows = 40
     static let fineRows = 300
+    /// Quota delle righe peggiori ignorata nel confronto di ripiego: una riga evidenziata sotto il puntatore fermo resta
+    /// nello stesso punto dello schermo mentre il contenuto scorre, e non deve far scartare lo spostamento giusto.
+    static let ignoredWorstRows = 0.3
+    /// Un primo cambiamento che tocca meno di questa frazione delle righe (evidenziazione, cursore del testo) non è uno
+    /// scorrimento: non serve a riconoscere le fasce fisse.
+    static let moveFraction = 8
 
     struct Frame {
         let bytes: [UInt8]
@@ -99,7 +105,7 @@ public final class ScrollStitcher: @unchecked Sendable {
         guard image.width == width, image.height == frameHeight else { return .sizeMismatch }
         let frame = Self.makeFrame(image)
         if Self.equal(frame.bytes, previous.bytes) { return .unchanged }
-        if !bandsKnown { detectBands(previous, frame) }
+        if !bandsKnown, Self.changedRows(previous, frame) * Self.moveFraction >= frameHeight { detectBands(previous, frame) }
 
         switch match(previous, frame, hint: hint) {
         case .ambiguous:
@@ -110,6 +116,8 @@ public final class ScrollStitcher: @unchecked Sendable {
             self.previous = frame
             lastShift = shift
             if shift == 0 { return .unchanged }
+            // Il primo movimento è avvenuto: da qui le fasce non si cercano più (l'immagine non è più un solo fotogramma).
+            bandsKnown = true
             position += shift
             if shift < 0 { return .movedBack }
             let newBottom = position + regionHeight
@@ -182,6 +190,9 @@ public final class ScrollStitcher: @unchecked Sendable {
             if let error = error(old, new, shift: candidate.shift, oldRows: fineOld, newRows: fineNew) { errors.append((candidate.shift, error)) }
         }
         guard let best = errors.min(by: { $0.error < $1.error }), best.error <= Self.matchThreshold else {
+            // Nessuno spostamento combacia del tutto: forse poche righe ferme sullo schermo (un'evidenziazione) disturbano.
+            // Ignorandole, uno spostamento che combacia senza alternative equivalenti è quello giusto.
+            if let shift = robustShift(old, new, range: range, oldRows: oldRows, newRows: newRows) { return .shift(shift) }
             // Nessuno spostamento verificabile combacia. Se quello atteso non è contraddetto da nessuna riga (le righe con
             // dettagli finiscono fuori dalla sovrapposizione, come in un tratto bianco), è il più credibile.
             if let hint, range.contains(hint),
@@ -201,6 +212,26 @@ public final class ScrollStitcher: @unchecked Sendable {
         return .shift(candidates.min { abs($0 - hint) < abs($1 - hint) }!)
     }
 
+    /// Lo spostamento che combacia ignorando le righe peggiori, se è uno solo (a meno di 2 pixel).
+    private func robustShift(_ old: Frame, _ new: Frame, range: ClosedRange<Int>, oldRows: [Int], newRows: [Int]) -> Int? {
+        let coarseOld = Self.thin(oldRows, to: Self.coarseRows), coarseNew = Self.thin(newRows, to: Self.coarseRows)
+        var coarse: [(shift: Int, error: Double)] = []
+        for shift in range {
+            if let error = error(old, new, shift: shift, oldRows: coarseOld, newRows: coarseNew, ignoringWorst: true) { coarse.append((shift, error)) }
+        }
+        guard let coarseBest = coarse.min(by: { $0.error < $1.error }) else { return nil }
+        let fineOld = Self.thin(oldRows, to: Self.fineRows), fineNew = Self.thin(newRows, to: Self.fineRows)
+        var errors: [(shift: Int, error: Double)] = []
+        for candidate in coarse where candidate.error <= coarseBest.error + 4 * Self.tieTolerance + 1 {
+            if let error = error(old, new, shift: candidate.shift, oldRows: fineOld, newRows: fineNew, ignoringWorst: true) {
+                errors.append((candidate.shift, error))
+            }
+        }
+        guard let best = errors.min(by: { $0.error < $1.error }), best.error <= Self.matchThreshold else { return nil }
+        let candidates = errors.filter { $0.error <= best.error + Self.tieTolerance }.map(\.shift)
+        return candidates.max()! - candidates.min()! <= 2 ? best.shift : nil
+    }
+
     /// Vero se almeno una riga con dettagli, in uno dei due fotogrammi, cade nella sovrapposizione su una riga diversa.
     static func contradicts(_ old: Frame, _ new: Frame, shift: Int, region: Int, topBand: Int) -> Bool {
         for r in 0..<region where old.informative[topBand + r] {
@@ -218,6 +249,11 @@ public final class ScrollStitcher: @unchecked Sendable {
         return false
     }
 
+    /// Righe la cui firma è cambiata alla stessa posizione.
+    static func changedRows(_ old: Frame, _ new: Frame) -> Int {
+        zip(old.signatures, new.signatures).reduce(0) { $0 + ($1.0 != $1.1 ? 1 : 0) }
+    }
+
     /// Righe distribuite in modo uniforme, al massimo `count`.
     static func thin(_ rows: [Int], to count: Int) -> [Int] {
         guard rows.count > count else { return rows }
@@ -225,26 +261,30 @@ public final class ScrollStitcher: @unchecked Sendable {
     }
 
     /// Errore medio fra le righe che si sovrappongono con questo spostamento, contando solo quelle con dettagli in
-    /// almeno uno dei due fotogrammi; `nil` se sono troppo poche per giudicare.
-    private func error(_ old: Frame, _ new: Frame, shift: Int, oldRows: [Int], newRows: [Int]) -> Double? {
+    /// almeno uno dei due fotogrammi (con `ignoringWorst`, senza le peggiori); `nil` se sono troppo poche per giudicare.
+    private func error(_ old: Frame, _ new: Frame, shift: Int, oldRows: [Int], newRows: [Int], ignoringWorst: Bool = false) -> Double? {
         let region = regionHeight
-        var total = 0
-        var count = 0
+        var distances: [Int16] = []
+        distances.reserveCapacity(oldRows.count + newRows.count)
         // Riga `r` del vecchio fotogramma ↔ riga `r - shift` del nuovo.
         for r in oldRows {
             let n = r - shift
             guard n >= 0, n < region else { continue }
-            total += Int(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
-            count += 1
+            distances.append(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
         }
         for n in newRows {
             let r = n + shift
             guard r >= 0, r < region, !old.informative[topBand + r] else { continue }
-            total += Int(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
-            count += 1
+            distances.append(Self.distance(old.signatures[topBand + r], new.signatures[topBand + n]))
         }
-        guard count >= Self.minimumInformativeRows else { return nil }
-        return Double(total) / Double(count * Self.blocks)
+        guard distances.count >= Self.minimumInformativeRows else { return nil }
+        var kept = distances.count
+        if ignoringWorst {
+            distances.sort()
+            kept = max(Self.minimumInformativeRows, Int((Double(distances.count) * (1 - Self.ignoredWorstRows)).rounded(.up)))
+        }
+        let total = distances[..<kept].reduce(0) { $0 + Int($1) }
+        return Double(total) / Double(kept * Self.blocks)
     }
 
     static func distance(_ a: SIMD32<Int16>, _ b: SIMD32<Int16>) -> Int16 {

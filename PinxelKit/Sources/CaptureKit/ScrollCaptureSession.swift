@@ -83,6 +83,8 @@ public final class ScrollCaptureSession {
     public func run() async -> CGImage? {
         do {
             try await source.prepare(display: display)
+            // Scorrendo a mano si campiona ogni `manualInterval`, contando anche il tempo di cattura e cucitura.
+            var lastSample = now()
             var report = await worker.add(try await source.frame(of: rect, on: display), hint: nil)
             publish(report)
             logger.notice("scrolling capture: automatic=\(self.driver != nil, privacy: .public) frame=\(report.width)x\(report.regionHeight) px")
@@ -108,8 +110,10 @@ public final class ScrollCaptureSession {
                     let reason: Pause = waitingForMatch ? .scrollBack : (driver != nil && !pointerIsInside ? .pointerOutside : .none)
                     if reason != pause { logger.notice("scrolling paused: \(String(describing: reason), privacy: .public)") }
                     pause = reason
-                    await sleep(Self.manualInterval)
+                    let wait = Self.manualInterval - .seconds(now() - lastSample)
+                    if wait > .zero { await sleep(wait) }
                     if stopRequest != nil { continue }
+                    lastSample = now()
                     report = await worker.add(try await source.frame(of: rect, on: display), hint: nil)
                     publish(report)
                     if report.step != .unchanged {

@@ -24,4 +24,4 @@ l'utente; Accessibilità serve solo perché Esc e Invio non arrivino all'app sot
 | S17 | Finder in vista elenco con un file selezionato: Invio durante la cattura | La cattura finisce; il Finder non entra in modifica del nome. In una chat Invio non invia il messaggio |
 | S18 | Area che comprende la barra di scorrimento (scroller sovrapposti) | Nessun pezzo della barra ripetuto lungo il bordo destro dell'immagine |
 | S19 | Area con elenchi che si evidenziano al passaggio del puntatore o mostrano un suggerimento | Nessuna evidenziazione o suggerimento ripetuto nell'immagine |
-| S20 | Un colpo veloce sul trackpad | Il pannello dice "Scorrimento troppo veloce: torna un po' su"; tornando su la cattura riprende senza righe doppie |
+| S20 | Un colpo veloce sul trackpad | Il pannello dice in arancione "Troppo veloce: torna un po' su per riprendere"; tornando su la cattura riprende senza righe doppie |

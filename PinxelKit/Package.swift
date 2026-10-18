@@ -16,7 +16,9 @@ let package = Package(
         .target(name: "DocumentModel"),
         .target(name: "Rendering", dependencies: ["DocumentModel"]),
         .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
-        .target(name: "CaptureKit"),
+        // La cucitura della cattura a scorrimento confronta milioni di pixel a fotogramma: senza ottimizzazioni è
+        // dieci volte più lenta e, scorrendo a mano, perde i passaggi.
+        .target(name: "CaptureKit", swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"]),
         .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"]),
         .target(

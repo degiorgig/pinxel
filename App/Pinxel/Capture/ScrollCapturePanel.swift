@@ -18,9 +18,9 @@ struct ScrollCapturePanel: View {
                     .foregroundStyle(.secondary)
                     .contentTransition(.numericText())
                 Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .font(session.pause == .scrollBack ? .caption.weight(.semibold) : .caption)
+                    .foregroundStyle(session.pause == .scrollBack ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             Button("Annulla") { session.cancel() }
@@ -34,7 +34,7 @@ struct ScrollCapturePanel: View {
     }
 
     private var message: String {
-        if session.pause == .scrollBack { return "Scorrimento troppo veloce: torna un po' su." }
+        if session.pause == .scrollBack { return "Troppo veloce: torna un po' su per riprendere." }
         if narrowed { return "Area ristretta in larghezza per non esaurire la memoria. Scorri verso il basso, poi Fine." }
         return "Scorri verso il basso, poi premi Fine o Invio."
     }

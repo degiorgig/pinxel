@@ -172,6 +172,42 @@ struct ScrollStitcherTests {
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .appended(60))
     }
 
+    /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
+    func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
+        let ctx = FakeScrollingPage.context(width: image.width, height: image.height)
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0.3, alpha: 0.35))
+        ctx.fill(CGRect(x: 0, y: image.height - rows.upperBound, width: image.width, height: rows.count))
+        return ctx.makeImage()!
+    }
+
+    @Test func aSmallChangeBeforeScrollingIsNotTakenForFixedBands() {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 200, scale: 1)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        _ = stitcher.add(page.currentFrame(), hint: nil)
+        // Solo una riga cambia (evidenziazione al passaggio del puntatore): non è uno scorrimento.
+        #expect(stitcher.add(highlighted(page.currentFrame(), rows: 180..<184), hint: nil) == .unchanged)
+        page.scrollTo(100)
+        #expect(stitcher.add(page.currentFrame(), hint: nil) == .appended(100))
+        #expect(stitcher.topBand == 0)
+        #expect(stitcher.bottomBand == 0)
+        for position in stride(from: 200, through: page.maxPosition, by: 100) {
+            page.scrollTo(position)
+            _ = stitcher.add(page.currentFrame(), hint: nil)
+        }
+        expectEqual(stitcher.image(), page.expectedImage)
+    }
+
+    @Test func aHighlightedRowUnderAStillPointerDoesNotBreakMatching() {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 1500), viewportHeight: 300, scale: 1)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        _ = stitcher.add(highlighted(page.currentFrame(), rows: 140..<160), hint: nil)
+        for position in stride(from: 80, through: 800, by: 80) {
+            page.scrollTo(position)
+            #expect(stitcher.add(highlighted(page.currentFrame(), rows: 140..<160), hint: nil) == .appended(80), "at \(position)")
+        }
+    }
+
     @Test func stopsAtTheHeightLimit() {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let (stitcher, steps) = stitch(page, step: 80, maxHeight: 300)

@@ -175,6 +175,21 @@ struct ScrollCaptureSessionTests {
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
+    @Test func scrollingByHandSamplesTenTimesASecondIncludingTheWorkTime() async {
+        let time = FakeTime()
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
+        let session = makeSession(page, automatic: false, time: time)
+        var captureTimes: [Double] = []
+        page.onFrame = { count in
+            captureTimes.append(time.now)
+            time.now += 0.06 // catturare e cucire richiede tempo
+            if count == 6 { session.finish() }
+        }
+        _ = await session.run()
+        let gaps = zip(captureTimes.dropFirst(), captureTimes.dropFirst(2)).map { $1 - $0 }
+        #expect(gaps.allSatisfy { abs($0 - 0.1) < 0.001 }, "\(gaps)")
+    }
+
     @Test func aTooFastManualScrollAsksToGoBackAndRecovers() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 600), viewportHeight: 120, scale: 1)
         let session = makeSession(page, automatic: false)
