@@ -35,6 +35,8 @@ public final class ScrollStitcher: @unchecked Sendable {
     static let tieTolerance = 0.75
     /// Spostamenti confrontati su tutte le righe, alla fine.
     static let finalists = 16
+    /// Blocchi mossi necessari perché una riga conti nel confronto delle sole parti che si muovono.
+    static let minimumMovingBlocks = 8
 
     /// Due spostamenti sono equivalenti se l'errore del secondo supera quello del migliore di poco, in assoluto o in
     /// proporzione: fra fotogrammi reali anche lo spostamento giusto ha un piccolo errore.
@@ -213,6 +215,9 @@ public final class ScrollStitcher: @unchecked Sendable {
             // Nessuno spostamento combacia del tutto: forse poche righe ferme sullo schermo (un'evidenziazione) disturbano.
             // Ignorandole, uno spostamento che combacia senza alternative equivalenti è quello giusto.
             if let shift = robustShift(old, new, range: range, oldRows: oldRows, newRows: newRows) { return .shift(shift) }
+            // Forse uno sfondo resta fermo mentre il contenuto scorre (la tappezzeria di una chat, una colonna fissa):
+            // confrontando solo le parti che si sono mosse, lo spostamento giusto torna a combaciare.
+            if let shift = movingPartShift(old, new, range: range) { return .shift(shift) }
             // Nessuno spostamento verificabile combacia. Se quello atteso non è contraddetto da nessuna riga (le righe con
             // dettagli finiscono fuori dalla sovrapposizione, come in un tratto bianco), è il più credibile.
             if let hint, range.contains(hint),
@@ -230,6 +235,59 @@ public final class ScrollStitcher: @unchecked Sendable {
         guard let hint else { return .ambiguous }
         guard range.contains(hint) else { return .noMatch }
         return .shift(candidates.min { abs($0 - hint) < abs($1 - hint) }!)
+    }
+
+    /// Lo spostamento che combacia confrontando solo i blocchi cambiati sul posto fra i due fotogrammi, se è uno solo
+    /// (a meno di 2 pixel). I blocchi rimasti uguali sono sfondo fermo: contano allo stesso modo per ogni spostamento e
+    /// coprono quello giusto.
+    private func movingPartShift(_ old: Frame, _ new: Frame, range: ClosedRange<Int>) -> Int? {
+        let region = regionHeight
+        // Per ogni riga della zona che scorre, i blocchi che sono cambiati sul posto.
+        let moving: [SIMDMask<SIMD32<Int16>>] = (0..<region).map { r in
+            let difference = old.signatures[topBand + r] &- new.signatures[topBand + r]
+            let absolute = difference.replacing(with: 0 &- difference, where: difference .< 0)
+            return absolute .> 1
+        }
+        let rows = (0..<region).filter { r in Self.count(moving[r]) >= Self.minimumMovingBlocks }
+        guard rows.count >= Self.minimumInformativeRows else { return nil }
+        func error(_ shift: Int, rows: [Int]) -> Double? {
+            var total = 0, lanes = 0, compared = 0
+            for r in rows {
+                let n = r - shift
+                guard n >= 0, n < region else { continue }
+                let both = moving[r] .& moving[n]
+                let blocks = Self.count(both)
+                guard blocks >= Self.minimumMovingBlocks else { continue }
+                let difference = old.signatures[topBand + r] &- new.signatures[topBand + n]
+                let absolute = difference.replacing(with: 0 &- difference, where: difference .< 0)
+                // Della riga conta la metà dei blocchi che combacia meglio: un blocco che in un fotogramma è sfondo
+                // fermo e nell'altro contenuto non combacia neanche con lo spostamento giusto.
+                var values = (0..<32).filter { both[$0] }.map { Int(absolute[$0]) }
+                values.sort()
+                let kept = max(Self.minimumMovingBlocks / 2, values.count / 2)
+                total += values.prefix(kept).reduce(0, +)
+                lanes += kept
+                compared += 1
+            }
+            guard compared >= Self.minimumInformativeRows else { return nil }
+            return Double(total) / Double(lanes)
+        }
+        let coarseRows = Self.thin(rows, to: Self.coarseRows)
+        var coarse: [(shift: Int, error: Double)] = []
+        for shift in range where shift != 0 {
+            if let value = error(shift, rows: coarseRows) { coarse.append((shift, value)) }
+        }
+        guard let coarseBest = coarse.min(by: { $0.error < $1.error }) else { return nil }
+        let finalists = coarse.filter { $0.error <= coarseBest.error + 4 * Self.tieTolerance + 1 }
+            .sorted { $0.error < $1.error }.prefix(Self.finalists)
+        let errors = finalists.compactMap { candidate in error(candidate.shift, rows: rows).map { (shift: candidate.shift, error: $0) } }
+        guard let best = errors.min(by: { $0.error < $1.error }), best.error <= Self.matchThreshold else { return nil }
+        let candidates = errors.filter { Self.ties($0.error, best: best.error) }.map(\.shift)
+        return candidates.max()! - candidates.min()! <= 2 ? best.shift : nil
+    }
+
+    static func count(_ mask: SIMDMask<SIMD32<Int16>>) -> Int {
+        Int(SIMD32<Int16>(repeating: 0).replacing(with: 1, where: mask).wrappedSum())
     }
 
     /// Lo spostamento che combacia ignorando le righe peggiori, se è uno solo (a meno di 2 pixel).

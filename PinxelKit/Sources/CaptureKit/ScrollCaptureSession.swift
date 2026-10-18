@@ -21,7 +21,8 @@ public final class ScrollCaptureSession {
         case similarRows
     }
 
-    public static let manualInterval: Duration = .milliseconds(100)
+    /// 30 al secondo: in un'area piccola uno scorrimento normale supera in un decimo di secondo lo spostamento misurabile.
+    public static let manualInterval: Duration = .seconds(1.0 / 30)
     /// Mancate di fila prima di chiedere di tornare su.
     public static let missLimit = 3
     /// Spostamento minimo, in pixel, perché tari le unità di scorrimento.

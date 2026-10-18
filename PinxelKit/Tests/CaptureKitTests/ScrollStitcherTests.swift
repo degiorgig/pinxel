@@ -216,6 +216,53 @@ struct ScrollStitcherTests {
         #expect(steps.allSatisfy { $0 == .appended(90) }, "\(steps)")
     }
 
+    /// Fotogramma di una chat: i fumetti (`bubbles`, trasparente fra l'uno e l'altro) scorrono sopra una tappezzeria ferma.
+    func chatFrame(bubbles: CGImage, wallpaper: CGImage, position: Int, height: Int) -> CGImage {
+        let width = bubbles.width
+        let ctx = FakeScrollingPage.context(width: width, height: height)
+        ctx.setFillColor(CGColor(srgbRed: 0.93, green: 0.9, blue: 0.85, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        ctx.setAlpha(0.35)
+        ctx.interpolationQuality = .none
+        ctx.draw(wallpaper, in: CGRect(x: 0, y: 0, width: width, height: height))
+        ctx.setAlpha(1)
+        let visible = bubbles.cropping(to: CGRect(x: 0, y: position, width: width, height: height))!
+        ctx.draw(visible, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return ctx.makeImage()!
+    }
+
+    /// Fumetti alti 40–70 px, alternati a sinistra e a destra, con 20 px di tappezzeria fra l'uno e l'altro.
+    func bubbles(width: Int, height: Int) -> CGImage {
+        let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        let text = TestImages.noise(width: width, height: height)
+        var top = 10, index = 0
+        while top < height - 80 {
+            let bubbleHeight = 40 + (index * 17) % 31
+            let rect = CGRect(x: index % 2 == 0 ? 10 : width / 3, y: height - top - bubbleHeight, width: width * 2 / 3 - 10, height: bubbleHeight)
+            ctx.saveGState()
+            ctx.clip(to: rect)
+            ctx.draw(text, in: CGRect(x: 0, y: 0, width: width, height: height))
+            ctx.restoreGState()
+            top += bubbleHeight + 20
+            index += 1
+        }
+        return ctx.makeImage()!
+    }
+
+    @Test func aChatOverAStillWallpaperIsStitched() {
+        let content = bubbles(width: 320, height: 1600)
+        // Disegni grandi come quelli di WhatsApp: macchie di circa 13×12 px, non rumore fine che si annulla nella media.
+        let wallpaper = TestImages.noise(width: 24, height: 25)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        _ = stitcher.add(chatFrame(bubbles: content, wallpaper: wallpaper, position: 0, height: 300), hint: nil)
+        var steps: [StitchStep] = []
+        for position in stride(from: 70, through: 1300, by: 70) {
+            steps.append(stitcher.add(chatFrame(bubbles: content, wallpaper: wallpaper, position: position, height: 300), hint: nil))
+        }
+        #expect(steps.allSatisfy { $0 == .appended(70) }, "\(steps)")
+    }
+
     /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
     func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)

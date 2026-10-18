@@ -136,19 +136,20 @@ struct ScrollCaptureSessionTests {
         #expect((6000...6000 + 600 / 4).contains(image.height), "\(image.height)")
     }
 
-    @Test func scrollingByHandSamplesTenTimesASecondIncludingTheWorkTime() async {
+    @Test func scrollingByHandSamplesThirtyTimesASecondIncludingTheWorkTime() async {
         let time = FakeTime()
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page, time: time)
         var captureTimes: [Double] = []
         page.onFrame = { count in
             captureTimes.append(time.now)
-            time.now += 0.06 // catturare e cucire richiede tempo
+            time.now += 0.02 // catturare e cucire richiede tempo
             if count == 6 { session.finish() }
         }
         _ = await session.run()
         let gaps = zip(captureTimes.dropFirst(), captureTimes.dropFirst(2)).map { $1 - $0 }
-        #expect(gaps.allSatisfy { abs($0 - 0.1) < 0.001 }, "\(gaps)")
+        // In un'area piccola uno scorrimento normale supera in un decimo di secondo lo spostamento misurabile.
+        #expect(gaps.allSatisfy { abs($0 - 1.0 / 30) < 0.001 }, "\(gaps)")
     }
 
     @Test func aTooFastManualScrollAsksToGoBackAndRecovers() async {
