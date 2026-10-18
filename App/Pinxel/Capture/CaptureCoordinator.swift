@@ -4,16 +4,15 @@ import CaptureKit
 import DocumentModel
 import os
 
-/// Ciò che serve alla cattura a scorrimento; nei UI test la pagina finta fa da sorgente e da scorrimento.
+/// Ciò che serve alla cattura a scorrimento; nei UI test la pagina finta fa da sorgente.
+/// Scorre sempre l'utente: Pinxel cattura e cuce finché si preme Fine o Invio.
 @MainActor
 struct ScrollCaptureDependencies {
+    /// Serve solo perché Esc e Invio non arrivino anche all'app sotto.
     let accessibility: any AccessibilityPermission
     let makeSource: () -> any RegionFrameSource
-    let makeDriver: () -> any ScrollDriver
     let presenter: any ScrollCapturePresenting
     let defaults: UserDefaults
-    /// Falso con la pagina finta dei UI test, dove il puntatore vero non c'entra.
-    var tracksPointer = true
 }
 
 @MainActor
@@ -122,13 +121,21 @@ final class CaptureCoordinator {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let current = settings()
         do {
+            logger.notice("scrolling capture: taking snapshot")
             let snapshot = try await engine.snapshot(excludingBundleIdentifier: Bundle.main.bundleIdentifier ?? "com.degiorgi.pinxel")
-            guard case .area(let selected) = await selection.select(mode: .area, snapshot: snapshot) else {
+            let choice: SelectionResult
+            if let debugRect = Self.debugScrollRect() {
+                choice = .area(debugRect)
+            } else {
+                choice = await selection.select(mode: .area, snapshot: snapshot)
+            }
+            guard case .area(let selected) = choice else {
                 frontmost?.activate()
                 return
             }
             let center = CGPoint(x: selected.midX, y: selected.midY)
             guard let display = ScreenGeometry.display(at: center, in: snapshot.displays.map(\.info)) else { throw CaptureError.displayNotFound }
+            logger.notice("scrolling capture: area \(String(describing: selected), privacy: .public) on display \(String(describing: display.frame), privacy: .public) scale \(display.scale, privacy: .public), accessibility \(self.scrolling.accessibility.isGranted, privacy: .public)")
             guard let prepared = ScrollCaptureGeometry.prepare(selected, on: display, maxHeight: Self.maxScrollingHeight) else {
                 AppEnvironment.shared.notifier.info("Area troppo bassa per la cattura a scorrimento: almeno \(Int(ScrollCaptureGeometry.minimumHeight)) punti")
                 frontmost?.activate()
@@ -138,17 +145,10 @@ final class CaptureCoordinator {
                 scrolling.defaults.set(true, forKey: Self.accessibilityAskedKey)
                 scrolling.accessibility.request()
             }
-            // L'app sotto l'area deve ricevere lo scorrimento: torna davanti prima di iniziare.
+            // L'app sotto l'area deve ricevere lo scorrimento dell'utente: torna davanti prima di iniziare.
             frontmost?.activate()
-            let session = ScrollCaptureSession(source: scrolling.makeSource(),
-                                               driver: scrolling.accessibility.isGranted ? scrolling.makeDriver() : nil,
-                                               rect: prepared.rect, display: display, maxHeight: Self.maxScrollingHeight,
-                                               pointerInside: { [tracksPointer = scrolling.tracksPointer, area = prepared.rect] in
-                                                   guard tracksPointer else { return true }
-                                                   let mouse = NSEvent.mouseLocation
-                                                   let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-                                                   return area.contains(CGPoint(x: mouse.x, y: primaryHeight - mouse.y))
-                                               })
+            let session = ScrollCaptureSession(source: scrolling.makeSource(), driver: nil, rect: prepared.rect,
+                                               display: display, maxHeight: Self.maxScrollingHeight)
             guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else { return }
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)
             metadata.windowTitle = nil
@@ -165,6 +165,19 @@ final class CaptureCoordinator {
             AppEnvironment.shared.notifier.failure(error)
             frontmost?.activate()
         }
+    }
+
+    /// Solo in Debug: `-PinxelDebugScrollRect x,y,w,h` salta la selezione, per provare la cattura vera da script.
+    private static func debugScrollRect() -> CGRect? {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-PinxelDebugScrollRect"), index + 1 < arguments.count else { return nil }
+        let values = arguments[index + 1].split(separator: ",").compactMap { Double($0) }
+        guard values.count == 4 else { return nil }
+        return CGRect(x: values[0], y: values[1], width: values[2], height: values[3])
+        #else
+        return nil
+        #endif
     }
 
     private func showPermissionWindow() {

@@ -85,7 +85,7 @@ public final class ScrollCaptureSession {
             try await source.prepare(display: display)
             var report = await worker.add(try await source.frame(of: rect, on: display), hint: nil)
             publish(report)
-            logger.info("scrolling capture: automatic=\(self.driver != nil, privacy: .public) frame=\(report.width)x\(report.regionHeight) px")
+            logger.notice("scrolling capture: automatic=\(self.driver != nil, privacy: .public) frame=\(report.width)x\(report.regionHeight) px")
             if report.step == .reachedLimit { outcome = .reachedLimit }
             let baseStep = Double(report.regionHeight) / display.scale * 2 / 3
             var step = baseStep
@@ -105,11 +105,16 @@ public final class ScrollCaptureSession {
                 let automatic = driver != nil && pointerIsInside && !waitingForMatch
                     && now() - lastManualScroll >= Self.manualResumeDelay
                 guard automatic, let driver else {
-                    pause = waitingForMatch ? .scrollBack : (driver != nil && !pointerIsInside ? .pointerOutside : .none)
+                    let reason: Pause = waitingForMatch ? .scrollBack : (driver != nil && !pointerIsInside ? .pointerOutside : .none)
+                    if reason != pause { logger.notice("scrolling paused: \(String(describing: reason), privacy: .public)") }
+                    pause = reason
                     await sleep(Self.manualInterval)
                     if stopRequest != nil { continue }
                     report = await worker.add(try await source.frame(of: rect, on: display), hint: nil)
                     publish(report)
+                    if report.step != .unchanged {
+                        logger.notice("scrolling manual frame -> \(String(describing: report.step), privacy: .public), height \(report.height, privacy: .public)")
+                    }
                     switch report.step {
                     case .appended, .movedBack, .unchanged, .first:
                         if report.step != .unchanged { unchanged = 0 }
@@ -136,7 +141,7 @@ public final class ScrollCaptureSession {
                 let started = now()
                 report = await worker.add(frame, hint: Int((step * display.scale).rounded()))
                 publish(report)
-                logger.info("scrolling step \(step, privacy: .public) pt -> \(String(describing: report.step), privacy: .public), height \(report.height, privacy: .public), \(Int((self.now() - started) * 1000), privacy: .public) ms")
+                logger.notice("scrolling step \(step, privacy: .public) pt -> \(String(describing: report.step), privacy: .public), height \(report.height, privacy: .public), \(Int((self.now() - started) * 1000), privacy: .public) ms")
                 switch report.step {
                 case .unchanged:
                     unchanged += 1
@@ -171,7 +176,7 @@ public final class ScrollCaptureSession {
         }
         if outcome == nil { outcome = stopRequest ?? .contentChanging }
         pause = .none
-        logger.info("scrolling capture ended: \(String(describing: self.outcome), privacy: .public), height \(self.height, privacy: .public)")
+        logger.notice("scrolling capture ended: \(String(describing: self.outcome), privacy: .public), height \(self.height, privacy: .public)")
         return outcome == .cancelled ? nil : await worker.finalImage()
     }
 

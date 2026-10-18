@@ -10,19 +10,17 @@ struct ScrollCapturePanel: View {
         HStack(spacing: 12) {
             thumbnail
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.scrollsAutomatically ? "Cattura a scorrimento" : "Scorri tu")
+                Text("Cattura a scorrimento")
                     .font(.headline)
                 Text("\(session.height) px")
                     .font(.callout)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .contentTransition(.numericText())
-                if let message {
-                    Text(message)
+                Text(message)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                }
             }
             Spacer(minLength: 8)
             Button("Annulla") { session.cancel() }
@@ -35,15 +33,10 @@ struct ScrollCapturePanel: View {
         .animation(.smooth(duration: 0.25), value: session.height)
     }
 
-    private var message: String? {
-        switch session.pause {
-        case .pointerOutside: return "Riporta il puntatore sull'area per continuare lo scorrimento."
-        case .scrollBack: return "Scorrimento troppo veloce: torna un po' su."
-        case .none: break
-        }
-        if !session.scrollsAutomatically { return "Per lo scorrimento automatico consenti Pinxel in Accessibilità." }
-        if narrowed { return "Area ristretta in larghezza per non esaurire la memoria." }
-        return nil
+    private var message: String {
+        if session.pause == .scrollBack { return "Scorrimento troppo veloce: torna un po' su." }
+        if narrowed { return "Area ristretta in larghezza per non esaurire la memoria. Scorri verso il basso, poi Fine." }
+        return "Scorri verso il basso, poi premi Fine o Invio."
     }
 
     @ViewBuilder private var thumbnail: some View {

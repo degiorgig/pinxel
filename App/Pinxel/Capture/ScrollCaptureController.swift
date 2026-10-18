@@ -7,7 +7,7 @@ protocol ScrollCapturePresenting {
     func run(_ session: ScrollCaptureSession, rect: CGRect, display: DisplayInfo, narrowed: Bool) async -> CGImage?
 }
 
-/// Cornice attorno all'area e pannello accanto, mentre la sessione scorre e cuce. Tasti: Esc annulla, Invio finisce.
+/// Cornice attorno all'area e pannello accanto, mentre l'utente scorre e la sessione cuce. Tasti: Esc annulla, Invio finisce.
 @MainActor
 final class ScrollCaptureController: ScrollCapturePresenting {
     private var windows: [NSWindow] = []
@@ -50,12 +50,6 @@ final class ScrollCaptureController: ScrollCapturePresenting {
         panel.orderFrontRegardless()
         windows = [border, panel]
 
-        // Lo scorrimento va alla finestra sotto il puntatore: se è fuori dall'area lo si porta al centro.
-        let mouse = NSEvent.mouseLocation
-        if !rect.contains(CGPoint(x: mouse.x, y: primaryHeight - mouse.y)) {
-            CGWarpMouseCursorPosition(CGPoint(x: rect.midX, y: rect.midY))
-        }
-
         // Esc e Invio non devono arrivare anche all'app sotto (Invio in una chat invierebbe il messaggio): con
         // Accessibilità un event tap li consuma; senza, un monitor globale li vede soltanto.
         let keyTap = KeyTap { keyCode in
@@ -76,13 +70,6 @@ final class ScrollCaptureController: ScrollCapturePresenting {
             keys(event)
             return event
         }) { monitors.append(local) }
-        if let scroll = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel, handler: { event in
-            MainActor.assumeIsolated {
-                if event.cgEvent?.getIntegerValueField(.eventSourceUserData) != CGEventScrollDriver.syntheticMarker {
-                    session.userDidScroll()
-                }
-            }
-        }) { monitors.append(scroll) }
     }
 
     private func close() {

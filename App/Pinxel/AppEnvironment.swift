@@ -50,16 +50,16 @@ final class AppEnvironment {
         actions.onCapture = { [unowned self] contents in self.lastCapture = contents }
         let scrolling: ScrollCaptureDependencies
         if arguments.contains("-PinxelUITestFakeScrolling") {
-            // 200×150 pt a 2x come l'area finta: pagina di rumore 400×1200 px.
+            // 200×150 pt a 2x come l'area finta: pagina di rumore 400×1200 px, che "l'utente" scorre di 60 px a fotogramma.
             let page = FakeScrollingPage(content: Self.fakeScrollingContent(), viewportHeight: 300, scale: 2)
+            page.onFrame = { [unowned page] count in if count > 1 { page.scrollTo(page.position + 60) } }
             scrolling = ScrollCaptureDependencies(accessibility: FixedAccessibilityPermission(isGranted: true),
-                                                  makeSource: { page }, makeDriver: { page },
-                                                  presenter: ScrollCaptureController(), defaults: store.defaults, tracksPointer: false)
+                                                  makeSource: { page }, presenter: ScrollCaptureController(),
+                                                  defaults: store.defaults)
         } else {
             let bundle = Bundle.main.bundleIdentifier ?? "com.degiorgi.pinxel"
             scrolling = ScrollCaptureDependencies(accessibility: SystemAccessibilityPermission(),
-                                                  makeSource: { ScreenCaptureKitFrameSource(excludingBundleIdentifier: bundle) },
-                                                  makeDriver: { CGEventScrollDriver() },
+                                                  makeSource: { DebugFrameDump.wrap(ScreenCaptureKitFrameSource(excludingBundleIdentifier: bundle)) },
                                                   presenter: ScrollCaptureController(), defaults: .standard)
         }
         coordinator = CaptureCoordinator(engine: engine, permission: permission, selection: selection, actions: actions, scrolling: scrolling) { [unowned self] in
