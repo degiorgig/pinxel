@@ -130,6 +130,7 @@ final class CaptureCoordinator {
                 choice = await selection.select(mode: .area, snapshot: snapshot)
             }
             guard case .area(let selected) = choice else {
+                logger.notice("scrolling capture: selection ended without an area: \(String(describing: choice), privacy: .public)")
                 frontmost?.activate()
                 return
             }
