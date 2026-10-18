@@ -189,6 +189,55 @@ struct ScrollCaptureSessionTests {
         #expect(pause == .similarRows)
     }
 
+    /// Strisce identiche ogni 20 px sotto `noiseRows` righe di rumore: dove ci sono solo strisce, lo spostamento lo dice
+    /// soltanto quanto ha scorso l'utente.
+    static func stripedPage(noiseRows: Int, height: Int = 900) -> CGImage {
+        let ctx = FakeScrollingPage.context(width: 64, height: height)
+        for row in 0..<(height / 20) {
+            ctx.setFillColor(CGColor(srgbRed: row % 2 == 0 ? 0.9 : 0.2, green: 0.4, blue: 0.6, alpha: 1))
+            ctx.fill(CGRect(x: 0, y: row * 20, width: 64, height: 20))
+        }
+        if noiseRows > 0 {
+            ctx.draw(TestImages.noise(width: 64, height: noiseRows), in: CGRect(x: 0, y: height - noiseRows, width: 64, height: noiseRows))
+        }
+        return ctx.makeImage()!
+    }
+
+    @Test func whatTheUserScrolledPicksAmongLookAlikeRows() async {
+        let page = FakeScrollingPage(content: Self.stripedPage(noiseRows: 0), viewportHeight: 120, scale: 1)
+        let session = makeSession(page)
+        page.onFrame = { count in
+            guard count > 1 else { return }
+            if page.position < page.maxPosition {
+                let before = page.position
+                page.scrollTo(page.position + 25)
+                session.userScrolled(by: Double(page.position - before), precise: true)
+            } else if count > 50 {
+                session.finish()
+            }
+        }
+        let image = await session.run()
+        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
+    }
+
+    @Test func wheelNotchesAreMeasuredOnClearContentFirst() async {
+        // Una rotella a scatti: quanto vale uno scatto lo si impara sul rumore, poi serve sulle strisce.
+        let page = FakeScrollingPage(content: Self.stripedPage(noiseRows: 300), viewportHeight: 120, scale: 1)
+        let session = makeSession(page)
+        page.onFrame = { count in
+            guard count > 1 else { return }
+            if page.position < page.maxPosition {
+                let before = page.position
+                page.scrollTo(page.position + 30)
+                session.userScrolled(by: Double(page.position - before) / 10, precise: false)
+            } else if count > 50 {
+                session.finish()
+            }
+        }
+        let image = await session.run()
+        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
+    }
+
     @Test func scrollingBackUpAddsNothingTwice() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)

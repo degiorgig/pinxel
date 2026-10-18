@@ -7,7 +7,8 @@ protocol ScrollCapturePresenting {
     func run(_ session: ScrollCaptureSession, rect: CGRect, display: DisplayInfo, narrowed: Bool) async -> CGImage?
 }
 
-/// Cornice attorno all'area e pannello accanto, mentre l'utente scorre e la sessione cuce. Tasti: Esc annulla, Invio finisce.
+/// Cornice attorno all'area e pannello accanto, mentre l'utente scorre e la sessione cuce; quanto scorre arriva alla sessione
+/// come indizio. Tasti: Esc annulla, Invio finisce.
 @MainActor
 final class ScrollCaptureController: ScrollCapturePresenting {
     private var windows: [NSWindow] = []
@@ -70,6 +71,15 @@ final class ScrollCaptureController: ScrollCapturePresenting {
             keys(event)
             return event
         }) { monitors.append(local) }
+
+        // Quanto scorre l'utente sopra l'area: decide fra spostamenti che nelle immagini sembrano uguali (righe simili).
+        // `scrollingDeltaY` è positivo verso l'inizio del documento; conta anche l'inerzia del trackpad.
+        if let scroll = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel, handler: { event in
+            MainActor.assumeIsolated {
+                guard let location = event.cgEvent?.location, rect.contains(location), event.scrollingDeltaY != 0 else { return }
+                session.userScrolled(by: -event.scrollingDeltaY, precise: event.hasPreciseScrollingDeltas)
+            }
+        }) { monitors.append(scroll) }
     }
 
     private func close() {

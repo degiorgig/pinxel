@@ -24,6 +24,8 @@ public final class ScrollCaptureSession {
     public static let manualInterval: Duration = .milliseconds(100)
     /// Mancate di fila prima di chiedere di tornare su.
     public static let missLimit = 3
+    /// Spostamento minimo, in pixel, perché tari le unità di scorrimento.
+    static let calibrationMinimumShift = 16
 
     /// Altezza in pixel dell'immagine cucita finora.
     public private(set) var height = 0
@@ -38,6 +40,12 @@ public final class ScrollCaptureSession {
     @ObservationIgnored private let sleep: @MainActor (Duration) async -> Void
     @ObservationIgnored private let now: @MainActor () -> Double
     @ObservationIgnored private var stopRequest: Outcome?
+    /// Scorrimento dell'utente dall'ultimo fotogramma riconosciuto: trackpad (punti) e rotella a scatti, separati.
+    @ObservationIgnored private var pendingPrecise = 0.0
+    @ObservationIgnored private var pendingNotches = 0.0
+    /// Pixel per unità di scorrimento, imparati dagli spostamenti riconosciuti con certezza; il segno lo decidono loro.
+    @ObservationIgnored private var pixelsPerPoint: Double
+    @ObservationIgnored private var pixelsPerNotch: Double?
     @ObservationIgnored private let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "scrolling")
 
     public init(source: any RegionFrameSource, rect: CGRect, display: DisplayInfo, maxHeight: Int = 32768,
@@ -49,6 +57,38 @@ public final class ScrollCaptureSession {
         self.sleep = sleep
         self.now = now
         worker = StitchWorker(maxHeight: maxHeight)
+        pixelsPerPoint = display.scale
+    }
+
+    /// L'utente ha scorso sopra l'area; positivo verso il fondo del documento. `precise`: trackpad o mouse a scorrimento
+    /// continuo, in punti; altrimenti scatti di rotella, il cui valore in pixel dipende dall'app.
+    public func userScrolled(by amount: Double, precise: Bool) {
+        if precise { pendingPrecise += amount } else { pendingNotches += amount }
+    }
+
+    /// Quanto ci si aspetta che il contenuto si sia spostato, in pixel; `nil` se l'utente non ha scorso o se il valore
+    /// degli scatti non è ancora noto.
+    private var expectedShift: Int? {
+        guard pendingPrecise != 0 || pendingNotches != 0 else { return nil }
+        var pixels = pendingPrecise * pixelsPerPoint
+        if pendingNotches != 0 {
+            guard let pixelsPerNotch else { return nil }
+            pixels += pendingNotches * pixelsPerNotch
+        }
+        return Int(pixels.rounded())
+    }
+
+    /// Dopo un fotogramma riconosciuto: lo spostamento misurato tara le unità di scorrimento, poi si riparte da zero.
+    private func calibrate(measured shift: Int) {
+        defer { pendingPrecise = 0; pendingNotches = 0 }
+        guard abs(shift) >= Self.calibrationMinimumShift else { return }
+        if pendingNotches == 0, pendingPrecise != 0 {
+            let ratio = Double(shift) / pendingPrecise
+            if (0.25...4).contains(abs(ratio) / display.scale) { pixelsPerPoint = pixelsPerPoint * 0.5 + ratio * 0.5 }
+        } else if pendingPrecise == 0, pendingNotches != 0 {
+            let ratio = Double(shift) / pendingNotches
+            pixelsPerNotch = pixelsPerNotch.map { $0 * 0.5 + ratio * 0.5 } ?? ratio
+        }
     }
 
     public func finish() {
@@ -80,14 +120,18 @@ public final class ScrollCaptureSession {
                 if wait > .zero { await sleep(wait) }
                 if stopRequest != nil { continue }
                 lastSample = now()
-                report = await worker.add(try await source.frame(of: rect, on: display))
+                let frame = try await source.frame(of: rect, on: display)
+                // Dopo la cattura: conta anche lo scorrimento arrivato mentre si catturava.
+                let expected = expectedShift
+                report = await worker.add(frame, expectedShift: expected)
                 publish(report)
                 if report.step != .unchanged {
-                    logger.notice("scrolling frame -> \(String(describing: report.step), privacy: .public), height \(report.height, privacy: .public)")
+                    logger.notice("scrolling frame -> \(String(describing: report.step), privacy: .public), expected \(expected.map(String.init) ?? "-", privacy: .public), height \(report.height, privacy: .public)")
                 }
                 switch report.step {
                 case .appended, .movedBack, .unchanged, .first:
                     misses = 0
+                    calibrate(measured: report.step == .unchanged ? 0 : report.shift ?? 0)
                 case .noMatch, .ambiguous:
                     misses += 1
                     lastMiss = report.step
@@ -132,6 +176,8 @@ struct StitchReport: @unchecked Sendable {
     let height: Int
     let width: Int
     let frameHeight: Int
+    /// Spostamento dell'ultimo fotogramma riconosciuto.
+    let shift: Int?
     let thumbnail: CGImage?
 }
 
@@ -143,10 +189,10 @@ actor StitchWorker {
         stitcher = ScrollStitcher(maxHeight: maxHeight)
     }
 
-    func add(_ frame: CGImage) -> StitchReport {
-        let step = stitcher.add(frame, hint: nil)
+    func add(_ frame: CGImage, expectedShift: Int? = nil) -> StitchReport {
+        let step = stitcher.add(frame, hint: expectedShift)
         return StitchReport(step: step, height: stitcher.height, width: stitcher.width, frameHeight: stitcher.frameHeight,
-                            thumbnail: stitcher.thumbnail(width: 80))
+                            shift: stitcher.lastShift, thumbnail: stitcher.thumbnail(width: 80))
     }
 
     func finalImage() -> CGImage? {
