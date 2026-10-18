@@ -24,7 +24,7 @@ final class ScrollCaptureController: ScrollCapturePresenting {
     private func show(_ session: ScrollCaptureSession, rect: CGRect, display: DisplayInfo, narrowed: Bool) {
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
 
-        let border = NSWindow(contentRect: ScreenGeometry.appKit(fromTopLeft: rect.insetBy(dx: -3, dy: -3), primaryHeight: primaryHeight),
+        let border = NSWindow(contentRect: ScreenGeometry.appKit(fromTopLeft: rect.insetBy(dx: -4, dy: -4), primaryHeight: primaryHeight),
                               styleMask: .borderless, backing: .buffered, defer: false)
         border.isOpaque = false
         border.backgroundColor = .clear
@@ -92,7 +92,7 @@ final class ScrollCaptureController: ScrollCapturePresenting {
     }
 }
 
-/// Filo attorno all'area, appena fuori dal rettangolo catturato.
+/// Filo attorno all'area, a 1,5 punti dal rettangolo catturato: mai nei suoi pixel.
 private final class ScrollFrameView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 3, yRadius: 3)

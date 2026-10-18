@@ -15,6 +15,15 @@ struct ScrollCaptureGeometryTests {
         #expect(ok?.narrowed == false)
     }
 
+    @Test func theAreaShrinksToWholeScreenPixels() {
+        // Con bordi a metà pixel l'ultima riga catturata prenderebbe un po' di ciò che c'è appena fuori (la cornice).
+        let prepared = ScrollCaptureGeometry.prepare(CGRect(x: 138.89, y: 146.1, width: 843.39, height: 736.53), on: display, maxHeight: 32768)
+        #expect(prepared?.rect == CGRect(x: 139, y: 146.5, width: 843, height: 736))
+        let offset = DisplayInfo(id: 3, frame: CGRect(x: 1440.25, y: 0, width: 1000, height: 900), scale: 2)
+        let shifted = ScrollCaptureGeometry.prepare(CGRect(x: 1500, y: 10, width: 300, height: 200), on: offset, maxHeight: 32768)
+        #expect(shifted?.rect == CGRect(x: 1500.25, y: 10, width: 299.5, height: 200))
+    }
+
     @Test func widthIsLimitedByTheMemoryBudget() {
         let wide = DisplayInfo(id: 2, frame: CGRect(x: 0, y: 0, width: 6000, height: 2000), scale: 2)
         let prepared = ScrollCaptureGeometry.prepare(CGRect(x: 0, y: 0, width: 6000, height: 500), on: wide, maxHeight: 32768)

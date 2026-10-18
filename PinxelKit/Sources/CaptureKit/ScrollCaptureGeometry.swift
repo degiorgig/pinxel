@@ -6,14 +6,26 @@ public enum ScrollCaptureGeometry {
     /// Memoria massima per l'immagine più lunga possibile.
     public static let byteBudget = 1 << 30
 
-    /// L'area limitata al suo schermo e, se serve, ristretta in larghezza per il budget di memoria.
+    /// L'area limitata al suo schermo, ristretta ai pixel interi e, se serve, in larghezza per il budget di memoria.
     /// `nil` se resta più bassa di `minimumHeight`.
     public static func prepare(_ rect: CGRect, on display: DisplayInfo, maxHeight: Int) -> (rect: CGRect, narrowed: Bool)? {
-        let clipped = rect.standardized.intersection(display.frame)
-        guard !clipped.isNull, clipped.height >= minimumHeight else { return nil }
+        let visible = rect.standardized.intersection(display.frame)
+        guard !visible.isNull else { return nil }
+        let clipped = wholePixels(visible, on: display)
+        guard clipped.height >= minimumHeight else { return nil }
         let maxWidth = (Double(byteBudget / (max(maxHeight, 1) * 4)) / display.scale).rounded(.down)
         guard clipped.width > maxWidth else { return (clipped, false) }
         return (CGRect(x: clipped.minX, y: clipped.minY, width: maxWidth, height: clipped.height), true)
+    }
+
+    /// Il rettangolo più grande fatto di pixel interi dello schermo dentro `rect`: con bordi a metà pixel l'ultima riga
+    /// catturata prenderebbe un po' di ciò che sta appena fuori, come la cornice dell'area.
+    static func wholePixels(_ rect: CGRect, on display: DisplayInfo) -> CGRect {
+        let scale = display.scale, origin = display.frame.origin
+        let minX = ((rect.minX - origin.x) * scale).rounded(.up), maxX = ((rect.maxX - origin.x) * scale).rounded(.down)
+        let minY = ((rect.minY - origin.y) * scale).rounded(.up), maxY = ((rect.maxY - origin.y) * scale).rounded(.down)
+        return CGRect(x: origin.x + minX / scale, y: origin.y + minY / scale,
+                      width: max(0, maxX - minX) / scale, height: max(0, maxY - minY) / scale)
     }
 
     /// Pannello fuori dall'area: sotto, sopra, a destra, a sinistra; se non c'è posto, in basso a destra dentro lo schermo

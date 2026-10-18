@@ -17,8 +17,13 @@ public final class ScreenCaptureKitFrameSource: RegionFrameSource {
     public func prepare(display: DisplayInfo) async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let screen = content.displays.first(where: { $0.displayID == display.id }) else { throw CaptureError.displayNotFound }
-        let own = content.windows.filter { $0.owningApplication?.bundleIdentifier == bundleIdentifier }
-        filter = SCContentFilter(display: screen, excludingWindows: own)
+        // Escludere l'app intera copre anche le finestre di Pinxel non ancora elencate (la cornice appena comparsa).
+        if let own = content.applications.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
+            filter = SCContentFilter(display: screen, excludingApplications: [own], exceptingWindows: [])
+        } else {
+            let own = content.windows.filter { $0.owningApplication?.bundleIdentifier == bundleIdentifier }
+            filter = SCContentFilter(display: screen, excludingWindows: own)
+        }
     }
 
     public func frame(of rect: CGRect, on display: DisplayInfo) async throws -> CGImage {
