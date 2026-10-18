@@ -9,7 +9,11 @@ struct EditorView: View {
         CanvasRepresentable(model: model)
             .frame(minWidth: 320, minHeight: 240)
             .overlay(alignment: .bottomTrailing) {
-                CaptureDragHandle(model: model).padding(12)
+                HStack(spacing: 8) {
+                    ZoomControls(model: model)
+                    CaptureDragHandle(model: model)
+                }
+                .padding(12)
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if model.session.isReadOnly { ReadOnlyBanner() }

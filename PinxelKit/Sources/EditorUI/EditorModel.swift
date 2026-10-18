@@ -57,7 +57,16 @@ public enum InspectedKind: Equatable, Sendable {
 @Observable
 public final class EditorModel {
     public let session: EditorSession
-    public var tool: EditorTool = .select
+    public var tool: EditorTool = .select {
+        // Scegliere uno strumento spegne la manina.
+        didSet { isPanning = false }
+    }
+    /// Manina dei comandi sopra la tela: trascinare sposta la vista invece di usare lo strumento.
+    public var isPanning = false
+    /// Zoom della tela (1 = 100%), copiato dalla tela per i comandi sopra l'immagine.
+    public internal(set) var zoom: Double = 1
+    /// La tela, a cui i comandi sopra l'immagine mandano zoom e adattamento.
+    @ObservationIgnored public internal(set) weak var canvas: (any EditorActions)?
     public var toolStyles = ToolStyles()
     public var isInspectorPresented = true
     /// Foglio del menu Immagine aperto sulla finestra.
