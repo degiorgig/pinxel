@@ -17,6 +17,8 @@ public final class ScrollCaptureSession {
         case none
         /// Si è andati oltre l'ultimo punto riconosciuto: bisogna tornare un po' su.
         case scrollBack
+        /// Righe tutte simili (tabelle, liste): più spostamenti combaciano allo stesso modo. Si torna su e si scorre piano.
+        case similarRows
     }
 
     public static let manualInterval: Duration = .milliseconds(100)
@@ -68,6 +70,7 @@ public final class ScrollCaptureSession {
             logger.notice("scrolling capture: frame=\(report.width)x\(report.frameHeight) px")
             if report.step == .reachedLimit { outcome = .reachedLimit }
             var misses = 0
+            var lastMiss = StitchStep.noMatch
             while outcome == nil {
                 if let stop = stopRequest {
                     outcome = stop
@@ -87,12 +90,13 @@ public final class ScrollCaptureSession {
                     misses = 0
                 case .noMatch, .ambiguous:
                     misses += 1
+                    lastMiss = report.step
                 case .reachedLimit:
                     outcome = .reachedLimit
                 case .sizeMismatch:
                     outcome = .contentChanging
                 }
-                let reason: Pause = misses >= Self.missLimit ? .scrollBack : .none
+                let reason: Pause = misses < Self.missLimit ? .none : lastMiss == .ambiguous ? .similarRows : .scrollBack
                 if reason != pause { logger.notice("scrolling paused: \(String(describing: reason), privacy: .public)") }
                 pause = reason
             }

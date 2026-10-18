@@ -173,6 +173,49 @@ struct ScrollStitcherTests {
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .appended(60))
     }
 
+    /// Tabella larga 640 px: righe alte 40 px con lo stesso fondo e un "testo" diverso in ciascuna.
+    func table(height: Int) -> CGImage {
+        let ctx = FakeScrollingPage.context(width: 640, height: height)
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 640, height: height))
+        for row in 0..<(height / 40) {
+            let top = height - (row + 1) * 40
+            ctx.setFillColor(CGColor(srgbRed: 0.85, green: 0.85, blue: 0.85, alpha: 1))
+            ctx.fill(CGRect(x: 0, y: top, width: 640, height: 1))
+            ctx.setFillColor(CGColor(srgbRed: 0.2, green: 0.2, blue: 0.2, alpha: 1))
+            // Stessa impaginazione in ogni riga (date, etichette, barre); cambia solo qualche cifra.
+            for x in stride(from: 20, to: 600, by: 70) { ctx.fill(CGRect(x: x, y: top + 15, width: 50, height: 10)) }
+            ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+            for (column, factor) in [(1, 7), (3, 11), (5, 5), (7, 13)] {
+                ctx.fill(CGRect(x: 25 + column * 70 + (row * factor) % 40, y: top + 17, width: 3, height: 6))
+            }
+        }
+        return ctx.makeImage()!
+    }
+
+    /// Copia di `image` con la barra di scorrimento che macOS mostra a destra mentre si scorre.
+    func withScrollbar(_ image: CGImage) -> CGImage {
+        let ctx = FakeScrollingPage.context(width: image.width, height: image.height)
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        ctx.setFillColor(CGColor(srgbRed: 0.9, green: 0.9, blue: 0.9, alpha: 1))
+        ctx.fill(CGRect(x: image.width - 20, y: 0, width: 20, height: image.height))
+        ctx.setFillColor(CGColor(srgbRed: 0.55, green: 0.55, blue: 0.55, alpha: 1))
+        ctx.fill(CGRect(x: image.width - 14, y: image.height / 3, width: 8, height: image.height / 3))
+        return ctx.makeImage()!
+    }
+
+    @Test func theScrollbarShownWhileScrollingDoesNotBreakMatching() {
+        let page = FakeScrollingPage(content: table(height: 1600), viewportHeight: 400, scale: 1)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        _ = stitcher.add(page.currentFrame(), hint: nil)
+        var steps: [StitchStep] = []
+        for position in stride(from: 90, through: page.maxPosition, by: 90) {
+            page.scrollTo(position)
+            steps.append(stitcher.add(withScrollbar(page.currentFrame()), hint: nil))
+        }
+        #expect(steps.allSatisfy { $0 == .appended(90) }, "\(steps)")
+    }
+
     /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
     func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)

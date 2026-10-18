@@ -170,6 +170,25 @@ struct ScrollCaptureSessionTests {
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
+    @Test func rowsThatAllLookAlikeAskToScrollSlowlyNotThatItWasTooFast() async {
+        // Strisce identiche ogni 20 px: ogni spostamento multiplo di 40 combacia allo stesso modo.
+        let ctx = FakeScrollingPage.context(width: 64, height: 900)
+        for row in 0..<45 {
+            ctx.setFillColor(CGColor(srgbRed: row % 2 == 0 ? 0.9 : 0.2, green: 0.4, blue: 0.6, alpha: 1))
+            ctx.fill(CGRect(x: 0, y: row * 20, width: 64, height: 20))
+        }
+        let page = FakeScrollingPage(content: ctx.makeImage()!, viewportHeight: 120, scale: 1)
+        let session = makeSession(page)
+        var pause: ScrollCaptureSession.Pause?
+        page.onFrame = { count in
+            // Passi di 25 px: nessuna posizione coincide con la prima a meno di un periodo, quindi nessun fotogramma è uguale.
+            page.scrollTo((count - 1) * 25)
+            if count == 6 { pause = session.pause; session.finish() }
+        }
+        _ = await session.run()
+        #expect(pause == .similarRows)
+    }
+
     @Test func scrollingBackUpAddsNothingTwice() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)

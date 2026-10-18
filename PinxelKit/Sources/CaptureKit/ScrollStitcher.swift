@@ -25,10 +25,22 @@ public enum StitchStep: Equatable, Sendable {
 /// È una classe perché tiene l'immagine in un buffer riservato una volta sola (niente copie a ogni passo).
 public final class ScrollStitcher: @unchecked Sendable {
     static let blocks = 32
+    /// Blocchi più diversi ignorati nel confronto di due righe (vedi `distance`).
+    static let ignoredBlocks = 2
+    /// Blocchi che contano nel confronto.
+    static var comparedBlocks: Int { blocks - ignoredBlocks }
     /// Errore medio (0–255) sotto cui due righe combaciano.
     static let matchThreshold = 3.0
-    /// Spostamenti con errore entro questa distanza dal migliore sono equivalenti.
+    /// Margine attorno al migliore entro cui gli spostamenti passano alla fase successiva della ricerca.
     static let tieTolerance = 0.75
+    /// Spostamenti confrontati su tutte le righe, alla fine.
+    static let finalists = 16
+
+    /// Due spostamenti sono equivalenti se l'errore del secondo supera quello del migliore di poco, in assoluto o in
+    /// proporzione: fra fotogrammi reali anche lo spostamento giusto ha un piccolo errore.
+    static func ties(_ error: Double, best: Double) -> Bool {
+        error <= best + max(0.15, best * 0.3)
+    }
     /// Una riga con differenza fra il blocco più chiaro e il più scuro sotto questa soglia è uniforme (bianca, a tinta unita):
     /// non dice nulla sullo spostamento e non entra nel confronto.
     static let uniformRowRange: Int16 = 4
@@ -190,6 +202,13 @@ public final class ScrollStitcher: @unchecked Sendable {
         for candidate in coarse where candidate.error <= coarseBest.error + 4 * Self.tieTolerance + 1 {
             if let error = error(old, new, shift: candidate.shift, oldRows: fineOld, newRows: fineNew) { errors.append((candidate.shift, error)) }
         }
+        // I migliori si confrontano su tutte le righe con dettagli: con poche righe campionate uno spostamento sbagliato
+        // su contenuto che si ripete (schede, tabelle) può sembrare buono quanto quello giusto.
+        let fineBest = errors.min(by: { $0.error < $1.error })?.error ?? 0
+        let finalists = errors.filter { $0.error <= fineBest + 2 * Self.tieTolerance }.sorted { $0.error < $1.error }.prefix(Self.finalists)
+        errors = finalists.compactMap { candidate in
+            error(old, new, shift: candidate.shift, oldRows: oldRows, newRows: newRows).map { (candidate.shift, $0) }
+        }
         guard let best = errors.min(by: { $0.error < $1.error }), best.error <= Self.matchThreshold else {
             // Nessuno spostamento combacia del tutto: forse poche righe ferme sullo schermo (un'evidenziazione) disturbano.
             // Ignorandole, uno spostamento che combacia senza alternative equivalenti è quello giusto.
@@ -203,7 +222,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             }
             return .noMatch
         }
-        let candidates = errors.filter { $0.error <= best.error + Self.tieTolerance }.map(\.shift)
+        let candidates = errors.filter { Self.ties($0.error, best: best.error) }.map(\.shift)
         let spread = candidates.max()! - candidates.min()!
         guard spread > 2 else { return .shift(best.shift) }
         // Più spostamenti equivalenti (contenuto uniforme o ripetuto): decide l'indizio, se c'è e se è misurabile;
@@ -237,13 +256,13 @@ public final class ScrollStitcher: @unchecked Sendable {
     static func contradicts(_ old: Frame, _ new: Frame, shift: Int, region: Int, topBand: Int) -> Bool {
         for r in 0..<region where old.informative[topBand + r] {
             let n = r - shift
-            if n >= 0, n < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(blocks) {
+            if n >= 0, n < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(comparedBlocks) {
                 return true
             }
         }
         for n in 0..<region where new.informative[topBand + n] {
             let r = n + shift
-            if r >= 0, r < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(blocks) {
+            if r >= 0, r < region, distance(old.signatures[topBand + r], new.signatures[topBand + n]) > Int16(matchThreshold) * Int16(comparedBlocks) {
                 return true
             }
         }
@@ -285,12 +304,19 @@ public final class ScrollStitcher: @unchecked Sendable {
             kept = max(Self.minimumInformativeRows, Int((Double(distances.count) * (1 - Self.ignoredWorstRows)).rounded(.up)))
         }
         let total = distances[..<kept].reduce(0) { $0 + Int($1) }
-        return Double(total) / Double(kept * Self.blocks)
+        return Double(total) / Double(kept * Self.comparedBlocks)
     }
 
+    /// Differenza fra due righe senza i `ignoredBlocks` blocchi più diversi: una colonna che cambia da sola, come la barra
+    /// di scorrimento che compare mentre si scorre, peserebbe uguale su tutti gli spostamenti e coprirebbe quello giusto.
     static func distance(_ a: SIMD32<Int16>, _ b: SIMD32<Int16>) -> Int16 {
         let difference = a &- b
-        return difference.replacing(with: 0 &- difference, where: difference .< 0).wrappedSum()
+        let absolute = difference.replacing(with: 0 &- difference, where: difference .< 0)
+        let worst = absolute.max()
+        let others = absolute.replacing(with: 0, where: absolute .== worst)
+        let worstCount = SIMD32<Int16>(repeating: 0).replacing(with: 1, where: absolute .== worst).wrappedSum()
+        let second = worstCount > 1 ? worst : others.max()
+        return absolute.wrappedSum() &- worst &- second
     }
 
     static func equal(_ a: [UInt8], _ b: [UInt8]) -> Bool {
