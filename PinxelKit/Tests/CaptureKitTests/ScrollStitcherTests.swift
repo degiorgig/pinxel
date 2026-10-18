@@ -5,9 +5,10 @@ import PinxelTestSupport
 
 @MainActor
 struct ScrollStitcherTests {
-    /// Scorre la pagina a passi di `step` pixel richiesti (il fattore della pagina decide quelli veri) fino in fondo.
-    /// Come la sessione, dopo un `noMatch` torna su di mezzo passo e dimezza il passo.
-    func stitch(_ page: FakeScrollingPage, step initialStep: Int, hint: Bool = true, maxHeight: Int = 32768) -> (ScrollStitcher, [StitchStep]) {
+    /// Scorre la pagina a passi di `step` pixel attesi (`factor` decide quelli veri) fino in fondo, con lo spostamento
+    /// atteso come indizio. Dopo un `noMatch` torna su di mezzo passo e dimezza il passo.
+    func stitch(_ page: FakeScrollingPage, step initialStep: Int, factor: Double = 1, hint: Bool = true,
+                maxHeight: Int = 32768) -> (ScrollStitcher, [StitchStep]) {
         let stitcher = ScrollStitcher(maxHeight: maxHeight)
         var steps = [stitcher.add(page.currentFrame(), hint: nil)]
         var unchanged = 0
@@ -15,13 +16,13 @@ struct ScrollStitcherTests {
         var backedOff = false
         while unchanged < 2, steps.count < 200 {
             // Dopo essere tornati su di mezzo passo si cattura senza scorrere: lo spostamento netto è il nuovo passo.
-            if !backedOff { page.scroll(by: Double(step) / page.scale, at: .zero) }
+            if !backedOff { page.scrollTo(page.position + Int((Double(step) * factor).rounded())) }
             backedOff = false
             let result = stitcher.add(page.currentFrame(), hint: hint ? step : nil)
             steps.append(result)
             if result == .reachedLimit { break }
             if result == .noMatch {
-                page.scroll(by: -Double(step / 2) / page.scale, at: .zero)
+                page.scrollTo(page.position - Int((Double(step / 2) * factor).rounded()))
                 step = max(10, step / 2)
                 backedOff = true
             }
@@ -44,9 +45,9 @@ struct ScrollStitcherTests {
     }
 
     @Test(arguments: [0.7, 1.3])
-    func appsThatScrollMoreOrLessStillRebuildThePage(factor: Double) {
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1, scrollFactor: factor)
-        let (stitcher, _) = stitch(page, step: 70)
+    func shiftsDifferentFromTheExpectedOneStillRebuildThePage(factor: Double) {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
+        let (stitcher, _) = stitch(page, step: 70, factor: factor)
         expectEqual(stitcher.image(), page.expectedImage)
     }
 
@@ -95,7 +96,7 @@ struct ScrollStitcherTests {
         let page = FakeScrollingPage(content: TestImages.noise(width: 800, height: 3000), viewportHeight: 1000, scale: 2)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
-        page.scroll(by: 300, at: .zero)
+        page.scrollTo(600)
         let frame = page.currentFrame()
         let clock = ContinuousClock()
         let elapsed = clock.measure { _ = stitcher.add(frame, hint: 600) }
@@ -139,7 +140,7 @@ struct ScrollStitcherTests {
         let page = FakeScrollingPage(content: blank, viewportHeight: 120, scale: 1)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
-        page.scroll(by: 50, at: .zero)
+        page.scrollTo(page.position + 50)
         // Fotogrammi identici: nessun movimento visibile.
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .unchanged)
     }

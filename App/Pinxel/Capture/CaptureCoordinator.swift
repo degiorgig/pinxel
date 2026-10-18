@@ -147,7 +147,7 @@ final class CaptureCoordinator {
             }
             // L'app sotto l'area deve ricevere lo scorrimento dell'utente: torna davanti prima di iniziare.
             frontmost?.activate()
-            let session = ScrollCaptureSession(source: scrolling.makeSource(), driver: nil, rect: prepared.rect,
+            let session = ScrollCaptureSession(source: scrolling.makeSource(), rect: prepared.rect,
                                                display: display, maxHeight: Self.maxScrollingHeight)
             guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else { return }
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)

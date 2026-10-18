@@ -85,10 +85,11 @@ public final class ScrollStitcher: @unchecked Sendable {
     public var regionHeight: Int { frameHeight - topBand - bottomBand }
     /// Sovrapposizione minima fra due fotogrammi perché lo spostamento sia misurabile.
     public var minimumOverlap: Int { max(8, regionHeight / 4) }
-    /// Spostamento massimo misurabile fra due fotogrammi: i passi automatici devono restare sotto.
+    /// Spostamento massimo misurabile fra due fotogrammi: chi scorre più in fretta perde il riferimento.
     public var maxShift: Int { max(0, regionHeight - minimumOverlap) }
     public var height: Int { rowBytes == 0 ? 0 : (canvas?.rows ?? 0) + bottomRows.count / rowBytes }
 
+    /// `hint`: lo spostamento atteso in pixel, se noto; decide fra spostamenti equivalenti e nei tratti senza dettagli.
     public func add(_ image: CGImage, hint: Int?) -> StitchStep {
         guard let previous else {
             width = image.width

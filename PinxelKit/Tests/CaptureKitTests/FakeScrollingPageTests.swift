@@ -12,7 +12,7 @@ struct FakeScrollingPageTests {
         let page = FakeScrollingPage(content: content, viewportHeight: 50,
                                      header: TestImages.solid(width: 40, height: 10, red: 1, green: 0, blue: 0),
                                      footer: TestImages.solid(width: 40, height: 6, red: 0, green: 0, blue: 1))
-        page.scroll(by: 15, at: .zero) // 15 pt × 2 = 30 px
+        page.scrollTo(30)
         #expect(page.position == 30)
         let frame = PixelBuffer(try await page.frame(of: .zero, on: display))
         #expect(frame.height == 66)
@@ -22,15 +22,14 @@ struct FakeScrollingPageTests {
         #expect(page.frameCount == 1)
     }
 
-    @Test func scrollingStopsAtTheEndsAndHonoursTheFactor() {
-        let page = FakeScrollingPage(content: TestImages.noise(width: 20, height: 100), viewportHeight: 40, scale: 1, scrollFactor: 1.5)
-        page.scroll(by: 10, at: .zero)
+    @Test func scrollingStopsAtTheEnds() {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 20, height: 100), viewportHeight: 40, scale: 1)
+        page.scrollTo(15)
         #expect(page.position == 15)
-        page.scroll(by: 1000, at: .zero)
+        page.scrollTo(1000)
         #expect(page.position == 60)
-        page.scroll(by: -1000, at: .zero)
+        page.scrollTo(-1000)
         #expect(page.position == 0)
-        #expect(page.scrollCalls == [10, 1000, -1000])
     }
 
     @Test func expectedImageStacksHeaderContentAndFooter() {

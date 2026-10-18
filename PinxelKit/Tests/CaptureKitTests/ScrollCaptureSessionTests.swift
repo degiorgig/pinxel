@@ -18,26 +18,38 @@ struct ScrollCaptureSessionTests {
     let display = DisplayInfo(id: 1, frame: CGRect(x: 0, y: 0, width: 800, height: 600), scale: 1)
     let rect = CGRect(x: 0, y: 0, width: 64, height: 120)
 
-    func makeSession(_ page: FakeScrollingPage, automatic: Bool = true, time: FakeTime = FakeTime(), maxHeight: Int = 32768) -> ScrollCaptureSession {
-        ScrollCaptureSession(source: page, driver: automatic ? page : nil, rect: rect, display: display, maxHeight: maxHeight,
+    func makeSession(_ page: FakeScrollingPage, time: FakeTime = FakeTime(), maxHeight: Int = 32768) -> ScrollCaptureSession {
+        ScrollCaptureSession(source: page, rect: rect, display: display, maxHeight: maxHeight,
                              sleep: { await time.sleep($0) }, now: { time.now })
     }
 
-    @Test func automaticCaptureScrollsToTheEnd() async {
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
+    /// L'utente scorre di `speed` pixel fra un fotogramma e l'altro, dal secondo, e preme Fine `pause` fotogrammi dopo
+    /// essere arrivato in fondo. `onFrame` arriva prima del fotogramma.
+    func scrollByHand(_ page: FakeScrollingPage, _ session: ScrollCaptureSession, speed: Int, pause: Int = 3) {
+        page.onFrame = { count in
+            page.scrollTo((count - 1) * speed)
+            if count > 1 + page.maxPosition / speed + pause { session.finish() }
+        }
+    }
+
+    @Test func theUserScrollsAndPinxelStitches() async {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 400), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
+        scrollByHand(page, session, speed: 50)
         let image = await session.run()
-        #expect(session.outcome == .reachedEnd)
+        #expect(session.outcome == .finishedByUser)
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
-        #expect(page.scrollCalls.first == 80) // 2/3 di 120 pt
-        #expect(session.height == 900)
+        #expect(session.height == 400)
         #expect(session.preview != nil)
     }
 
     @Test func fineKeepsWhatIsStitched() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
-        page.onFrame = { count in if count == 3 { session.finish() } }
+        page.onFrame = { count in
+            page.scrollTo((count - 1) * 50)
+            if count == 3 { session.finish() }
+        }
         let image = await session.run()
         #expect(session.outcome == .finishedByUser)
         #expect(image != nil)
@@ -47,63 +59,35 @@ struct ScrollCaptureSessionTests {
     @Test func cancelDiscardsEverything() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
-        page.onFrame = { count in if count == 3 { session.cancel() } }
+        page.onFrame = { count in
+            page.scrollTo((count - 1) * 50)
+            if count == 3 { session.cancel() }
+        }
         #expect(await session.run() == nil)
         #expect(session.outcome == .cancelled)
     }
 
-    @Test func withoutADriverTheUserScrolls() async {
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 400), viewportHeight: 120, scale: 1)
-        let session = makeSession(page, automatic: false)
-        #expect(!session.scrollsAutomatically)
-        page.onFrame = { count in
-            // `onFrame` arriva prima del fotogramma: l'utente scorre di 50 px fra un fotogramma e l'altro, dal secondo.
-            page.scrollTo((count - 1) * 50)
-            if count == 12 { session.finish() }
-        }
-        let image = await session.run()
-        #expect(page.scrollCalls.isEmpty)
-        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
-    }
-
-    @Test func manualScrollingPausesTheAutomaticSteps() async {
-        let time = FakeTime()
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
-        let session = makeSession(page, time: time)
-        var callsWhilePaused = -1
-        page.onFrame = { count in
-            if count == 2 { session.userDidScroll() }
-            if count == 4 { callsWhilePaused = page.scrollCalls.count }
-        }
-        _ = await session.run()
-        #expect(callsWhilePaused == 1) // dopo lo scorrimento a mano, per 1 s nessun passo automatico
-        #expect(session.outcome == .reachedEnd)
-    }
-
-    @Test func contentThatChangesStopsTheCapture() async {
+    @Test func contentThatChangesByItselfAsksToGoBackWithoutStopping() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
-        page.onFrame = { count in if count == 2 { page.isAnimating = true } }
+        var asked = false
+        page.onFrame = { count in
+            if count == 2 { page.isAnimating = true }
+            if count == 10 { asked = session.pause == .scrollBack; session.finish() }
+        }
         let image = await session.run()
-        #expect(session.outcome == .contentChanging)
+        #expect(asked)
+        #expect(session.outcome == .finishedByUser)
         #expect(image?.height == 120) // resta il primo fotogramma
     }
 
     @Test func stopsAtTheHeightLimit() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page, maxHeight: 400)
+        scrollByHand(page, session, speed: 50)
         let image = await session.run()
         #expect(session.outcome == .reachedLimit)
         #expect(image?.height == 400)
-    }
-
-    @Test func appsThatScrollTooFarRecoverByBackingOff() async {
-        // Passo di 80 pt, l'app scorre 104 px: oltre la sovrapposizione minima, quindi si torna indietro e si riprova.
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1, scrollFactor: 1.3)
-        let session = makeSession(page)
-        let image = await session.run()
-        #expect(session.outcome == .reachedEnd)
-        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
     /// Pagina bianca con paragrafi di 1–3 righe di "testo" alte 10 px, separati da tratti bianchi di 120–`maxGap` px,
@@ -142,43 +126,20 @@ struct ScrollCaptureSessionTests {
     @Test(arguments: [(UInt64(1), 320, 200), (1, 320, 80), (2, 320, 80), (3, 420, 80)])
     func pagesWithLongBlankStretchesAreStitchedWhole(seed: UInt64, maxGap: Int, extra: Int) async {
         let page = FakeScrollingPage(content: Self.sparsePage(seed: seed, maxGap: maxGap, extra: extra), viewportHeight: 600, scale: 1)
-        let session = makeSession(page)
+        let session = ScrollCaptureSession(source: page, rect: CGRect(x: 0, y: 0, width: 640, height: 600), display: display,
+                                           sleep: { _ in await Task.yield() }, now: { 0 })
+        scrollByHand(page, session, speed: 120)
         let image = await session.run()
-        #expect(session.outcome == .reachedEnd)
         guard let image else { Issue.record("no image"); return }
-        // Tutto il testo, in ordine, senza righe doppie né mancanti. Dove fra due fotogrammi non c'è nessun dettaglio
-        // in comune lo spostamento non si può misurare: un tratto bianco può risultare un po' più lungo.
+        // Tutto il testo, in ordine, senza righe doppie né mancanti.
         #expect(Self.textRows(PixelBuffer(image)) == Self.textRows(PixelBuffer(page.expectedImage)))
         #expect((6000...6000 + 600 / 4).contains(image.height), "\(image.height)")
-    }
-
-    @Test func automaticStepsWaitWhileThePointerIsOutsideTheArea() async {
-        // Lo scorrimento va alla finestra sotto il puntatore: se l'utente va verso il pannello, Pinxel aspetta.
-        let time = FakeTime()
-        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
-        var inside = true
-        var pausedSeen = false
-        var scrollsWhileOutside = 0
-        let session = ScrollCaptureSession(source: page, driver: page, rect: rect, display: display,
-                                           sleep: { await time.sleep($0) }, now: { time.now }, pointerInside: { inside })
-        page.onFrame = { count in
-            if count == 3 { inside = false }
-            if count == 3 + 10 { scrollsWhileOutside = page.scrollCalls.count; inside = true }
-            if count > 3, count < 13, session.pause == .pointerOutside { pausedSeen = true }
-        }
-        let callsBefore = { page.scrollCalls.count }
-        let image = await session.run()
-        #expect(pausedSeen)
-        #expect(scrollsWhileOutside <= 2) // al massimo il passo già partito
-        #expect(callsBefore() > scrollsWhileOutside)
-        #expect(session.outcome == .reachedEnd)
-        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
     @Test func scrollingByHandSamplesTenTimesASecondIncludingTheWorkTime() async {
         let time = FakeTime()
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
-        let session = makeSession(page, automatic: false, time: time)
+        let session = makeSession(page, time: time)
         var captureTimes: [Double] = []
         page.onFrame = { count in
             captureTimes.append(time.now)
@@ -192,7 +153,7 @@ struct ScrollCaptureSessionTests {
 
     @Test func aTooFastManualScrollAsksToGoBackAndRecovers() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 600), viewportHeight: 120, scale: 1)
-        let session = makeSession(page, automatic: false)
+        let session = makeSession(page)
         var askedToGoBack = false
         page.onFrame = { count in
             switch count {
@@ -209,10 +170,13 @@ struct ScrollCaptureSessionTests {
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
-    @Test func scrollingBackDuringAnAutomaticCaptureAddsNothingTwice() async {
+    @Test func scrollingBackUpAddsNothingTwice() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
-        page.onFrame = { count in if count == 4 { page.scrollTo(page.position - 100); session.userDidScroll() } }
+        let positions = [0, 50, 100, 150, 200, 120, 60, 110, 160, 210, 260, 310, 360, 410, 460, 510, 560, 610, 660, 710, 760, 780, 780]
+        page.onFrame = { count in
+            if count <= positions.count { page.scrollTo(positions[count - 1]) } else { session.finish() }
+        }
         let image = await session.run()
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }

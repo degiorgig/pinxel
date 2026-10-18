@@ -12,10 +12,3 @@ public protocol RegionFrameSource {
 public extension RegionFrameSource {
     func prepare(display: DisplayInfo) async throws {}
 }
-
-/// Fa scorrere il contenuto sotto `point` (punti globali, origine in alto a sinistra).
-@MainActor
-public protocol ScrollDriver {
-    /// Positivo: più giù nel documento (il contenuto sale).
-    func scroll(by points: Double, at point: CGPoint)
-}

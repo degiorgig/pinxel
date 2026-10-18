@@ -43,33 +43,7 @@ public final class ScreenCaptureKitFrameSource: RegionFrameSource {
     }
 }
 
-/// Scorrimento con eventi di sistema in pixel; richiede il permesso Accessibilità.
-@MainActor
-public struct CGEventScrollDriver: ScrollDriver {
-    /// Segna gli eventi di Pinxel, per distinguerli dallo scorrimento dell'utente nei monitor globali.
-    public static let syntheticMarker: Int64 = 0x5069_6E78
-    static let maximumChunk = 50.0
-
-    public init() {}
-
-    public func scroll(by points: Double, at point: CGPoint) {
-        for chunk in Self.chunks(for: points) {
-            // Rotella negativa: il contenuto sale, cioè si va più giù nel documento.
-            guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1,
-                                      wheel1: Int32((-chunk).rounded()), wheel2: 0, wheel3: 0) else { continue }
-            event.location = point
-            event.setIntegerValueField(.eventSourceUserData, value: Self.syntheticMarker)
-            event.post(tap: .cghidEventTap)
-        }
-    }
-
-    static func chunks(for points: Double) -> [Double] {
-        guard points != 0 else { return [] }
-        let count = Int((abs(points) / maximumChunk).rounded(.up))
-        return Array(repeating: points / Double(count), count: count)
-    }
-}
-
+/// Serve all'event tap che consuma Esc e Invio durante la cattura a scorrimento.
 @MainActor
 public protocol AccessibilityPermission {
     var isGranted: Bool { get }

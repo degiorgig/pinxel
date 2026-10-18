@@ -1,42 +1,33 @@
 import CoreGraphics
 
-/// Pagina lunga virtuale per test e UI test: fa da sorgente dei fotogrammi e da scorrimento.
+/// Pagina lunga virtuale per test e UI test: fa da sorgente dei fotogrammi; i test la scorrono con `scrollTo`.
 /// I fotogrammi sono intestazione + `viewportHeight` righe del contenuto + piè di pagina.
 @MainActor
-public final class FakeScrollingPage: RegionFrameSource, ScrollDriver {
+public final class FakeScrollingPage: RegionFrameSource {
     public let content: CGImage
     public let viewportHeight: Int
     public let header: CGImage?
     public let footer: CGImage?
     public let scale: Double
-    /// Quanto scorre davvero rispetto al richiesto (app con accelerazione o scorrimento ridotto).
-    public var scrollFactor: Double
     /// Contenuto che cambia da solo: ogni fotogramma è diverso dal precedente.
     public var isAnimating = false
     /// Chiamato a ogni fotogramma con il numero del fotogramma (da 1).
     public var onFrame: ((Int) -> Void)?
     public private(set) var position = 0
-    public private(set) var scrollCalls: [Double] = []
     public private(set) var frameCount = 0
 
     public init(content: CGImage, viewportHeight: Int, header: CGImage? = nil, footer: CGImage? = nil,
-                scale: Double = 2, scrollFactor: Double = 1) {
+                scale: Double = 2) {
         self.content = content
         self.viewportHeight = min(viewportHeight, content.height)
         self.header = header
         self.footer = footer
         self.scale = scale
-        self.scrollFactor = scrollFactor
     }
 
     public var maxPosition: Int { content.height - viewportHeight }
 
-    public func scroll(by points: Double, at point: CGPoint) {
-        scrollCalls.append(points)
-        scrollTo(position + Int((points * scale * scrollFactor).rounded()))
-    }
-
-    /// Scorrimento a mano, in pixel.
+    /// Scorrimento dell'utente, in pixel.
     public func scrollTo(_ newPosition: Int) {
         position = min(max(newPosition, 0), maxPosition)
     }

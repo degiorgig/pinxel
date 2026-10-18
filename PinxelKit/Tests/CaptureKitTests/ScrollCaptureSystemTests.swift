@@ -11,12 +11,6 @@ struct ScrollCaptureSystemTests {
         #expect(ScreenCaptureKitFrameSource.pixelSize(for: rect, on: display) == (600, 800))
     }
 
-    @Test func scrollsAreSplitIntoSmallEvents() {
-        #expect(CGEventScrollDriver.chunks(for: 150) == [50, 50, 50])
-        #expect(CGEventScrollDriver.chunks(for: -40) == [-40])
-        #expect(CGEventScrollDriver.chunks(for: 0) == [])
-    }
-
     @Test func fixedPermissionReportsItsValue() {
         #expect(FixedAccessibilityPermission(isGranted: true).isGranted)
         #expect(!FixedAccessibilityPermission(isGranted: false).isGranted)
