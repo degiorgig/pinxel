@@ -108,8 +108,12 @@ public final class CanvasView: NSView, EditorActions {
 
     public override func layout() {
         super.layout()
-        if followsWindow, bounds.width > 0, bounds.height > 0 {
-            viewport.fit(canvasSize: canvasSize, in: bounds.size)
+        if bounds.width > 0, bounds.height > 0 {
+            if followsWindow {
+                viewport.fit(canvasSize: canvasSize, in: bounds.size)
+            } else {
+                viewport.constrain(canvasSize: canvasSize, in: bounds.size)
+            }
         }
         layoutTextEditor()
     }
@@ -127,8 +131,12 @@ public final class CanvasView: NSView, EditorActions {
                 // Un altro strumento chiude la modifica del testo.
                 if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
                 // Ritaglio, taglio, ridimensiona e margini cambiano la tela: se segue la finestra, la riadatta.
-                if self.followsWindow, self.bounds.width > 0, self.bounds.height > 0 {
-                    self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
+                if self.bounds.width > 0, self.bounds.height > 0 {
+                    if self.followsWindow {
+                        self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
+                    } else {
+                        self.viewport.constrain(canvasSize: self.canvasSize, in: self.bounds.size)
+                    }
                     self.layoutTextEditor()
                 }
                 self.needsDisplay = true
@@ -737,13 +745,14 @@ public final class CanvasView: NSView, EditorActions {
 
     private func setZoom(_ zoom: Double, anchor: CGPoint) {
         viewport.setZoom(zoom, anchor: anchor)
+        viewport.constrain(canvasSize: canvasSize, in: bounds.size)
         followsWindow = false
         layoutTextEditor()
         needsDisplay = true
     }
 
     private func pan(by delta: CGSize) {
-        viewport.pan(by: delta)
+        viewport.pan(by: delta, canvasSize: canvasSize, in: bounds.size)
         followsWindow = false
         layoutTextEditor()
         needsDisplay = true
@@ -909,6 +918,8 @@ public final class CanvasView: NSView, EditorActions {
         if adaptCanvas {
             guard let background = ImagePlacement.resized(cgImage, to: placement.imageSize),
                   let asset = session.assets.add(background) else { return false }
+            // Un'immagine nuova al posto della tela: la si mostra intera, come appena aperta.
+            followsWindow = true
             session.perform(ReplaceBackground(asset, size: placement.imageSize, in: document, name: "Incolla immagine"))
             session.selection = []
             return true

@@ -75,9 +75,22 @@ public struct Viewport: Equatable, Sendable {
         center(canvasSize: canvasSize, in: viewSize)
     }
 
-    public mutating func pan(by delta: CGSize) {
+    /// Sposta la tela, ma solo entro i suoi bordi (vedi `constrain`).
+    public mutating func pan(by delta: CGSize, canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         origin.x += delta.width
         origin.y += delta.height
+        constrain(canvasSize: canvasSize, in: viewSize, margin: margin)
+    }
+
+    /// Come una vista che scorre: in ogni direzione la tela che entra nella vista resta centrata; quella più grande
+    /// si sposta solo finché i suoi bordi restano a `margin` punti da quelli della vista.
+    public mutating func constrain(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
+        func axis(_ origin: Double, content: Double, view: Double) -> Double {
+            if content + 2 * margin <= view { return (view - content) / 2 }
+            return min(margin, max(view - content - margin, origin))
+        }
+        origin = CGPoint(x: axis(origin.x, content: canvasSize.width * pointsPerPixel, view: viewSize.width),
+                         y: axis(origin.y, content: canvasSize.height * pointsPerPixel, view: viewSize.height))
     }
 
     private mutating func center(canvasSize: CGSize, in viewSize: CGSize) {
