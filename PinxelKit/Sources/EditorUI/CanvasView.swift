@@ -940,10 +940,12 @@ public final class CanvasView: NSView, EditorActions {
         return true
     }
 
-    /// Un'immagine trascinata o incollata sopra la cattura, senza cambiarne le dimensioni; `viewPoint` è il centro
-    /// (in coordinate della vista), `nil` = centro della parte visibile.
+    /// Un'immagine trascinata o incollata sopra la cattura; `viewPoint` è il centro (in coordinate della vista),
+    /// `nil` = centro della parte visibile. Con `growsCanvas` la tela si allarga a destra e in basso per contenere
+    /// l'oggetto, che non esce mai in alto o a sinistra; altrimenti le dimensioni restano.
     @discardableResult
-    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, name: String = "Inserisci immagine") -> Bool {
+    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, growsCanvas: Bool = false,
+                            name: String = "Inserisci immagine") -> Bool {
         guard !session.isReadOnly,
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide) else { return false }
@@ -953,12 +955,22 @@ public final class CanvasView: NSView, EditorActions {
             imageScale: PixelDensity.scale(pixelWidth: original.width, pointWidth: image.size.width),
             documentScale: document.scale,
             center: viewPoint.map { documentPoint(fromView: $0) } ?? visibleDocumentCenter(),
-            imageSize: document.imageSize,
+            // Se la tela può crescere l'oggetto non va rimpicciolito né spinto dentro: lo limita solo il lato massimo.
+            imageSize: growsCanvas ? PixelSize(width: PinxelDocument.maxImageSide, height: PinxelDocument.maxImageSide) : document.imageSize,
             adaptCanvas: false
         )
         guard let asset = session.assets.add(cgImage) else { return false }
-        let annotation = Annotation(kind: .image(PlacedImageData(rect: placement.rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
-        session.perform(AddAnnotations([annotation], name: name))
+        let rect = placement.rect
+        var commands: [any EditCommand] = []
+        if growsCanvas {
+            let limit = PinxelDocument.maxImageSide
+            let size = PixelSize(width: min(limit, max(document.imageSize.width, Int(rect.maxX.rounded(.up)))),
+                                 height: min(limit, max(document.imageSize.height, Int(rect.maxY.rounded(.up)))))
+            if size != document.imageSize { commands.append(ApplyImageOperation(.extend(size), in: document)) }
+        }
+        let annotation = Annotation(kind: .image(PlacedImageData(rect: rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
+        commands.append(AddAnnotations([annotation], name: name))
+        session.perform(commands.count == 1 ? commands[0] : CommandGroup(name: name, commands: commands))
         session.selection = [annotation.id]
         return true
     }
@@ -981,7 +993,7 @@ public final class CanvasView: NSView, EditorActions {
     public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let image = droppedImage(sender) else { return false }
         window?.makeFirstResponder(self)
-        return insertImage(image, centeredAt: convert(sender.draggingLocation, from: nil))
+        return insertImage(image, centeredAt: convert(sender.draggingLocation, from: nil), growsCanvas: true)
     }
 
     /// Centro della parte di immagine visibile nella finestra, o dell'immagine se non se ne vede niente.
