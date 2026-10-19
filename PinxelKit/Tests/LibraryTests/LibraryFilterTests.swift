@@ -59,4 +59,21 @@ struct LibraryFilterTests {
         filter.folder = .folder(work.id)
         #expect(filter.apply(to: index, timeZone: utc).isEmpty)
     }
+
+    /// Spec §1 criterio 4: la striscia ricalcola filtro ed etichette a ogni modifica; con 2000 catture deve restare veloce.
+    @Test func twoThousandCapturesFilterQuickly() {
+        var index = LibraryIndex()
+        for i in 0..<2000 {
+            index.add(LibraryItem(file: "c\(i).pinxel", added: Date(timeIntervalSince1970: Double(i)), captureDate: Date(timeIntervalSince1970: Double(i)),
+                                  appName: "App \(i % 20)", windowTitle: "Titolo \(i)", pixelWidth: 1, pixelHeight: 1, tags: ["tag\(i % 50)", "comune"]))
+        }
+        var filter = LibraryFilter()
+        filter.text = "app 7 titolo"
+        let start = Date()
+        for _ in 0..<5 {
+            _ = filter.apply(to: index, timeZone: utc)
+            _ = index.allTags
+        }
+        #expect(Date().timeIntervalSince(start) / 5 < 0.05)
+    }
 }

@@ -19,13 +19,26 @@ enum LibraryOpener {
         case .openNewWindow:
             DocumentOpener.open(url: url)
         case .replaceInWindow:
-            guard let current, let frame = window?.frame else { return DocumentOpener.open(url: url) }
-            // Il documento è nell'archivio: si salva dove sta, poi la nuova cattura prende la stessa cornice.
-            current.autosave(withImplicitCancellability: false) { _ in
+            guard let current, let window else { return DocumentOpener.open(url: url) }
+            let frame = window.frame
+            let strip = (window.windowController as? EditorWindowController)?.stripState
+            // Il documento è nell'archivio: si salva dove sta, poi la nuova cattura prende la stessa cornice e lo stesso
+            // filtro del carosello. Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
+            current.autosave(withImplicitCancellability: false) { error in
                 MainActor.assumeIsolated {
+                    if let error {
+                        current.presentError(error)
+                        return
+                    }
                     current.close()
                     DocumentOpener.open(url: url) { document in
-                        document?.windowControllers.first?.window?.setFrame(frame, display: true)
+                        let controller = document?.windowControllers.first as? EditorWindowController
+                        if let strip, let next = controller?.stripState {
+                            next.filter = strip.filter
+                            next.anchor = strip.anchor
+                            next.selection = [item.file]
+                        }
+                        controller?.window?.setFrame(frame, display: true)
                     }
                 }
             }

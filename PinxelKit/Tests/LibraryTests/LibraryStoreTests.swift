@@ -13,6 +13,13 @@ final class NoTrashFileManager: FileManager, @unchecked Sendable {
     }
 }
 
+/// FileManager che non può spostare nel Cestino per un motivo diverso dal Cestino assente (permessi).
+final class DeniedTrashFileManager: FileManager, @unchecked Sendable {
+    override func trashItem(at url: URL, resultingItemURL outResultingURL: AutoreleasingUnsafeMutablePointer<NSURL?>?) throws {
+        throw CocoaError(.fileWriteNoPermission)
+    }
+}
+
 struct LibraryStoreTests {
     let date = Date(timeIntervalSinceReferenceDate: 800_000_000)
 
@@ -66,7 +73,7 @@ struct LibraryStoreTests {
         try store.save(index)
         let load = store.load()
         #expect(load.index == index)
-        #expect(!load.setAsideCorruptIndex)
+        #expect(load.problem == nil)
     }
 
     @Test func loadReconcilesWithTheFolder() throws {
@@ -93,7 +100,7 @@ struct LibraryStoreTests {
         let item = try store.add(contents(), to: &index)
         let load = store.load()
         #expect(load.index.items.map(\.file) == [item.file])
-        #expect(!load.setAsideCorruptIndex)
+        #expect(load.problem == nil)
     }
 
     @Test func corruptIndexIsSetAsideAndRebuilt() throws {
@@ -104,7 +111,7 @@ struct LibraryStoreTests {
         let item = try store.add(contents(), to: &index)
         try Data("{ rotto".utf8).write(to: folder.appendingPathComponent(LibraryStore.indexName))
         let load = store.load()
-        #expect(load.setAsideCorruptIndex)
+        #expect(load.problem == .corrupt)
         #expect(load.index.items.map(\.file) == [item.file])
         #expect(try Data(contentsOf: folder.appendingPathComponent(LibraryStore.corruptName)) == Data("{ rotto".utf8))
     }
@@ -117,7 +124,7 @@ struct LibraryStoreTests {
         let future = Data(#"{"version":2,"folders":[],"items":[]}"#.utf8)
         try future.write(to: folder.appendingPathComponent(LibraryStore.indexName))
         let load = store.load()
-        #expect(load.setAsideCorruptIndex)
+        #expect(load.problem == .futureVersion)
         #expect(try Data(contentsOf: folder.appendingPathComponent(LibraryStore.corruptName)) == future)
     }
 
@@ -218,5 +225,37 @@ struct LibraryStoreTests {
         #expect(store.file(for: folder.appendingPathComponent("a.pinxel")) == "a.pinxel")
         #expect(store.file(for: folder.appendingPathComponent("sub/a.pinxel")) == nil)
         #expect(store.file(for: URL(fileURLWithPath: "/tmp/a.pinxel")) == nil)
+    }
+
+    @Test func unreadableIndexIsNeitherOverwrittenNorSetAside() throws {
+        let folder = temporaryFolder()
+        let indexURL = folder.appendingPathComponent(LibraryStore.indexName)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: indexURL.path)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        let store = LibraryStore(folder: folder)
+        var index = LibraryIndex()
+        let item = try store.add(contents(), to: &index)
+        _ = try index.createFolder(named: "Lavoro")
+        try store.save(index)
+        let saved = try Data(contentsOf: indexURL)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: indexURL.path)
+        let load = store.load()
+        #expect(load.problem == .unreadable)
+        #expect(load.index.items.map(\.file) == [item.file])
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: indexURL.path)
+        #expect(try Data(contentsOf: indexURL) == saved)
+        #expect(!FileManager.default.fileExists(atPath: folder.appendingPathComponent(LibraryStore.corruptName).path))
+    }
+
+    @Test func otherTrashErrorsAreNotReportedAsMissingTrash() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = LibraryStore(folder: folder, fileManager: DeniedTrashFileManager())
+        var index = LibraryIndex()
+        let item = try store.add(contents(), to: &index)
+        #expect(throws: LibraryError.writeFailed(store.url(for: item).path)) { try store.trash([item.file], in: &index) }
+        #expect(index.items.count == 1)
     }
 }

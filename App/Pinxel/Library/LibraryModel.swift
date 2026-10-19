@@ -7,13 +7,26 @@ import Persistence
 @MainActor
 @Observable
 final class LibraryModel {
-    private(set) var index = LibraryIndex()
+    private(set) var index = LibraryIndex() {
+        didSet {
+            guard index != oldValue else { return }
+            allTags = index.allTags
+            filtered = nil
+        }
+    }
+    /// Le etichette in uso, ricalcolate solo quando cambia l'indice (la striscia le chiede a ogni disegno).
+    private(set) var allTags: [String] = []
+    @ObservationIgnored private var filtered: (filter: LibraryFilter, items: [Library.LibraryItem])?
     /// Data di modifica dei file noti: quando cambia, la miniatura si rilegge.
     private(set) var thumbnailRevision: [String: Date] = [:]
 
     @ObservationIgnored let store: LibraryStore
     @ObservationIgnored private let notifier: Notifier
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
+    /// `library.json` c'è ma non si legge: finché è così non si riscrive, o cartelle ed etichette andrebbero perse.
+    @ObservationIgnored private var indexUnreadable = false
+    /// Date di modifica di cartella e indice all'ultimo caricamento: al ritorno su Pinxel si ricarica solo se cambiano.
+    @ObservationIgnored private var loadedStamp: [Date?] = []
 
     init(store: LibraryStore, notifier: Notifier) {
         self.store = store
@@ -24,32 +37,58 @@ final class LibraryModel {
             MainActor.assumeIsolated { self?.documentSaved(at: url) }
         })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reload() }
+            MainActor.assumeIsolated { self?.reloadIfChanged() }
         })
     }
 
     func reload() {
         let load = store.load()
-        if load.setAsideCorruptIndex {
+        indexUnreadable = load.problem == .unreadable
+        switch load.problem {
+        case .corrupt:
             notifier.info("L'indice della libreria era danneggiato: ricostruito dai file. Cartelle ed etichette sono andate perse; la copia è in \(LibraryStore.corruptName).")
+        case .futureVersion:
+            notifier.info("L'indice della libreria è di una versione più recente di Pinxel: messo da parte in \(LibraryStore.corruptName) e ricostruito dai file.")
+        case .unreadable:
+            notifier.info("Impossibile leggere l'indice della libreria: cartelle ed etichette non si salvano finché non torna leggibile.")
+        case nil:
+            break
         }
-        if load.index != index { index = load.index }
+        // Indice illeggibile: le catture si vedono lo stesso, ma senza perdere cartelle ed etichette già in memoria.
+        if load.problem == .unreadable, !index.items.isEmpty {
+            index = index.reconciled(withFiles: Set(load.index.items.map(\.file))) { file in load.index.item(file)! }
+        } else if load.index != index {
+            index = load.index
+        }
+        loadedStamp = stamp()
         refreshRevisions()
+    }
+
+    /// Al ritorno su Pinxel: qualcosa è cambiato nella cartella (file aggiunti o tolti dal Finder) o nell'indice?
+    private func reloadIfChanged() {
+        if stamp() != loadedStamp { reload() }
+    }
+
+    private func stamp() -> [Date?] {
+        [store.folder, store.folder.appendingPathComponent(LibraryStore.indexName)].map {
+            try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+        }
     }
 
     func add(_ contents: PinxelFileContents) throws -> URL {
         let item = try store.add(contents, to: &index)
         persist()
-        refreshRevisions()
+        refreshRevisions([item.file])
         return store.url(for: item)
     }
 
     func importFiles(_ urls: [URL]) {
+        var added: [String] = []
         for url in urls {
-            do { _ = try store.importFile(at: url, into: &index) } catch { notifier.failure(error) }
+            do { added.append(try store.importFile(at: url, into: &index).file) } catch { notifier.failure(error) }
         }
         persist()
-        refreshRevisions()
+        refreshRevisions(added)
     }
 
     func move(_ files: Set<String>, to folder: UUID?) { index.move(files, to: folder); persist() }
@@ -79,11 +118,16 @@ final class LibraryModel {
         }
     }
 
-    /// Chiude le finestre aperte su queste catture, poi le sposta nel Cestino (o, se non c'è, chiede e cancella).
+    /// Sposta le catture nel Cestino (o, se non c'è, chiede e cancella), poi chiude le finestre di quelle eliminate.
+    /// Le finestre si chiudono solo dopo: se l'eliminazione non riesce o si annulla, le modifiche restano.
     func delete(_ files: Set<String>) {
         guard !files.isEmpty else { return }
-        for document in NSDocumentController.shared.documents {
-            if let url = document.fileURL, let file = store.file(for: url), files.contains(file) { document.close() }
+        let open = NSDocumentController.shared.documents.compactMap { document -> (NSDocument, String)? in
+            guard let url = document.fileURL, let file = store.file(for: url), files.contains(file) else { return nil }
+            return (document, file)
+        }
+        defer {
+            for (document, file) in open where index.item(file) == nil { document.close() }
         }
         do {
             try store.trash(files, in: &index)
@@ -100,7 +144,15 @@ final class LibraryModel {
             notifier.failure(error)
         }
         persist()
-        refreshRevisions()
+        thumbnailRevision = thumbnailRevision.filter { index.item($0.key) != nil }
+    }
+
+    /// Le catture che il filtro mostra; ricalcolate solo quando cambiano indice o filtro.
+    func items(for filter: LibraryFilter) -> [Library.LibraryItem] {
+        if let filtered, filtered.filter == filter { return filtered.items }
+        let items = filter.apply(to: index)
+        filtered = (filter, items)
+        return items
     }
 
     func file(for url: URL) -> String? { store.file(for: url).flatMap { index.item($0) != nil ? $0 : nil } }
@@ -113,19 +165,26 @@ final class LibraryModel {
         } else {
             store.refreshed(file, in: &index)
             persist()
-            refreshRevisions()
+            refreshRevisions([file])
         }
     }
 
     private func persist() {
-        do { try store.save(index) } catch { notifier.failure(error) }
+        guard !indexUnreadable else { return }
+        do {
+            try store.save(index)
+            loadedStamp = stamp()
+        } catch {
+            notifier.failure(error)
+        }
     }
 
-    private func refreshRevisions() {
-        var next: [String: Date] = [:]
-        for item in index.items {
-            let date = (try? store.url(for: item).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-            next[item.file] = date
+    /// Rilegge le date di modifica: di tutti i file dopo un caricamento, altrimenti solo di quelli indicati.
+    private func refreshRevisions(_ files: [String]? = nil) {
+        var next = files == nil ? [:] : thumbnailRevision
+        for file in files ?? index.items.map(\.file) {
+            let url = store.folder.appendingPathComponent(file)
+            next[file] = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
         }
         if next != thumbnailRevision { thumbnailRevision = next }
     }

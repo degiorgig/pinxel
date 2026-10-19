@@ -8,6 +8,8 @@ struct EditorView: View {
     let stripState: LibraryStripState
     /// File della finestra, letto a ogni disegno: un documento senza titolo può diventare un file.
     let currentURL: () -> URL?
+    /// La finestra che ospita questa vista: il clic sul carosello decide su di lei, non sulla finestra in primo piano.
+    let window: () -> NSWindow?
     @AppStorage("libraryStripVisible") private var stripVisible = true
 
     var body: some View {
@@ -25,7 +27,7 @@ struct EditorView: View {
                 let library = AppEnvironment.shared.library
                 LibraryStrip(library: library, state: stripState,
                              currentFile: currentURL().flatMap { library.file(for: $0) }) { item, newWindow in
-                    LibraryOpener.open(item, from: NSApp.keyWindow, newWindow: newWindow)
+                    LibraryOpener.open(item, from: window(), newWindow: newWindow)
                 }
             }
         }

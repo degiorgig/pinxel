@@ -24,7 +24,7 @@ struct LibraryStrip: View {
     let open: (Library.LibraryItem, _ newWindow: Bool) -> Void
     @FocusState private var focused: Bool
 
-    private var items: [Library.LibraryItem] { state.filter.apply(to: library.index) }
+    private var items: [Library.LibraryItem] { library.items(for: state.filter) }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -34,13 +34,17 @@ struct LibraryStrip: View {
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView(.horizontal) {
-                    LazyHStack(spacing: 8) {
-                        ForEach(items) { item in thumbnail(item) }
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 8) {
+                            ForEach(items) { item in thumbnail(item) }
+                        }
+                        .padding(.horizontal, 12)
                     }
-                    .padding(.horizontal, 12)
+                    .scrollIndicators(.automatic)
+                    // Finestra nuova o cattura sostituita: la striscia mostra quella aperta, anche se è vecchia di mesi.
+                    .onAppear { if let currentFile { proxy.scrollTo(currentFile, anchor: .center) } }
                 }
-                .scrollIndicators(.automatic)
             }
         }
         .padding(.vertical, 6)
@@ -122,7 +126,7 @@ struct LibraryStrip: View {
             Menu(state.filter.tag.map { "#\($0)" } ?? "Etichetta") {
                 Picker("Etichetta", selection: $state.filter.tag) {
                     Text("Tutte").tag(String?.none)
-                    ForEach(library.index.allTags, id: \.self) { tag in Text(tag).tag(Optional(tag)) }
+                    ForEach(library.allTags, id: \.self) { tag in Text(tag).tag(Optional(tag)) }
                 }
                 .pickerStyle(.inline)
             }
@@ -165,7 +169,7 @@ struct LibraryStrip: View {
             }
         }
         Menu("Etichette") {
-            ForEach(library.index.allTags, id: \.self) { tag in
+            ForEach(library.allTags, id: \.self) { tag in
                 let all = files.allSatisfy { file in library.index.item(file)?.tags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame } ?? false }
                 Toggle(tag, isOn: Binding(get: { all }, set: { on in on ? library.addTag(tag, to: files) : library.removeTag(tag, from: files) }))
             }
@@ -206,12 +210,23 @@ struct LibraryStrip: View {
         return try? ImageCodec.encode(image, type: .png)
     }
 
+    /// Tutti i file trascinati in un'unica importazione (un solo salvataggio dell'indice).
     private func importDropped(_ providers: [NSItemProvider]) {
+        let group = DispatchGroup()
+        let collected = DroppedURLs()
+        let temporary = TemporaryFiles.root.resolvingSymlinksInPath().path
         for provider in providers {
+            group.enter()
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
                 // Le miniature trascinate dalla striscia stessa sono PNG temporanei: non si reimportano.
-                guard let url, !url.standardizedFileURL.path.hasPrefix(TemporaryFiles.root.standardizedFileURL.path) else { return }
-                Task { @MainActor in library.importFiles([url]) }
+                if let url, !url.resolvingSymlinksInPath().path.hasPrefix(temporary) { collected.append(url) }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) {
+            MainActor.assumeIsolated {
+                let urls = collected.urls
+                if !urls.isEmpty { library.importFiles(urls) }
             }
         }
     }
@@ -227,4 +242,16 @@ struct LibraryStrip: View {
         alert.window.initialFirstResponder = field
         return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }
+}
+
+/// URL raccolti dalle callback di `NSItemProvider`, che arrivano su thread qualsiasi.
+private final class DroppedURLs: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [URL] = []
+
+    func append(_ url: URL) {
+        lock.withLock { stored.append(url) }
+    }
+
+    var urls: [URL] { lock.withLock { stored } }
 }

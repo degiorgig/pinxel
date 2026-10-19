@@ -11,10 +11,18 @@ public enum LibraryError: Error, Equatable {
     case trashUnavailable
 }
 
+public enum LibraryLoadProblem: Equatable, Sendable {
+    /// `library.json` era rovinato: messo da parte e ricostruito dai file.
+    case corrupt
+    /// `library.json` è di una versione più recente: messo da parte e ricostruito dai file.
+    case futureVersion
+    /// `library.json` c'è ma non si legge (permessi, disco): non si tocca, l'indice in memoria viene dai file.
+    case unreadable
+}
+
 public struct LibraryLoad: Sendable {
     public var index: LibraryIndex
-    /// `library.json` era rovinato o di una versione futura: messo da parte e ricostruito dai file.
-    public var setAsideCorruptIndex: Bool
+    public var problem: LibraryLoadProblem?
 }
 
 /// Tutto ciò che tocca la cartella dell'archivio. Si usa dal thread principale; solo `thumbnail(at:)` va bene altrove.
@@ -56,20 +64,26 @@ public final class LibraryStore {
 
     public func load() -> LibraryLoad {
         var index = LibraryIndex()
-        var setAside = false
-        if let data = try? Data(contentsOf: indexURL) {
+        var problem: LibraryLoadProblem?
+        if fileManager.fileExists(atPath: indexURL.path) {
             do {
-                index = try Self.decoder.decode(LibraryIndex.self, from: data)
+                let data = try Data(contentsOf: indexURL)
+                do {
+                    index = try Self.decoder.decode(LibraryIndex.self, from: data)
+                } catch {
+                    problem = error as? LibraryIndexError == nil ? .corrupt : .futureVersion
+                    // Senza la copia messa da parte l'indice non si riscrive: cartelle ed etichette restano recuperabili.
+                    let corrupt = folder.appendingPathComponent(Self.corruptName)
+                    try? fileManager.removeItem(at: corrupt)
+                    do { try fileManager.moveItem(at: indexURL, to: corrupt) } catch { problem = .unreadable }
+                }
             } catch {
-                setAside = true
-                let corrupt = folder.appendingPathComponent(Self.corruptName)
-                try? fileManager.removeItem(at: corrupt)
-                try? fileManager.moveItem(at: indexURL, to: corrupt)
+                problem = .unreadable
             }
         }
         let reconciled = index.reconciled(withFiles: pinxelFiles()) { makeItem(file: $0) }
-        if reconciled != index || setAside { try? save(reconciled) }
-        return LibraryLoad(index: reconciled, setAsideCorruptIndex: setAside)
+        if problem != .unreadable, reconciled != index || problem != nil { try? save(reconciled) }
+        return LibraryLoad(index: reconciled, problem: problem)
     }
 
     public func save(_ index: LibraryIndex) throws {
@@ -136,8 +150,10 @@ public final class LibraryStore {
             do {
                 try fileManager.trashItem(at: url, resultingItemURL: nil)
                 removed.insert(file)
-            } catch {
+            } catch let error as CocoaError where error.code == .featureUnsupported || error.code == .fileWriteVolumeReadOnly {
                 throw LibraryError.trashUnavailable
+            } catch {
+                throw LibraryError.writeFailed(url.path)
             }
         }
     }

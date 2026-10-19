@@ -13,9 +13,9 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     init(model: EditorModel) {
         self.model = model
         weak var weakSelf: EditorWindowController?
-        let hosting = NSHostingController(rootView: EditorView(model: model, stripState: stripState) {
-            (weakSelf?.document as? NSDocument)?.fileURL
-        })
+        let hosting = NSHostingController(rootView: EditorView(model: model, stripState: stripState,
+                                                               currentURL: { (weakSelf?.document as? NSDocument)?.fileURL },
+                                                               window: { weakSelf?.window }))
         hosting.sceneBridgingOptions = [.toolbars]
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
