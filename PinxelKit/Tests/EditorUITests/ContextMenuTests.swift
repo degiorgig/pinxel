@@ -40,7 +40,7 @@ struct ContextMenuTests {
         let canvas = makeCanvas()
         let menu = try #require(rightClick(canvas, at: CGPoint(x: 125, y: 125)))
         #expect(canvas.model.session.selection == [shape.id])
-        for title in ["Porta in primo piano", "Porta avanti", "Porta indietro", "Porta in fondo", "Duplica", "Blocca", "Elimina"] {
+        for title in [CommandName.bringToFront, CommandName.bringForward, CommandName.sendBackward, CommandName.sendToBack, CommandName.duplicate, CommandName.lock, CommandName.delete] {
             #expect(item(menu, title)?.isEnabled == true, "\(title)")
         }
     }
@@ -48,7 +48,7 @@ struct ContextMenuTests {
     @Test func sendToBackFromTheMenuPutsTheObjectUnderTheCapture() throws {
         let canvas = makeCanvas()
         let menu = rightClick(canvas, at: CGPoint(x: 125, y: 125))
-        let back = try #require(item(menu, "Porta in fondo"))
+        let back = try #require(item(menu, CommandName.sendToBack))
         _ = (back.target as AnyObject?)?.perform(try #require(back.action), with: back)
         #expect(canvas.model.session.document.annotations.first?.id == shape.id)
         canvas.model.session.undoManager.undo()
@@ -80,8 +80,8 @@ struct ContextMenuTests {
         canvas.model.session.selection = [shape.id]
         canvas.lockSelection(nil)
         let menu = rightClick(canvas, at: CGPoint(x: 125, y: 125))
-        #expect(item(menu, "Sblocca")?.isEnabled == true)
-        #expect(item(menu, "Porta in fondo")?.isEnabled == false)
+        #expect(item(menu, CommandName.unlock)?.isEnabled == true)
+        #expect(item(menu, CommandName.sendToBack)?.isEnabled == false)
     }
 
     @Test func readOnlyHasNoMenu() {

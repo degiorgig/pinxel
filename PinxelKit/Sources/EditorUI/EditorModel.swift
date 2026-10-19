@@ -92,7 +92,7 @@ public final class EditorModel {
     /// Applica uno stile rapido agli oggetti selezionati dello stesso strumento, o allo strumento.
     public func applyQuickStyle(_ style: Style) {
         guard let target = quickStyleTool else { return }
-        update(name: "Stile rapido", selection: { annotation in
+        update(name: CommandName.quickStyle, selection: { annotation in
             if EditorTool(kind: annotation.kind) == target { annotation.style = style }
         }, tool: { styles in
             styles.styles[target] = style
@@ -116,7 +116,7 @@ public final class EditorModel {
 
     public func setStyle<Value: Equatable>(_ keyPath: WritableKeyPath<Style, Value>, _ value: Value, coalescing: Bool = false) {
         let tool = self.tool
-        update(name: "Stile", coalescing: coalescing, selection: { $0.style[keyPath: keyPath] = value }, tool: { styles in
+        update(name: CommandName.style, coalescing: coalescing, selection: { $0.style[keyPath: keyPath] = value }, tool: { styles in
             styles.styles[tool, default: ToolStyles.defaultStyle(for: tool)][keyPath: keyPath] = value
         })
     }
@@ -198,7 +198,7 @@ public final class EditorModel {
             guard on else { return nil }
             return current.fill ?? (kind == .text || kind == .callout ? .white : (current.stroke ?? .accentRed))
         }
-        update(name: "Riempimento", selection: { annotation in
+        update(name: CommandName.fill, selection: { annotation in
             let kind = InspectedKind(annotation.kind)
             guard kind.showsFill else { return }
             annotation.style.fill = fill(for: kind, current: annotation.style)
@@ -212,7 +212,7 @@ public final class EditorModel {
     }
 
     public func setEffectMode(_ mode: EffectMode) {
-        update(name: "Effetto", selection: { $0.convertEffect(to: mode) }, tool: { $0.effectMode = mode })
+        update(name: CommandName.effect, selection: { $0.convertEffect(to: mode) }, tool: { $0.effectMode = mode })
     }
 
     /// Attiva lo strumento del tasto premuto; `false` se il tasto non è di nessuno strumento.

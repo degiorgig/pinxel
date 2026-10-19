@@ -26,7 +26,7 @@ public enum AnnotationEditing {
             copy.isLocked = locked
             return copy
         }
-        return UpdateAnnotations(name: locked ? "Blocca" : "Sblocca", before: before, after: after)
+        return UpdateAnnotations(name: locked ? CommandName.lock : CommandName.unlock, before: before, after: after)
     }
 
     /// Copie spostate di `offset`, con ID nuovi e sbloccate.

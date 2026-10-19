@@ -5,19 +5,36 @@ public enum EditorTool: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .select: "Selezione"
-        case .arrow: "Freccia"
-        case .line: "Linea"
-        case .shape: "Forma"
-        case .text: "Testo"
-        case .callout: "Callout"
-        case .step: "Step"
-        case .pen: "Penna"
-        case .highlight: "Evidenziatore"
-        case .blur: "Sfocatura"
-        case .magnifier: "Lente"
-        case .crop: "Ritaglio"
-        case .cutOut: "Taglia e ricuci"
+        case .select: String(localized: "Select", bundle: .module, comment: "Tool name")
+        case .arrow: String(localized: "Arrow", bundle: .module, comment: "Tool name")
+        case .line: String(localized: "Line", bundle: .module, comment: "Tool name")
+        case .shape: String(localized: "Shape", bundle: .module, comment: "Tool name")
+        case .text: String(localized: "Text", bundle: .module, comment: "Tool name")
+        case .callout: String(localized: "Callout", bundle: .module, comment: "Tool name")
+        case .step: String(localized: "Step", bundle: .module, comment: "Tool name")
+        case .pen: String(localized: "Pen", bundle: .module, comment: "Tool name")
+        case .highlight: String(localized: "Highlighter", bundle: .module, comment: "Tool name")
+        case .blur: String(localized: "Blur", bundle: .module, comment: "Tool name")
+        case .magnifier: String(localized: "Magnifier", bundle: .module, comment: "Tool name")
+        case .crop: String(localized: "Crop", bundle: .module, comment: "Tool name")
+        case .cutOut: String(localized: "Cut Out", bundle: .module, comment: "Tool name")
+        }
+    }
+
+    /// Nome in "Annulla …" di un oggetto creato con lo strumento.
+    public var addCommandName: String {
+        switch self {
+        case .arrow: String(localized: "Add Arrow", bundle: .module, comment: "Undo: new object")
+        case .line: String(localized: "Add Line", bundle: .module, comment: "Undo: new object")
+        case .shape: String(localized: "Add Shape", bundle: .module, comment: "Undo: new object")
+        case .text: String(localized: "Add Text", bundle: .module, comment: "Undo: new object")
+        case .callout: String(localized: "Add Callout", bundle: .module, comment: "Undo: new object")
+        case .step: String(localized: "Add Step", bundle: .module, comment: "Undo: new object")
+        case .pen: String(localized: "Add Pen Stroke", bundle: .module, comment: "Undo: new object")
+        case .highlight: String(localized: "Add Highlight", bundle: .module, comment: "Undo: new object")
+        case .blur: String(localized: "Add Blur", bundle: .module, comment: "Undo: new object")
+        case .magnifier: String(localized: "Add Magnifier", bundle: .module, comment: "Undo: new object")
+        case .select, .crop, .cutOut: CommandName.add
         }
     }
 

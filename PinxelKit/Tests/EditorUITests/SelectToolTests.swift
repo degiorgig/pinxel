@@ -84,7 +84,7 @@ struct SelectToolTests {
         #expect(drag.command == nil)
         _ = tool.handle(.drag(CGPoint(x: 170, y: 125), []), document: doc, selection: [a.id])
         let up = tool.handle(.up(CGPoint(x: 170, y: 125), []), document: doc, selection: [a.id])
-        #expect(up.command?.name == "Sposta")
+        #expect(up.command?.name == CommandName.move)
         #expect(applied(up, to: doc).annotations.first { $0.id == a.id }?.bounds.minX == 120)
     }
 
@@ -104,7 +104,7 @@ struct SelectToolTests {
         let drag = tool.handle(.drag(CGPoint(x: 150, y: 175), .option), document: doc, selection: [a.id])
         #expect(drag.preview?.count == 2)
         let up = tool.handle(.up(CGPoint(x: 150, y: 175), .option), document: doc, selection: [a.id])
-        #expect(up.command?.name == "Duplica")
+        #expect(up.command?.name == CommandName.duplicate)
         #expect(up.selection == [TestDocuments.id(101)])
         let result = applied(up, to: doc)
         #expect(result.annotations.count == 2)
@@ -126,7 +126,7 @@ struct SelectToolTests {
         _ = tool.handle(.down(CGPoint(x: 200, y: 150), [], clickCount: 1), document: doc, selection: [a.id])
         _ = tool.handle(.drag(CGPoint(x: 230, y: 180), []), document: doc, selection: [a.id])
         let up = tool.handle(.up(CGPoint(x: 250, y: 200), []), document: doc, selection: [a.id])
-        #expect(up.command?.name == "Ridimensiona")
+        #expect(up.command?.name == CommandName.resize)
         #expect(applied(up, to: doc).annotations.first?.bounds == CGRect(x: 100, y: 100, width: 150, height: 100))
     }
 
@@ -153,7 +153,7 @@ struct SelectToolTests {
         let doc = document([a])
         _ = tool.handle(.down(CGPoint(x: 150, y: 70), [], clickCount: 1), document: doc, selection: [a.id])
         let up = tool.handle(.up(CGPoint(x: 250, y: 130), .shift), document: doc, selection: [a.id])
-        #expect(up.command?.name == "Ruota")
+        #expect(up.command?.name == CommandName.rotate)
         let rotation = applied(up, to: doc).annotations.first?.rotation ?? 0
         #expect(abs(rotation - .pi / 2) < 1e-9)
     }

@@ -63,7 +63,7 @@ public final class CanvasView: NSView, EditorActions {
         model.zoom = viewport.zoom
         setAccessibilityElement(true)
         setAccessibilityRole(.image)
-        setAccessibilityLabel("Tela")
+        setAccessibilityLabel(String(localized: "Canvas", bundle: .module, comment: "Accessibility label of the editor canvas"))
         setAccessibilityIdentifier("pinxel.editor.canvas")
         updateAccessibilityValue()
         observeModel()
@@ -164,7 +164,7 @@ public final class CanvasView: NSView, EditorActions {
 
     private func updateAccessibilityValue() {
         let size = session.document.imageSize
-        setAccessibilityValue("Annotazioni: \(session.document.annotations.count), selezionate: \(session.selection.count), immagine: \(size.width)×\(size.height)")
+        setAccessibilityValue(String(localized: "Annotations: \(session.document.annotations.count), selected: \(session.selection.count), image: \(size.width)×\(size.height)", bundle: .module, comment: "Canvas accessibility value"))
     }
 
     // MARK: Disegno
@@ -200,7 +200,7 @@ public final class CanvasView: NSView, EditorActions {
         }
         ctx.restoreGState()
 
-        if renderFailed { drawMessage("Impossibile mostrare l'immagine del documento.") }
+        if renderFailed { drawMessage(String(localized: "The document's image can't be shown.", bundle: .module, comment: "Canvas message")) }
         if blank, textEditor == nil { drawEmptyHint() }
         drawSelection(in: ctx)
         drawGuides(in: ctx)
@@ -248,7 +248,7 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     private func drawEmptyHint() {
-        let text = "Incolla uno screenshot con \u{2318}V" as NSString
+        let text = String(localized: "Paste a screenshot with \u{2318}V", bundle: .module, comment: "Hint on an empty canvas") as NSString
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 13, weight: .medium),
             .foregroundColor: NSColor.secondaryLabelColor,
@@ -609,11 +609,11 @@ public final class CanvasView: NSView, EditorActions {
             session.perform(command)
         }
         if let rect = result.crop {
-            applyContentEdit("Ritaglia") { ContentEditing.cropped($0, to: rect, images: session.assets.image(for:), add: { session.assets.add($0) }) }
+            applyContentEdit(CommandName.crop) { ContentEditing.cropped($0, to: rect, images: session.assets.image(for:), add: { session.assets.add($0) }) }
         }
         if let cut = result.cut {
             let canvas = session.document.imageSize
-            applyContentEdit("Taglia e ricuci") { ContentEditing.cut($0, cut, canvas: canvas, images: session.assets.image(for:), add: { session.assets.add($0) }) }
+            applyContentEdit(CommandName.cutOut) { ContentEditing.cut($0, cut, canvas: canvas, images: session.assets.image(for:), add: { session.assets.add($0) }) }
         }
         if let selection = result.selection { session.selection = selection }
         if let delta = result.nudge { session.nudge(by: delta) }
@@ -807,7 +807,7 @@ public final class CanvasView: NSView, EditorActions {
         let selected = session.selectedAnnotations.filter { !$0.isLocked }
         guard !selected.isEmpty, !session.isReadOnly else { return }
         let copies = AnnotationEditing.duplicates(of: selected, offset: AnnotationClipboard.pasteOffset)
-        session.perform(AddAnnotations(copies, name: "Duplica"))
+        session.perform(AddAnnotations(copies, name: CommandName.duplicate))
         session.selection = Set(copies.map(\.id))
     }
 
@@ -855,7 +855,7 @@ public final class CanvasView: NSView, EditorActions {
 
     private func contextMenu() -> NSMenu {
         let state = EditorMenuState(model: model)
-        let menu = NSMenu(title: "Disponi")
+        let menu = NSMenu(title: CommandName.arrange)
         menu.autoenablesItems = false
         func add(_ title: String, _ action: Selector, enabled: Bool) {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
@@ -864,19 +864,19 @@ public final class CanvasView: NSView, EditorActions {
             menu.addItem(item)
         }
         let editable = state.hasEditableSelection
-        add("Porta in primo piano", #selector(bringToFront(_:)), enabled: editable)
-        add("Porta avanti", #selector(bringForward(_:)), enabled: editable)
-        add("Porta indietro", #selector(sendBackward(_:)), enabled: editable)
-        add("Porta in fondo", #selector(sendToBack(_:)), enabled: editable)
+        add(CommandName.bringToFront, #selector(bringToFront(_:)), enabled: editable)
+        add(CommandName.bringForward, #selector(bringForward(_:)), enabled: editable)
+        add(CommandName.sendBackward, #selector(sendBackward(_:)), enabled: editable)
+        add(CommandName.sendToBack, #selector(sendToBack(_:)), enabled: editable)
         menu.addItem(.separator())
-        add("Duplica", #selector(duplicateSelection(_:)), enabled: editable)
+        add(CommandName.duplicate, #selector(duplicateSelection(_:)), enabled: editable)
         if state.hasLockedSelection && !state.hasUnlockedSelection {
-            add("Sblocca", #selector(unlockSelection(_:)), enabled: true)
+            add(CommandName.unlock, #selector(unlockSelection(_:)), enabled: true)
         } else {
-            add("Blocca", #selector(lockSelection(_:)), enabled: state.hasUnlockedSelection)
+            add(CommandName.lock, #selector(lockSelection(_:)), enabled: state.hasUnlockedSelection)
         }
         menu.addItem(.separator())
-        add("Elimina", #selector(delete(_:)), enabled: editable)
+        add(CommandName.delete, #selector(delete(_:)), enabled: editable)
         return menu
     }
 
@@ -892,7 +892,7 @@ public final class CanvasView: NSView, EditorActions {
             return
         }
         write(deletable)
-        session.perform(DeleteAnnotations(ids: Set(deletable.map(\.id)), in: session.document, name: "Taglia"))
+        session.perform(DeleteAnnotations(ids: Set(deletable.map(\.id)), in: session.document, name: CommandName.cut))
     }
 
     /// Senza annotazioni copia l'immagine intera; con annotazioni il loro contenuto privato più il loro PNG.
@@ -951,7 +951,7 @@ public final class CanvasView: NSView, EditorActions {
                 if !pasteImage(adaptCanvas: adaptCanvas) { NSSound.beep() }
                 return
             }
-            session.perform(AddAnnotations(copies, name: "Incolla"))
+            session.perform(AddAnnotations(copies, name: CommandName.paste))
             session.selection = Set(copies.map(\.id))
             return
         }
@@ -963,7 +963,7 @@ public final class CanvasView: NSView, EditorActions {
     private func pasteImage(adaptCanvas: Bool) -> Bool {
         guard adaptCanvas else {
             guard let image = NSImage(pasteboard: pasteboard) else { return false }
-            return insertImage(image, centeredAt: nil, name: "Incolla immagine")
+            return insertImage(image, centeredAt: nil, name: CommandName.pasteImage)
         }
         guard let image = NSImage(pasteboard: pasteboard),
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
@@ -992,7 +992,7 @@ public final class CanvasView: NSView, EditorActions {
     /// Un'immagine trascinata o incollata sopra il resto; `viewPoint` è il centro (in coordinate della vista),
     /// `nil` = centro della parte visibile. La tela si adatta all'oggetto, ovunque cada.
     @discardableResult
-    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, name: String = "Inserisci immagine") -> Bool {
+    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, name: String = CommandName.insertImage) -> Bool {
         guard !session.isReadOnly,
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide) else { return false }

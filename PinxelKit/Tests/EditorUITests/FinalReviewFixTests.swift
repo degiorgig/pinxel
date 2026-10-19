@@ -92,7 +92,7 @@ struct FinalReviewFixTests {
         #expect(!state.allows(false))
         state.editorIsKey = false
         #expect(state.allows(false))
-        #expect(state.undoTitle == "Annulla")
+        #expect(state.undoTitle == "Undo")
     }
 
     // 5. Tagliare e incollare un'immagine incollata la riporta.

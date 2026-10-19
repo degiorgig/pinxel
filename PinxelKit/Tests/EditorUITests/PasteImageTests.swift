@@ -127,7 +127,7 @@ struct PasteImageTests {
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
         #expect(session.document.userAnnotations.isEmpty)
-        #expect(session.undoManager.undoActionName == "Incolla immagine")
+        #expect(session.undoManager.undoActionName == CommandName.pasteImage)
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
         #expect(captureAsset(session) == TestDocuments.background)
@@ -155,7 +155,7 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         let before = session.document.annotations
-        session.perform(SetAnnotations(name: "Taglia e ricuci", before: before,
+        session.perform(SetAnnotations(name: CommandName.cutOut, before: before,
                                        after: ContentEditing.cut(before, CutOut(axis: .horizontal, start: 30, length: 40), canvas: session.document.imageSize,
                                                                  images: session.assets.image(for:), add: { session.assets.add($0) })))
         #expect(session.document.imageSize == PixelSize(width: 100, height: 60))

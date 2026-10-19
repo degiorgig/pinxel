@@ -312,25 +312,25 @@ public final class ToolController {
                     let copies = zip(after, copyIDs).map { moved, id in
                         Annotation(id: id, kind: moved.kind, style: moved.style, rotation: moved.rotation, isLocked: false)
                     }
-                    return ToolResult(command: AddAnnotations(copies, name: "Duplica"), selection: Set(copyIDs))
+                    return ToolResult(command: AddAnnotations(copies, name: CommandName.duplicate), selection: Set(copyIDs))
                 }
-                return ToolResult(command: UpdateAnnotations(name: "Sposta", before: originals, after: after))
+                return ToolResult(command: UpdateAnnotations(name: CommandName.move, before: originals, after: after))
             case .resize(let handle, let original, let start, let grab, let started):
                 // Un clic su una maniglia, senza trascinare, non modifica nulla.
                 guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
                 let after = AnnotationGeometry.resized(original, handle: handle, to: point.offset(by: grab), keepAspect: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
-                return ToolResult(command: UpdateAnnotations(name: "Ridimensiona", before: [original], after: [after]))
+                return ToolResult(command: UpdateAnnotations(name: CommandName.resize, before: [original], after: [after]))
             case .rotate(let original, let start, let grab, let started):
                 guard started || start.distance(to: point) >= dragThreshold else { return ToolResult() }
                 let after = AnnotationGeometry.rotated(original, pointer: point.offset(by: grab), snap: modifiers.contains(.shift))
                 guard after != original else { return ToolResult() }
-                return ToolResult(command: UpdateAnnotations(name: "Ruota", before: [original], after: [after]))
+                return ToolResult(command: UpdateAnnotations(name: CommandName.rotate, before: [original], after: [after]))
             case .movePart(let start, let original, let part, let started):
                 guard started else { return ToolResult() }
                 let after = AnnotationGeometry.moved(original, part: part, by: constrainedDelta(from: start, to: point, modifiers))
                 guard after != original else { return ToolResult() }
-                return ToolResult(command: UpdateAnnotations(name: "Sposta", before: [original], after: [after]))
+                return ToolResult(command: UpdateAnnotations(name: CommandName.move, before: [original], after: [after]))
             case .idle, .create:
                 return ToolResult()
             }
@@ -486,7 +486,7 @@ public final class ToolController {
             guard let annotation = makeAnnotation(id: id, start: start, end: point, points: points, modifiers: modifiers) else {
                 return ToolResult()
             }
-            return ToolResult(command: AddAnnotations([annotation], name: "Aggiungi \(tool.title.lowercased())"), selection: [id])
+            return ToolResult(command: AddAnnotations([annotation], name: tool.addCommandName), selection: [id])
 
         case .key:
             return ToolResult()

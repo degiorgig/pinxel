@@ -38,7 +38,7 @@ struct CreationToolTests {
         let tool = controller(.arrow)
         tool.styles.arrowHeads = ArrowHeads(start: .circle, end: .triangle)
         let result = drag(tool, from: CGPoint(x: 10, y: 10), through: [CGPoint(x: 50, y: 10)], to: CGPoint(x: 100, y: 10))
-        #expect(result.command?.name == "Aggiungi freccia")
+        #expect(result.command?.name == EditorTool.arrow.addCommandName)
         #expect(result.selection == [TestDocuments.id(101)])
         guard let arrow = created(result), case .arrow(let data) = arrow.kind else { Issue.record("no arrow"); return }
         #expect(data.line.start == CGPoint(x: 10, y: 10) && data.line.end == CGPoint(x: 100, y: 10))

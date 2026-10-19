@@ -50,7 +50,7 @@ struct EditorModelTests {
         model.session.selection = [rect.id]
         model.setStyle(\.lineWidth, 10)
         #expect(annotation(rect.id, in: model)?.style.lineWidth == 10)
-        #expect(model.session.undoManager.undoActionName == "Stile")
+        #expect(model.session.undoManager.undoActionName == CommandName.style)
         model.session.undoManager.undo()
         #expect(annotation(rect.id, in: model)?.style.lineWidth == 4)
     }
@@ -125,12 +125,12 @@ struct EditorModelTests {
     @Test func lockAndUnlockCommands() {
         let doc = TestDocuments.document(annotations: [rect])
         let lock = AnnotationEditing.setLocked(true, ids: [rect.id], in: doc)
-        #expect(lock?.name == "Blocca")
+        #expect(lock?.name == CommandName.lock)
         var locked = doc
         lock?.apply(to: &locked)
         #expect(locked.userAnnotations.first?.isLocked == true)
         #expect(AnnotationEditing.setLocked(true, ids: [rect.id], in: locked) == nil)
-        #expect(AnnotationEditing.setLocked(false, ids: [rect.id], in: locked)?.name == "Sblocca")
+        #expect(AnnotationEditing.setLocked(false, ids: [rect.id], in: locked)?.name == CommandName.unlock)
     }
 
     @Test func duplicatesGetNewIDsAndAnOffset() {

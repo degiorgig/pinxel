@@ -20,7 +20,7 @@ struct TextEditingTests {
     @Test func newTextAddsOneAnnotationWithTheTypedTextAndHeight() {
         var document = TestDocuments.document(annotations: [])
         let command = TextEditing.commit(newRequest, text: RichText("Nuovo"), minimumHeight: 48, document: document)
-        #expect(command?.name == "Aggiungi testo")
+        #expect(command?.name == CommandName.addText)
         command?.apply(to: &document)
         #expect(document.userAnnotations.count == 1)
         #expect(document.userAnnotations[0].richText?.plainText == "Nuovo")
@@ -33,7 +33,7 @@ struct TextEditingTests {
         var document = TestDocuments.document(annotations: [current])
         let request = TextEditRequest(annotation: existing, isNew: false)
         let command = TextEditing.commit(request, text: RichText("Ciao mondo"), minimumHeight: 0, document: document)
-        #expect(command?.name == "Modifica testo")
+        #expect(command?.name == CommandName.editText)
         command?.apply(to: &document)
         #expect(document.userAnnotations[0].richText?.plainText == "Ciao mondo")
         #expect(document.userAnnotations[0].style.fill == .white)

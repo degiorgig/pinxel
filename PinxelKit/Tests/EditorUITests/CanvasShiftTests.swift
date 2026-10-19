@@ -31,7 +31,7 @@ struct CanvasShiftTests {
         let before = try #require(stepCenter(canvas))
         let session = canvas.model.session
         let capture = try #require(session.document.annotations.first { $0.id == TestDocuments.captureID })
-        session.perform(UpdateAnnotations(name: "Sposta", before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -150, height: -50))]))
+        session.perform(UpdateAnnotations(name: CommandName.move, before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -150, height: -50))]))
         canvas.layoutSubtreeIfNeeded()
         let after = try #require(stepCenter(canvas))
         #expect(abs(after.x - before.x) < 0.5 && abs(after.y - before.y) < 0.5)
@@ -70,7 +70,7 @@ struct CanvasShiftTests {
     private func moveCaptureLeft(_ canvas: CanvasView) throws {
         let session = canvas.model.session
         let capture = try #require(session.document.annotations.first { $0.id == TestDocuments.captureID })
-        session.perform(UpdateAnnotations(name: "Sposta", before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -150, height: -50))]))
+        session.perform(UpdateAnnotations(name: CommandName.move, before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -150, height: -50))]))
     }
 
     @Test func zoomingAfterAFitKeepsThePointUnderTheAnchor() throws {

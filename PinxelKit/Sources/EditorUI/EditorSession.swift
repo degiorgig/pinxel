@@ -99,7 +99,7 @@ public final class EditorSession {
         let movable = selectedAnnotations.filter { !$0.isLocked }
         guard !movable.isEmpty else { return }
         let moved = movable.map { AnnotationGeometry.moved($0, by: delta) }
-        perform(UpdateAnnotations(name: "Sposta", before: movable, after: moved), coalescingKey: "nudge")
+        perform(UpdateAnnotations(name: CommandName.move, before: movable, after: moved), coalescingKey: "nudge")
     }
 
     /// Da chiamare a ogni salvataggio: la modifica successiva diventa un passo nuovo, così il documento

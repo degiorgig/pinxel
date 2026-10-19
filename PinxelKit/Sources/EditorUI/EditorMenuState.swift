@@ -44,11 +44,20 @@ public struct EditorMenuState: Equatable, Sendable {
         !hasEditor || !editorIsKey || isEditingText || condition
     }
 
-    public var undoTitle: String { title("Annulla", undoActionName) }
-    public var redoTitle: String { title("Ripristina", redoActionName) }
+    /// "Annulla Sposta" nella forma di macOS per la lingua dell'app; senza nome, solo "Annulla".
+    @MainActor public var undoTitle: String {
+        showsActionName(undoActionName)
+            ? UndoManager().undoMenuTitle(forUndoActionName: undoActionName)
+            : String(localized: "Undo", bundle: .module, comment: "Edit menu")
+    }
 
-    private func title(_ verb: String, _ action: String) -> String {
-        guard hasEditor, editorIsKey, !isEditingText, let first = action.first else { return verb }
-        return "\(verb) \(first.lowercased())\(action.dropFirst())"
+    @MainActor public var redoTitle: String {
+        showsActionName(redoActionName)
+            ? UndoManager().redoMenuTitle(forUndoActionName: redoActionName)
+            : String(localized: "Redo", bundle: .module, comment: "Edit menu")
+    }
+
+    private func showsActionName(_ action: String) -> Bool {
+        hasEditor && editorIsKey && !isEditingText && !action.isEmpty
     }
 }

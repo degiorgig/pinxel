@@ -78,11 +78,11 @@ public enum ContentEditing {
             data.rect = CGRect(origin: data.rect.standardized.origin, size: size)
             after.kind = .image(data)
             after.rotation = 0
-            return UpdateAnnotations(name: "Incolla immagine", before: [bottom], after: [after])
+            return UpdateAnnotations(name: CommandName.pasteImage, before: [bottom], after: [after])
         }
         let image = Annotation(id: newID, kind: .image(PlacedImageData(rect: CGRect(origin: .zero, size: size), asset: asset)),
                                style: Style(stroke: nil, lineWidth: 0))
-        return AddAnnotations([image], at: 0, name: "Incolla immagine")
+        return AddAnnotations([image], at: 0, name: CommandName.pasteImage)
     }
 
     /// I pixel dell'immagine che cadono in `inside` (coordinate del documento), alla densità dell'immagine.

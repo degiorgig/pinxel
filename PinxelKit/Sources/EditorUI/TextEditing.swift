@@ -25,18 +25,18 @@ public enum TextEditing {
             var annotation = request.annotation
             annotation.richText = text
             annotation.growTextHeight(to: minimumHeight)
-            if case .callout = annotation.kind { return AddAnnotations([annotation], name: "Aggiungi callout") }
-            return AddAnnotations([annotation], name: "Aggiungi testo")
+            if case .callout = annotation.kind { return AddAnnotations([annotation], name: CommandName.addCallout) }
+            return AddAnnotations([annotation], name: CommandName.addText)
         }
         guard let current = document.annotations.first(where: { $0.id == request.annotation.id }), !current.isLocked else {
             return nil
         }
-        if isEmpty { return DeleteAnnotations(ids: [current.id], in: document, name: "Elimina testo") }
+        if isEmpty { return DeleteAnnotations(ids: [current.id], in: document, name: CommandName.deleteText) }
         var updated = current
         updated.richText = text
         updated.growTextHeight(to: minimumHeight)
         guard updated != current else { return nil }
-        return UpdateAnnotations(name: "Modifica testo", before: [current], after: [updated])
+        return UpdateAnnotations(name: CommandName.editText, before: [current], after: [updated])
     }
 }
 

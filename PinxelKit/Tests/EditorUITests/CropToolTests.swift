@@ -108,6 +108,6 @@ struct CropToolTests {
         #expect(session.document.imageSize == PixelSize(width: 100, height: 80))
         #expect(canvas.model.tool == .select)
         try await Task.sleep(for: .milliseconds(50))
-        #expect((canvas.accessibilityValue() as? String)?.contains("immagine: 100×80") == true)
+        #expect((canvas.accessibilityValue() as? String)?.contains("image: 100×80") == true)
     }
 }
