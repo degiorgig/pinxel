@@ -1,7 +1,7 @@
 # Pinxel — Libreria delle catture — Design
 
 - **Data:** 2026-10-19
-- **Stato:** proposta, in revisione
+- **Stato:** approvata, implementata
 - **Ambito:** libreria/cronologia, rinviata dalla v1 (vedi `2026-10-14-pinxel-capture-editor-design.md`)
 
 ## 1. Obiettivo
@@ -20,6 +20,8 @@ di miniature sotto l'immagine dell'editor.
 | Interfaccia | Solo il carosello in fondo all'editor, con filtri e ricerca sopra; nessuna finestra Libreria separata |
 | Azioni sulla miniatura | Clic apre nella finestra; trascinare sulla tela, trascinare fuori; menu contestuale |
 | Conservazione | Approccio A: cartella gestita con un file `.pinxel` per cattura più un indice `library.json` |
+| Scorciatoia carosello | ⌃⌘L, perché ⌥⌘L è già Sblocca (deciso il 2026-10-19) |
+| Date nell'indice | Al secondo, come le scrive ISO 8601 |
 
 ### Criteri di successo
 
