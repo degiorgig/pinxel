@@ -28,7 +28,9 @@ import Rendering
 public final class CanvasView: NSView, EditorActions {
     public let model: EditorModel
     let controller = ToolController()
-    private(set) var viewport: Viewport
+    private(set) var viewport: Viewport {
+        didSet { if model.zoom != viewport.zoom { model.zoom = viewport.zoom } }
+    }
     /// Appunti di Copia/Incolla; i test ne usano uno privato.
     var pasteboard: NSPasteboard = .general
 
@@ -58,6 +60,8 @@ public final class CanvasView: NSView, EditorActions {
         self.model = model
         viewport = Viewport(documentScale: model.session.document.scale)
         super.init(frame: .zero)
+        model.canvas = self
+        model.zoom = viewport.zoom
         setAccessibilityElement(true)
         setAccessibilityRole(.image)
         setAccessibilityLabel("Tela")
@@ -108,8 +112,12 @@ public final class CanvasView: NSView, EditorActions {
 
     public override func layout() {
         super.layout()
-        if followsWindow, bounds.width > 0, bounds.height > 0 {
-            viewport.fit(canvasSize: canvasSize, in: bounds.size)
+        if bounds.width > 0, bounds.height > 0 {
+            if followsWindow {
+                viewport.fit(canvasSize: canvasSize, in: bounds.size)
+            } else {
+                viewport.constrain(canvasSize: canvasSize, in: bounds.size)
+            }
         }
         layoutTextEditor()
     }
@@ -121,14 +129,19 @@ public final class CanvasView: NSView, EditorActions {
             _ = session.preview
             _ = session.canvasStylePreview
             _ = model.tool
+            _ = model.isPanning
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 // Un altro strumento chiude la modifica del testo.
                 if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
                 // Ritaglio, taglio, ridimensiona e margini cambiano la tela: se segue la finestra, la riadatta.
-                if self.followsWindow, self.bounds.width > 0, self.bounds.height > 0 {
-                    self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
+                if self.bounds.width > 0, self.bounds.height > 0 {
+                    if self.followsWindow {
+                        self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
+                    } else {
+                        self.viewport.constrain(canvasSize: self.canvasSize, in: self.bounds.size)
+                    }
                     self.layoutTextEditor()
                 }
                 self.needsDisplay = true
@@ -631,7 +644,7 @@ public final class CanvasView: NSView, EditorActions {
         }
         window?.makeFirstResponder(self)
         let point = convert(event.locationInWindow, from: nil)
-        if spaceHeld {
+        if spaceHeld || model.isPanning {
             panPoint = point
             NSCursor.closedHand.set()
             return
@@ -653,7 +666,7 @@ public final class CanvasView: NSView, EditorActions {
         let point = convert(event.locationInWindow, from: nil)
         if panPoint != nil {
             panPoint = nil
-            (spaceHeld ? NSCursor.openHand : NSCursor.arrow).set()
+            (spaceHeld || model.isPanning ? NSCursor.openHand : NSCursor.arrow).set()
             return
         }
         send(.up(documentPoint(fromView: point), modifiers(of: event)))
@@ -663,7 +676,12 @@ public final class CanvasView: NSView, EditorActions {
         let modifiers = modifiers(of: event)
         switch event.keyCode {
         case 51, 117: send(.key(.delete, modifiers))
-        case 53: send(.key(.escape, modifiers))
+        case 53:
+            if model.isPanning {
+                model.isPanning = false
+            } else {
+                send(.key(.escape, modifiers))
+            }
         case 36, 76: send(.key(.enter, modifiers))
         case 123: send(.key(.left, modifiers))
         case 124: send(.key(.right, modifiers))
@@ -718,7 +736,7 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     public override func resetCursorRects() {
-        addCursorRect(bounds, cursor: model.tool == .select ? .arrow : .crosshair)
+        addCursorRect(bounds, cursor: model.isPanning ? .openHand : model.tool == .select ? .arrow : .crosshair)
     }
 
     public override func scrollWheel(with event: NSEvent) {
@@ -737,13 +755,14 @@ public final class CanvasView: NSView, EditorActions {
 
     private func setZoom(_ zoom: Double, anchor: CGPoint) {
         viewport.setZoom(zoom, anchor: anchor)
+        viewport.constrain(canvasSize: canvasSize, in: bounds.size)
         followsWindow = false
         layoutTextEditor()
         needsDisplay = true
     }
 
     private func pan(by delta: CGSize) {
-        viewport.pan(by: delta)
+        viewport.pan(by: delta, canvasSize: canvasSize, in: bounds.size)
         followsWindow = false
         layoutTextEditor()
         needsDisplay = true
@@ -909,6 +928,8 @@ public final class CanvasView: NSView, EditorActions {
         if adaptCanvas {
             guard let background = ImagePlacement.resized(cgImage, to: placement.imageSize),
                   let asset = session.assets.add(background) else { return false }
+            // Un'immagine nuova al posto della tela: la si mostra intera, come appena aperta.
+            followsWindow = true
             session.perform(ReplaceBackground(asset, size: placement.imageSize, in: document, name: "Incolla immagine"))
             session.selection = []
             return true

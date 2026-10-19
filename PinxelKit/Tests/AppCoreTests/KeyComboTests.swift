@@ -8,6 +8,9 @@ struct KeyComboTests {
         #expect(HotKeyAction.window.defaultCombo.displayString == "⌃⇧2")
         #expect(HotKeyAction.screen.defaultCombo.displayString == "⌃⇧3")
         #expect(HotKeyAction.repeatLastArea.defaultCombo.displayString == "⌃⇧4")
+        #expect(HotKeyAction.scrolling.defaultCombo.displayString == "⌃⇧5")
+        #expect(HotKeyAction.scrolling.title == "Cattura a scorrimento")
+        #expect(Set(HotKeyAction.allCases.map(\.defaultCombo)).count == HotKeyAction.allCases.count)
     }
 
     @Test func modifierGlyphOrder() {

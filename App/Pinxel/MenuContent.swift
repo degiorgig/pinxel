@@ -36,6 +36,7 @@ struct MenuContent: View {
         case .area: environment.capture(.area, fromMenu: true)
         case .window: environment.capture(.window, fromMenu: true)
         case .screen: environment.capture(.screen, fromMenu: true)
+        case .scrolling: environment.captureScrolling(fromMenu: true)
         case .repeatLastArea: environment.repeatLastArea(fromMenu: true)
         }
     }

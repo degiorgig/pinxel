@@ -114,4 +114,34 @@ struct ViewportTests {
         viewport.setZoom(0.1, anchor: .zero)
         #expect(viewport.checkerSquare == Viewport.checkerSquareRange.lowerBound)
     }
+
+    @Test func aCanvasThatFitsDoesNotScroll() {
+        var viewport = Viewport(documentScale: 1)
+        let canvas = CGSize(width: 400, height: 200), view = CGSize(width: 1000, height: 800)
+        viewport.fit(canvasSize: canvas, in: view)
+        let centered = viewport.origin
+        viewport.pan(by: CGSize(width: 0, height: -5000), canvasSize: canvas, in: view)
+        #expect(viewport.origin == centered)
+    }
+
+    @Test func aLargeCanvasScrollsOnlyToItsEdges() {
+        var viewport = Viewport(documentScale: 1)
+        let canvas = CGSize(width: 800, height: 5000), view = CGSize(width: 1000, height: 800)
+        viewport.actualSize(canvasSize: canvas, in: view)
+        // In larghezza entra: resta centrata.
+        viewport.pan(by: CGSize(width: 300, height: 100_000), canvasSize: canvas, in: view)
+        #expect(viewport.origin == CGPoint(x: 100, y: 20))
+        viewport.pan(by: CGSize(width: 0, height: -100_000), canvasSize: canvas, in: view)
+        #expect(viewport.origin == CGPoint(x: 100, y: 800 - 5000 - 20))
+    }
+
+    @Test func zoomingOutRecentersACanvasThatNowFits() {
+        var viewport = Viewport(documentScale: 1)
+        let canvas = CGSize(width: 800, height: 5000), view = CGSize(width: 1000, height: 800)
+        viewport.actualSize(canvasSize: canvas, in: view)
+        viewport.pan(by: CGSize(width: 0, height: -1000), canvasSize: canvas, in: view)
+        viewport.setZoom(0.1, anchor: CGPoint(x: 500, y: 400))
+        viewport.constrain(canvasSize: canvas, in: view)
+        #expect(viewport.origin == CGPoint(x: 460, y: 150))
+    }
 }

@@ -85,4 +85,18 @@ struct SettingsTests {
         #expect(settings.combo(for: .area) == HotKeyAction.area.defaultCombo)
         #expect(settings.combo(for: .window) == HotKeyAction.window.defaultCombo)
     }
+
+    @Test func settingsFromBeforeScrollingKeepTheirShortcuts() throws {
+        var old = CaptureSettings()
+        old.hotKeys = [.area: KeyCombo(keyCode: 0x15, modifiers: KeyCombo.command | KeyCombo.shift)]
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as! [String: Any]
+        // Una versione precedente non conosceva `scrolling`: la si toglie dal JSON, in qualunque forma sia codificata.
+        if var keys = json["hotKeys"] as? [String: Any] { keys["scrolling"] = nil; json["hotKeys"] = keys }
+        if var pairs = json["hotKeys"] as? [Any], let index = pairs.firstIndex(where: { ($0 as? String) == "scrolling" }) {
+            pairs.removeSubrange(index...index + 1); json["hotKeys"] = pairs
+        }
+        let decoded = try JSONDecoder().decode(CaptureSettings.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(decoded.combo(for: .area) == KeyCombo(keyCode: 0x15, modifiers: KeyCombo.command | KeyCombo.shift))
+        #expect(decoded.combo(for: .scrolling) == HotKeyAction.scrolling.defaultCombo)
+    }
 }

@@ -90,7 +90,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
 /// Persistenza delle impostazioni in `UserDefaults` come JSON; dati illeggibili → valori predefiniti.
 public struct SettingsStore {
     public static let key = "PinxelCaptureSettings"
-    private let defaults: UserDefaults
+    public let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
