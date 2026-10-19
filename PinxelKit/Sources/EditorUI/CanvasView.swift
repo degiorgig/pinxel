@@ -67,6 +67,12 @@ public final class CanvasView: NSView, EditorActions {
         setAccessibilityIdentifier("pinxel.editor.canvas")
         updateAccessibilityValue()
         observeModel()
+        model.session.onCanvasShift = { [weak self] offset in
+            guard let self else { return }
+            // Da qui la tela non segue più la finestra: ricentrarla farebbe saltare gli oggetti.
+            self.followsWindow = false
+            self.viewport.shift(byCanvas: offset)
+        }
         // Immagini trascinate dal Finder, da altre app o dal carosello della libreria.
         registerForDraggedTypes([.fileURL, .png, .tiff])
     }
@@ -117,7 +123,7 @@ public final class CanvasView: NSView, EditorActions {
             if followsWindow {
                 viewport.fit(canvasSize: canvasSize, in: bounds.size)
             } else {
-                viewport.constrain(canvasSize: canvasSize, in: bounds.size)
+                viewport.keepInView(canvasSize: canvasSize, in: bounds.size)
             }
         }
         layoutTextEditor()
@@ -136,12 +142,13 @@ public final class CanvasView: NSView, EditorActions {
                 guard let self else { return }
                 // Un altro strumento chiude la modifica del testo.
                 if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
-                // Ritaglio, taglio, ridimensiona e margini cambiano la tela: se segue la finestra, la riadatta.
+                // Ogni modifica può cambiare la tela: se segue la finestra la si riadatta, altrimenti resta dov'è
+                // finché se ne vede abbastanza (gli oggetti non saltano).
                 if self.bounds.width > 0, self.bounds.height > 0 {
                     if self.followsWindow {
                         self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
                     } else {
-                        self.viewport.constrain(canvasSize: self.canvasSize, in: self.bounds.size)
+                        self.viewport.keepInView(canvasSize: self.canvasSize, in: self.bounds.size)
                     }
                     self.layoutTextEditor()
                 }
@@ -175,7 +182,8 @@ public final class CanvasView: NSView, EditorActions {
         var document = displayedDocument
         document.annotations = annotationsForDrawing()
         ctx.saveGState()
-        ctx.clip(to: canvasRect)
+        // Durante un gesto l'oggetto trascinato oltre il bordo resta visibile: la tela si adatta al rilascio.
+        if session.preview == nil { ctx.clip(to: canvasRect) }
         ctx.interpolationQuality = viewport.zoom >= 2 ? .none : .high
         ctx.translateBy(x: viewport.origin.x, y: viewport.origin.y)
         ctx.scaleBy(x: viewport.pointsPerPixel, y: viewport.pointsPerPixel)
@@ -926,10 +934,11 @@ public final class CanvasView: NSView, EditorActions {
         )
         guard let replacement = ImagePlacement.resized(cgImage, to: placement.imageSize),
               let asset = session.assets.add(replacement) else { return false }
-        // Un'immagine nuova al posto della cattura: la si mostra intera, come appena aperta.
-        followsWindow = true
         session.perform(ContentEditing.replacingBottomImage(in: document.annotations, asset: asset,
                                                             size: placement.imageSize.cgSize, newID: UUID()))
+        // Un'immagine nuova al posto della cattura: la si mostra intera, come appena aperta (anche se l'adattamento
+        // della tela ha appena spostato la vista).
+        followsWindow = true
         session.selection = []
         return true
     }

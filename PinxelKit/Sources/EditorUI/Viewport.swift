@@ -93,6 +93,24 @@ public struct Viewport: Equatable, Sendable {
                          y: axis(origin.y, content: canvasSize.height * pointsPerPixel, view: viewSize.height))
     }
 
+    /// Gli oggetti sono stati traslati di `offset` (pixel del documento) per adattare la tela: la si sposta al contrario,
+    /// così sullo schermo restano dove erano.
+    public mutating func shift(byCanvas offset: CGVector) {
+        origin.x -= offset.dx * pointsPerPixel
+        origin.y -= offset.dy * pointsPerPixel
+    }
+
+    /// Dopo una modifica: la tela resta dov'è finché se ne vede abbastanza; non si ricentra (gli oggetti salterebbero).
+    /// Una tela più piccola della vista resta tutta dentro, una più grande non lascia vuoti oltre `margin`.
+    public mutating func keepInView(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
+        func axis(_ origin: Double, content: Double, view: Double) -> Double {
+            if content + 2 * margin <= view { return min(max(origin, margin), view - content - margin) }
+            return min(margin, max(view - content - margin, origin))
+        }
+        origin = CGPoint(x: axis(origin.x, content: canvasSize.width * pointsPerPixel, view: viewSize.width),
+                         y: axis(origin.y, content: canvasSize.height * pointsPerPixel, view: viewSize.height))
+    }
+
     private mutating func center(canvasSize: CGSize, in viewSize: CGSize) {
         origin = CGPoint(
             x: (viewSize.width - canvasSize.width * pointsPerPixel) / 2,
