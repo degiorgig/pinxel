@@ -58,8 +58,11 @@ final class AppEnvironment {
         if let index = arguments.firstIndex(of: "-PinxelLibraryFolder"), index + 1 < arguments.count {
             libraryFolder = URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
         } else if isUITesting {
-            // I test non devono mai scrivere nella libreria vera.
-            libraryFolder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-uitest-library-\(UUID().uuidString)", isDirectory: true)
+            // I test non devono mai scrivere nella libreria vera. La cartella è nella temporanea di Pinxel (quella del test sta
+            // nella sua sandbox, e scriverci chiederebbe un permesso); con un nome dato, più avvii la ritrovano.
+            let name = arguments.firstIndex(of: "-PinxelUITestLibraryName").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
+                ?? UUID().uuidString
+            libraryFolder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-uitest-library-\(name)", isDirectory: true)
         } else {
             libraryFolder = LibraryStore.defaultFolder
         }
