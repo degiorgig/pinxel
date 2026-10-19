@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "PinxelKit",
+    defaultLocalization: "en",
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "DocumentModel", targets: ["DocumentModel"]),
@@ -14,14 +15,14 @@ let package = Package(
         .library(name: "Library", targets: ["Library"]),
     ],
     targets: [
-        .target(name: "DocumentModel"),
+        .target(name: "DocumentModel", resources: [.process("Localizable.xcstrings")]),
         .target(name: "Rendering", dependencies: ["DocumentModel"]),
         .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
         // La cucitura della cattura a scorrimento confronta milioni di pixel a fotogramma: senza ottimizzazioni è
         // dieci volte più lenta e, scorrendo a mano, perde i passaggi.
         .target(name: "CaptureKit", swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
-        .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"]),
-        .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"]),
+        .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"], resources: [.process("Localizable.xcstrings")]),
+        .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"], resources: [.process("Localizable.xcstrings")]),
         .target(name: "Library", dependencies: ["DocumentModel", "Persistence", "AppCore"]),
         .target(
             name: "PinxelTestSupport",
