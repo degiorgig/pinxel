@@ -89,6 +89,10 @@ public final class ScrollStitcher: @unchecked Sendable {
     private var position = 0
     /// Righe di contenuto che scorre già nell'immagine.
     private var captured = 0
+    /// Per ogni riga di contenuto nell'immagine, quanto distava dal centro della zona che scorre nel fotogramma da cui
+    /// viene: si tiene la copia più centrale, lontana da ciò che sta fermo sui bordi (il pulsante "vai in fondo" di una
+    /// chat, una data che compare in alto).
+    private var rowDistance: [Int32] = []
 
     public init(maxHeight: Int) {
         self.maxHeight = maxHeight
@@ -114,6 +118,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             frame.bytes.withUnsafeBytes { canvas.append($0.baseAddress!, rows: rows) }
             self.canvas = canvas
             captured = rows
+            rowDistance = (0..<rows).map { Int32(abs($0 - frameHeight / 2)) }
             self.previous = frame
             return rows < frameHeight ? .reachedLimit : .first
         }
@@ -134,6 +139,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             // Il primo movimento è avvenuto: da qui le fasce non si cercano più (l'immagine non è più un solo fotogramma).
             bandsKnown = true
             position += shift
+            refresh(from: frame)
             if shift < 0 { return .movedBack }
             let newBottom = position + regionHeight
             guard newBottom >= captured else { return .appended(0) }
@@ -145,6 +151,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             let rows = min(wanted, room)
             let start = topBand + regionHeight - wanted
             frame.bytes.withUnsafeBytes { canvas.append($0.baseAddress! + start * rowBytes, rows: rows) }
+            rowDistance += (0..<rows).map { Int32(abs(regionHeight - wanted + $0 - regionHeight / 2)) }
             captured += rows
             return rows < wanted ? .reachedLimit : .appended(rows)
         }
@@ -176,6 +183,23 @@ public final class ScrollStitcher: @unchecked Sendable {
         bottomRows = Array(old.bytes[(frameHeight - bottom) * rowBytes ..< frameHeight * rowBytes])
         captured = keep - top
         position = 0
+        rowDistance = (0..<captured).map { Int32(abs($0 - regionHeight / 2)) }
+    }
+
+    /// Le righe già nell'immagine che in questo fotogramma stanno più vicine al centro prendono i suoi pixel.
+    private func refresh(from frame: Frame) {
+        guard let canvas else { return }
+        let rowBytes = rowBytes, center = regionHeight / 2
+        frame.bytes.withUnsafeBytes { source in
+            for y in 0..<regionHeight {
+                let row = position + y
+                guard row >= 0, row < captured else { continue }
+                let distance = Int32(abs(y - center))
+                guard distance < rowDistance[row] else { continue }
+                memcpy(canvas.pointer + (topBand + row) * rowBytes, source.baseAddress! + (topBand + y) * rowBytes, rowBytes)
+                rowDistance[row] = distance
+            }
+        }
     }
 
     private func match(_ old: Frame, _ new: Frame, hint: Int?) -> Match {

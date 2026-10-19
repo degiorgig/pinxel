@@ -263,6 +263,33 @@ struct ScrollStitcherTests {
         #expect(steps.allSatisfy { $0 == .appended(70) }, "\(steps)")
     }
 
+    /// Copia di `frame` con un pulsante rotondo fermo in basso a destra, come "vai in fondo" nelle chat.
+    func withFloatingButton(_ frame: CGImage) -> CGImage {
+        let ctx = FakeScrollingPage.context(width: frame.width, height: frame.height)
+        ctx.draw(frame, in: CGRect(x: 0, y: 0, width: frame.width, height: frame.height))
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
+        ctx.fillEllipse(in: CGRect(x: frame.width - 34, y: 10, width: 24, height: 24))
+        return ctx.makeImage()!
+    }
+
+    @Test func aButtonThatStaysStillIsNotRepeatedDownTheImage() {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 200, height: 1200), viewportHeight: 300, scale: 1)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        _ = stitcher.add(withFloatingButton(page.currentFrame()), hint: nil)
+        for position in Array(stride(from: 40, to: page.maxPosition, by: 40)) + [page.maxPosition] {
+            page.scrollTo(position)
+            _ = stitcher.add(withFloatingButton(page.currentFrame()), hint: nil)
+        }
+        let image = PixelBuffer(stitcher.image()!)
+        let expected = PixelBuffer(page.expectedImage)
+        #expect(image.height == expected.height)
+        // Ogni riga viene dal fotogramma in cui stava più vicina al centro: il pulsante resta solo nell'ultima mezza
+        // schermata, dove c'era davvero alla fine.
+        let clean = expected.height - page.viewportHeight / 2
+        let wrong = (0..<clean).filter { y in (0..<image.width).contains { image.pixel(x: $0, y: y) != expected.pixel(x: $0, y: y) } }
+        #expect(wrong.isEmpty, "\(wrong.count) righe sporche, la prima \(wrong.first ?? -1)")
+    }
+
     /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
     func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)
