@@ -233,3 +233,39 @@ public struct CommandGroup: EditCommand {
         for command in commands.reversed() { command.revert(on: &document) }
     }
 }
+
+/// Porta il rettangolo del contenuto a partire da (0,0) e ci adatta la tela; la sessione lo aggiunge dopo ogni comando.
+/// Tiene le annotazioni di prima: l'annullamento è esatto anche con rettangoli non normalizzati.
+public struct FitCanvas: EditCommand {
+    public let name = "Adatta tela"
+    /// Spostamento applicato a tutti gli oggetti, in pixel interi del documento.
+    public let offset: CGVector
+    public let sizeAfter: PixelSize
+    private let sizeBefore: PixelSize
+    private let annotationsBefore: [Annotation]
+
+    /// `nil` se la tela è già adattata al contenuto.
+    public init?(in document: PinxelDocument) {
+        let limit = PinxelDocument.maxImageSide
+        let target = ContentFit.bounds(of: document.annotations)
+        let offset = target.map { CGVector(dx: Double(-$0.x), dy: Double(-$0.y)) } ?? .zero
+        let size = target.map { PixelSize(width: min($0.width, limit), height: min($0.height, limit)) } ?? PixelSize(width: 0, height: 0)
+        guard offset != .zero || size != document.canvasSize else { return nil }
+        self.offset = offset
+        sizeAfter = size
+        sizeBefore = document.canvasSize
+        annotationsBefore = document.annotations
+    }
+
+    public func apply(to document: inout PinxelDocument) {
+        let dx = offset.dx, dy = offset.dy
+        let mapping = PointMapping { CGPoint(x: $0.x + dx, y: $0.y + dy) }
+        document.annotations = offset == .zero ? annotationsBefore : annotationsBefore.map { $0.transformed(by: mapping) }
+        document.canvasSize = sizeAfter
+    }
+
+    public func revert(on document: inout PinxelDocument) {
+        document.annotations = annotationsBefore
+        document.canvasSize = sizeBefore
+    }
+}
