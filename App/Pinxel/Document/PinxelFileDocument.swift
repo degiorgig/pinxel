@@ -5,6 +5,11 @@ import EditorUI
 import Persistence
 import Rendering
 
+extension Notification.Name {
+    /// Un documento è stato scritto su disco; `object` è il suo URL. La libreria aggiorna miniatura e dimensioni.
+    static let pinxelDocumentDidSave = Notification.Name("com.degiorgi.pinxel.documentDidSave")
+}
+
 @objc(PinxelFileDocument)
 final class PinxelFileDocument: NSDocument {
     // NSDocument legge e scrive sul thread principale (canConcurrentlyReadDocuments e
@@ -67,7 +72,10 @@ final class PinxelFileDocument: NSDocument {
     override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
                        completionHandler: @escaping (Error?) -> Void) {
         MainActor.assumeIsolated { editorModel?.commitTextEditing() }
-        super.save(to: url, ofType: typeName, for: saveOperation, completionHandler: completionHandler)
+        super.save(to: url, ofType: typeName, for: saveOperation) { error in
+            if error == nil { NotificationCenter.default.post(name: .pinxelDocumentDidSave, object: url) }
+            completionHandler(error)
+        }
     }
 
     override func canClose(withDelegate delegate: Any, shouldClose shouldCloseSelector: Selector?, contextInfo: UnsafeMutableRawPointer?) {

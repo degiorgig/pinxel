@@ -15,4 +15,14 @@ enum DocumentOpener {
         NSApp.activate()
         return document
     }
+
+    /// Apre un file (per esempio una cattura della libreria): si salva da solo dove sta.
+    static func open(url: URL, completion: ((NSDocument?) -> Void)? = nil) {
+        NSApp.setActivationPolicy(.regular)
+        NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { document, _, error in
+            if let error { NSApp.presentError(error) }
+            NSApp.activate()
+            completion?(document)
+        }
+    }
 }

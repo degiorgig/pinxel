@@ -1,6 +1,7 @@
 import AppCore
 import CaptureKit
 import Foundation
+import Library
 import os
 import UserNotifications
 
@@ -30,6 +31,10 @@ final class Notifier {
         case CaptureError.emptySelection: "La selezione è vuota."
         case AutoSaveError.folderNotWritable(let path): "Impossibile scrivere in \(path). Scegli un'altra cartella nelle Preferenze."
         case AutoSaveError.writeFailed(let path): "Salvataggio non riuscito: \(path)."
+        case LibraryError.notWritable(let path): "Impossibile scrivere nella libreria (\(path)). La cattura resta fuori dalla libreria."
+        case LibraryError.writeFailed(let path): "Salvataggio nella libreria non riuscito: \(path)."
+        case LibraryError.unsupportedFile(let name): "«\(name)» non è un'immagine né un documento Pinxel."
+        case LibraryError.trashUnavailable: "Il Cestino non è disponibile per questi file."
         default: error.localizedDescription
         }
     }
