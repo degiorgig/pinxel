@@ -92,6 +92,8 @@ public final class ToolController {
     private enum Gesture {
         case idle
         case marquee(start: CGPoint, base: Set<UUID>)
+        /// Premuto su un'immagine non selezionata: un clic la seleziona, un trascinamento disegna il riquadro.
+        case pressImage(start: CGPoint, id: UUID, base: Set<UUID>, shift: Bool)
         case move(start: CGPoint, originals: [Annotation], copyIDs: [UUID]?, started: Bool)
         /// `grab`: distanza fra la maniglia e il punto premuto, mantenuta per tutto il gesto.
         case resize(Handle, original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
@@ -228,6 +230,10 @@ public final class ToolController {
                     gesture = .idle
                     return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
                 }
+                if case .image = hit.kind, !selection.contains(hit.id) {
+                    gesture = .pressImage(start: point, id: hit.id, base: modifiers.contains(.shift) ? selection : [], shift: modifiers.contains(.shift))
+                    return ToolResult()
+                }
                 var newSelection = selection
                 if modifiers.contains(.shift) {
                     if newSelection.contains(hit.id) { newSelection.remove(hit.id) } else { newSelection.insert(hit.id) }
@@ -256,6 +262,11 @@ public final class ToolController {
         case .drag(let point, let modifiers):
             switch gesture {
             case .marquee(let start, let base):
+                let rect = CGRect.bounding([start, point])
+                return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
+            case .pressImage(let start, _, let base, _):
+                guard start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .marquee(start: start, base: base)
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
             case .move(let start, let originals, let copyIDs, let started):
@@ -290,6 +301,8 @@ public final class ToolController {
             case .marquee(let start, let base):
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)))
+            case .pressImage(_, let id, _, let shift):
+                return ToolResult(selection: shift ? selection.union([id]) : [id])
             case .move(let start, let originals, let copyIDs, let started):
                 guard started else { return ToolResult() }
                 let delta = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,

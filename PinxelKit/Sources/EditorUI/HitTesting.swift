@@ -102,12 +102,15 @@ public enum HitTesting {
         }
     }
 
-    /// ID delle annotazioni il cui riquadro (ruotato) interseca `rect`.
+    /// ID delle annotazioni il cui riquadro (ruotato) interseca `rect`. Le immagini contano solo se ci stanno tutte:
+    /// la cattura copre la tela e altrimenti ogni riquadro la prenderebbe.
     public static func ids(intersecting rect: CGRect, in annotations: [Annotation]) -> Set<UUID> {
         let area = rect.standardized
         return Set(annotations.filter { annotation in
             let bounds = worldBounds(annotation)
-            return !bounds.isNull && bounds.intersects(area)
+            guard !bounds.isNull else { return false }
+            if case .image = annotation.kind { return area.contains(bounds) }
+            return bounds.intersects(area)
         }.map(\.id))
     }
 
