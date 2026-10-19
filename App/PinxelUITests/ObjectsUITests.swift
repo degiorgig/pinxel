@@ -43,4 +43,31 @@ final class ObjectsUITests: XCTestCase {
         app.typeKey("z", modifierFlags: .command)
         wait(for: [expectation(for: NSPredicate(format: "value ENDSWITH %@", "immagine: \(before)"), evaluatedWith: canvas)], timeout: 5)
     }
+
+    /// I pulsanti In primo piano / In fondo nella barra: spenti senza selezione, accesi con un oggetto selezionato.
+    func testArrangeButtonsFollowTheSelection() throws {
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        let back = app.toolbars.buttons["In fondo"]
+        let front = app.toolbars.buttons["In primo piano"]
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        XCTAssertFalse(back.isEnabled)
+        XCTAssertFalse(front.isEnabled)
+        // Un rettangolo appena disegnato è selezionato.
+        let center = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        canvas.typeKey("r", modifierFlags: [])
+        center.withOffset(CGVector(dx: -30, dy: -30)).click(forDuration: 0.1, thenDragTo: center.withOffset(CGVector(dx: 10, dy: 10)))
+        wait(for: [expectation(for: NSPredicate(format: "value CONTAINS %@", "selezionate: 1"), evaluatedWith: canvas)], timeout: 5)
+        wait(for: [expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: back)], timeout: 5)
+        XCTAssertTrue(front.isEnabled)
+        back.click()
+        // Il pulsante ha registrato un comando: il primo ⌘Z annulla lo spostamento (il rettangolo resta),
+        // solo il secondo toglie il rettangolo.
+        app.typeKey("z", modifierFlags: .command)
+        let removed = expectation(for: NSPredicate(format: "value BEGINSWITH %@", "Annotazioni: 1"), evaluatedWith: canvas)
+        removed.isInverted = true
+        wait(for: [removed], timeout: 2)
+        app.typeKey("z", modifierFlags: .command)
+        wait(for: [expectation(for: NSPredicate(format: "value BEGINSWITH %@", "Annotazioni: 1"), evaluatedWith: canvas)], timeout: 5)
+    }
 }

@@ -834,6 +834,49 @@ public final class CanvasView: NSView, EditorActions {
         session.perform(command)
     }
 
+    // MARK: Menu del tasto destro
+
+    /// Clic destro: come nel Finder, l'oggetto sotto il puntatore diventa la selezione se non ne fa già parte,
+    /// poi i comandi di Disponi, Duplica, Blocca ed Elimina su quella selezione.
+    public override func menu(for event: NSEvent) -> NSMenu? {
+        guard !session.isReadOnly else { return nil }
+        if textEditor != nil { finishTextEditing() }
+        let point = documentPoint(fromView: convert(event.locationInWindow, from: nil))
+        if let hit = HitTesting.annotation(at: point, in: session.document.annotations, tolerance: controller.hitTolerance) {
+            if !session.selection.contains(hit.id) { session.selection = [hit.id] }
+        } else {
+            session.selection = []
+        }
+        return contextMenu()
+    }
+
+    private func contextMenu() -> NSMenu {
+        let state = EditorMenuState(model: model)
+        let menu = NSMenu(title: "Disponi")
+        menu.autoenablesItems = false
+        func add(_ title: String, _ action: Selector, enabled: Bool) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            item.isEnabled = enabled
+            menu.addItem(item)
+        }
+        let editable = state.hasEditableSelection
+        add("Porta in primo piano", #selector(bringToFront(_:)), enabled: editable)
+        add("Porta avanti", #selector(bringForward(_:)), enabled: editable)
+        add("Porta indietro", #selector(sendBackward(_:)), enabled: editable)
+        add("Porta in fondo", #selector(sendToBack(_:)), enabled: editable)
+        menu.addItem(.separator())
+        add("Duplica", #selector(duplicateSelection(_:)), enabled: editable)
+        if state.hasLockedSelection && !state.hasUnlockedSelection {
+            add("Sblocca", #selector(unlockSelection(_:)), enabled: true)
+        } else {
+            add("Blocca", #selector(lockSelection(_:)), enabled: state.hasUnlockedSelection)
+        }
+        menu.addItem(.separator())
+        add("Elimina", #selector(delete(_:)), enabled: editable)
+        return menu
+    }
+
     @objc public func copy(_ sender: Any?) {
         write(session.selectedAnnotations)
     }

@@ -18,3 +18,5 @@ Avvia l'app normale. Ogni cattura, anche quella appena fatta, è un oggetto imma
 | O12 | Elimina tutto | Tela vuota con il suggerimento; ⌘Z la riporta |
 | O13 | Apri una cattura vecchia (salvata prima di questa versione) | Identica a prima; la cattura ora si seleziona |
 | O14 | ⌘Z dopo O2 | Un solo passo riporta cattura e tela com'erano |
+| O15 | Clic destro su un oggetto non selezionato | Diventa la selezione; il menu offre Porta in primo piano / avanti / indietro / in fondo, Duplica, Blocca, Elimina |
+| O16 | Pulsanti In primo piano / In fondo nella barra | Spenti senza selezione; con la cattura selezionata, In primo piano la porta sopra le immagini trascinate |
