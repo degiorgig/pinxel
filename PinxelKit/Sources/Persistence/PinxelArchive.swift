@@ -71,8 +71,18 @@ public enum PinxelArchive {
         return try zip.finish()
     }
 
-    public static func read(_ data: Data, limits: ZipLimits = .default) throws -> PinxelFileContents {
-        let zip = try ZipReader(data, limits: limits)
+    /// Solo il documento, per l'indice della libreria: non legge le immagini.
+    public static func readDocument(_ data: Data, limits: ZipLimits = .default) throws -> PinxelDocument {
+        try manifestAndDocument(ZipReader(data, limits: limits)).1
+    }
+
+    /// La miniatura salvata nel file, se c'è.
+    public static func readThumbnail(_ data: Data) -> Data? {
+        try? ZipReader(data).data(for: "thumbnail.png")
+    }
+
+    /// Manifest e documento validati, senza leggere le immagini.
+    private static func manifestAndDocument(_ zip: ZipReader) throws -> (PinxelManifest, PinxelDocument) {
         let decoder = JSONDecoder()
 
         let manifest: PinxelManifest
@@ -98,6 +108,12 @@ public enum PinxelArchive {
         if let reason = document.validationError() {
             throw PinxelArchiveError.invalidDocument(reason)
         }
+        return (manifest, document)
+    }
+
+    public static func read(_ data: Data, limits: ZipLimits = .default) throws -> PinxelFileContents {
+        let zip = try ZipReader(data, limits: limits)
+        let (manifest, document) = try manifestAndDocument(zip)
 
         var images: [ImageAssetRef: Data] = [:]
         let limit = PinxelDocument.maxImageSide
