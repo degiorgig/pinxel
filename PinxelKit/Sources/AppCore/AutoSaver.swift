@@ -28,7 +28,7 @@ public struct AutoSaver {
         }
         guard fileManager.isWritableFile(atPath: folder.path) else { throw AutoSaveError.folderNotWritable(folder.path) }
 
-        let baseName = FileNamer.baseName(template: settings.fileNameTemplate, date: date)
+        let baseName = FileNamer.baseName(template: settings.effectiveFileNameTemplate, date: date)
         let url = FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: settings.saveFormat.fileExtension, fileManager: fileManager)
         let data: Data
         do {

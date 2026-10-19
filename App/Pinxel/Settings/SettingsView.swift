@@ -25,8 +25,16 @@ struct SettingsView: View {
                     Text("Documento Pinxel (.pinxel)").tag(SaveFormat.pinxel)
                     Text("Immagine PNG").tag(SaveFormat.png)
                 }
-                TextField("Nome file", text: binding(\.fileNameTemplate))
-                Text("Esempio: \(FileNamer.baseName(template: environment.settings.fileNameTemplate, date: Date()))")
+                // Il predefinito si mostra nella lingua dell'app; tornarci (o non toccarlo) lo lascia seguire la lingua.
+                TextField("Nome file", text: Binding(
+                    get: { environment.settings.effectiveFileNameTemplate },
+                    set: { value in
+                        environment.update {
+                            $0.fileNameTemplate = value == FileNamer.defaultTemplate ? FileNamer.legacyDefaultTemplate : value
+                        }
+                    }
+                ))
+                Text("Esempio: \(FileNamer.baseName(template: environment.settings.effectiveFileNameTemplate, date: Date()))")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Scorciatoie globali") {

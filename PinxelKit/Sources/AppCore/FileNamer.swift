@@ -1,8 +1,21 @@
 import Foundation
 
 public enum FileNamer {
-    /// Modello `DateFormatter`: il testo fisso va tra apici.
-    public static let defaultTemplate = "'Pinxel' yyyy-MM-dd 'at' HH.mm.ss"
+    /// Il predefinito delle versioni precedenti: chi lo ha ancora nelle impostazioni non l'ha personalizzato.
+    public static let legacyDefaultTemplate = "'Pinxel' yyyy-MM-dd 'at' HH.mm.ss"
+
+    /// Modello `DateFormatter` predefinito nella lingua dell'app: il testo fisso va tra apici.
+    public static var defaultTemplate: String {
+        String(localized: "'Pinxel' yyyy-MM-dd 'at' HH.mm.ss", bundle: .module, comment: "Default file name: keep the quotes around fixed text")
+    }
+
+    /// Il predefinito in una lingua precisa (per i test e per le impostazioni).
+    public static func defaultTemplate(for language: String) -> String {
+        guard let path = Bundle.module.path(forResource: language, ofType: "lproj"), let bundle = Bundle(path: path) else {
+            return legacyDefaultTemplate
+        }
+        return bundle.localizedString(forKey: legacyDefaultTemplate, value: legacyDefaultTemplate, table: nil)
+    }
 
     public static func baseName(template: String, date: Date, timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()

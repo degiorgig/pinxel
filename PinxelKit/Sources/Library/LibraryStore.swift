@@ -1,6 +1,7 @@
 import AppCore
 import DocumentModel
 import Foundation
+import OSLog
 import Persistence
 import UniformTypeIdentifiers
 
@@ -30,10 +31,28 @@ public final class LibraryStore {
     public static let indexName = "library.json"
     public static let corruptName = "library.json.rovinato"
 
+    public static let defaultFolderName = "Library"
+    public static let legacyFolderName = "Libreria"
+    private static let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "library")
+
     public static var defaultFolder: URL {
-        FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Pinxel", isDirectory: true)
-            .appendingPathComponent("Libreria", isDirectory: true)
+        prepareFolder(in: FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Pinxel", isDirectory: true))
+    }
+
+    /// La cartella dell'archivio dentro `parent`: `Library`, ricavata spostando `Libreria` la prima volta.
+    /// Se lo spostamento non riesce si continua con `Libreria` (niente si perde, si riprova al prossimo avvio).
+    public static func prepareFolder(in parent: URL, fileManager: FileManager = .default) -> URL {
+        let folder = parent.appendingPathComponent(defaultFolderName, isDirectory: true)
+        let legacy = parent.appendingPathComponent(legacyFolderName, isDirectory: true)
+        guard fileManager.fileExists(atPath: legacy.path), !fileManager.fileExists(atPath: folder.path) else { return folder }
+        do {
+            try fileManager.moveItem(at: legacy, to: folder)
+            return folder
+        } catch {
+            logger.notice("Libreria non spostata in Library: \(error.localizedDescription, privacy: .public)")
+            return legacy
+        }
     }
 
     public let folder: URL

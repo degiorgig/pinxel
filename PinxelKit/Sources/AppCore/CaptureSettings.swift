@@ -5,9 +5,9 @@ public enum PostCaptureAction: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .openEditor: "Apri l'editor"
-        case .quickPreview: "Anteprima veloce"
-        case .clipboardOnly: "Solo appunti"
+        case .openEditor: String(localized: "Open Editor", bundle: .module, comment: "After capture")
+        case .quickPreview: String(localized: "Quick Preview", bundle: .module, comment: "After capture")
+        case .clipboardOnly: String(localized: "Clipboard Only", bundle: .module, comment: "After capture")
         }
     }
 }
@@ -23,11 +23,17 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     public var autoSave = false
     public var saveFolderPath = "~/Pictures/Pinxel"
     public var saveFormat: SaveFormat = .pinxel
-    public var fileNameTemplate = FileNamer.defaultTemplate
+    /// Il modello salvato; finché vale il predefinito storico segue la lingua (vedi `effectiveFileNameTemplate`).
+    public var fileNameTemplate = FileNamer.legacyDefaultTemplate
     public var includeWindowShadow = true
     public var hotKeys: [HotKeyAction: KeyCombo] = Dictionary(uniqueKeysWithValues: HotKeyAction.allCases.map { ($0, $0.defaultCombo) })
 
     public init() {}
+
+    /// Il modello da usare: quello salvato, oppure il predefinito nella lingua attuale se è ancora il vecchio predefinito.
+    public var effectiveFileNameTemplate: String {
+        fileNameTemplate == FileNamer.legacyDefaultTemplate ? FileNamer.defaultTemplate : fileNameTemplate
+    }
 
     private enum CodingKeys: String, CodingKey {
         case postCaptureAction, autoSave, saveFolderPath, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys

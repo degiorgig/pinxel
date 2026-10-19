@@ -9,7 +9,7 @@ struct KeyComboTests {
         #expect(HotKeyAction.screen.defaultCombo.displayString == "⌃⇧3")
         #expect(HotKeyAction.repeatLastArea.defaultCombo.displayString == "⌃⇧4")
         #expect(HotKeyAction.scrolling.defaultCombo.displayString == "⌃⇧5")
-        #expect(HotKeyAction.scrolling.title == "Cattura a scorrimento")
+        #expect(HotKeyAction.scrolling.title == "Scrolling Capture")
         #expect(Set(HotKeyAction.allCases.map(\.defaultCombo)).count == HotKeyAction.allCases.count)
     }
 
@@ -17,8 +17,8 @@ struct KeyComboTests {
         let combo = KeyCombo(keyCode: 0x00, modifiers: KeyCombo.command | KeyCombo.shift | KeyCombo.option | KeyCombo.control)
         #expect(combo.displayString == "⌃⌥⇧⌘A")
         #expect(KeyCombo(keyCode: 0x7A, modifiers: KeyCombo.command).displayString == "⌘F1")
-        #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.option).displayString == "⌥Spazio")
-        #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).displayString == "⌃Tasto 90")
+        #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.option).displayString == "⌥Space")
+        #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).displayString == "⌃Key 90")
     }
 
     @Test func menuKeyEquivalentForNativeShortcutColumn() {
