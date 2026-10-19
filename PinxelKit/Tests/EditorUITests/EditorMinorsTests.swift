@@ -43,7 +43,7 @@ struct EditorMinorsTests {
 
     @Test func escapeDuringAMarqueeRestoresTheSelection() {
         let controller = ToolController()
-        let document = TestDocuments.document(annotations: [shape, arrow])
+        let document = TestDocuments.document(annotations: [shape, arrow]).withoutCapture
         _ = controller.handle(.down(CGPoint(x: 300, y: 20), [.shift], clickCount: 1), document: document, selection: [arrow.id])
         let marquee = controller.handle(.drag(CGPoint(x: 90, y: 160), [.shift]), document: document, selection: [arrow.id])
         #expect(marquee.selection == [arrow.id, shape.id])
@@ -69,7 +69,7 @@ struct EditorMinorsTests {
         canvas.cut(nil)
         let data = try #require(canvas.pasteboard.data(forType: CanvasView.annotationsType))
         #expect(try AnnotationClipboard.decode(data).map(\.id) == [shape.id])
-        #expect(canvas.model.session.document.annotations.map(\.id) == [locked.id])
+        #expect(canvas.model.session.document.userAnnotations.map(\.id) == [locked.id])
     }
 
     @Test func spacePanEndsWhenFocusIsLost() throws {
@@ -88,7 +88,7 @@ struct EditorMinorsTests {
         canvas.copy(nil)
         canvas.paste(nil)
         canvas.paste(nil)
-        let minXs = canvas.model.session.document.annotations.map(\.bounds.minX)
+        let minXs = canvas.model.session.document.userAnnotations.map(\.bounds.minX)
         #expect(minXs == [100, 110, 120])
     }
 
@@ -101,7 +101,7 @@ struct EditorMinorsTests {
         let model = canvas.model
         model.session.selection = [plain.id, arrow.id, text.id]
         model.setFill(true)
-        let annotations = model.session.document.annotations
+        let annotations = model.session.document.userAnnotations
         #expect(annotations[0].style.fill == .accentRed)
         #expect(annotations[1].style.fill == nil)
         #expect(annotations[2].style.fill == .white)

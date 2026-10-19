@@ -8,9 +8,10 @@ import Testing
 
 @MainActor
 struct EditorModelTests {
-    private let rect = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 0, y: 0, width: 50, height: 50), shape: .rectangle)))
-    private let arrow = Annotation(id: TestDocuments.id(2), kind: .arrow(ArrowData(line: LineGeometry(start: .zero, end: CGPoint(x: 50, y: 0)))))
-    private let blur = Annotation(id: TestDocuments.id(3), kind: .blur(BlurData(rect: CGRect(x: 0, y: 0, width: 40, height: 40), radius: 12)))
+    // Dentro la cattura, lontano dai bordi: nessun comando di questi test cambia la tela.
+    private let rect = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 30, y: 30, width: 50, height: 50), shape: .rectangle)))
+    private let arrow = Annotation(id: TestDocuments.id(2), kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 30, y: 30), end: CGPoint(x: 80, y: 30)))))
+    private let blur = Annotation(id: TestDocuments.id(3), kind: .blur(BlurData(rect: CGRect(x: 30, y: 30, width: 40, height: 40), radius: 12)))
 
     private func makeModel(_ annotations: [Annotation], clock: TestClock? = nil) -> EditorModel {
         let undo = UndoManager()
@@ -21,7 +22,7 @@ struct EditorModelTests {
     }
 
     private func annotation(_ id: UUID, in model: EditorModel) -> Annotation? {
-        model.session.document.annotations.first { $0.id == id }
+        model.session.document.userAnnotations.first { $0.id == id }
     }
 
     @Test func inspectedStyleComesFromTheSelectionOrTheTool() {
@@ -77,7 +78,7 @@ struct EditorModelTests {
         let model = makeModel([rect])
         model.session.selection = [rect.id]
         model.previewStyle(\.opacity, 0.5)
-        #expect(model.session.preview?.first?.style.opacity == 0.5)
+        #expect(model.session.preview?.first { $0.id == rect.id }?.style.opacity == 0.5)
         #expect(annotation(rect.id, in: model)?.style.opacity == 1)
         model.setStyle(\.opacity, 0.5)
         #expect(model.session.preview == nil)
@@ -127,7 +128,7 @@ struct EditorModelTests {
         #expect(lock?.name == "Blocca")
         var locked = doc
         lock?.apply(to: &locked)
-        #expect(locked.annotations.first?.isLocked == true)
+        #expect(locked.userAnnotations.first?.isLocked == true)
         #expect(AnnotationEditing.setLocked(true, ids: [rect.id], in: locked) == nil)
         #expect(AnnotationEditing.setLocked(false, ids: [rect.id], in: locked)?.name == "Sblocca")
     }
@@ -135,7 +136,7 @@ struct EditorModelTests {
     @Test func duplicatesGetNewIDsAndAnOffset() {
         let copies = AnnotationEditing.duplicates(of: [rect], offset: CGSize(width: 10, height: 10), makeID: { TestDocuments.id(50) })
         #expect(copies.first?.id == TestDocuments.id(50))
-        #expect(copies.first?.bounds.origin == CGPoint(x: 10, y: 10))
+        #expect(copies.first?.bounds.origin == CGPoint(x: 40, y: 40))
     }
 
     @Test func toolShortcutKeysSelectTools() {

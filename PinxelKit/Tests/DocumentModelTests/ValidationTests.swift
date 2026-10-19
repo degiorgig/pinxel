@@ -17,18 +17,11 @@ struct ValidationTests {
     }
 
     @Test func hostileValuesAreRejected() {
-        var crop = TestDocuments.document()
-        crop.imageOperations = [.crop(PixelRect(x: Int.max, y: 0, width: 10, height: 10))]
-        #expect(crop.validationError() != nil)
-
         var padding = TestDocuments.document()
         padding.canvasStyle.padding = 1e308
         #expect(padding.validationError() != nil)
 
-        var resize = TestDocuments.document()
-        resize.imageOperations = [.resize(PixelSize(width: 60000, height: 60000))]
-        #expect(resize.validationError() != nil)
-
+        // Le operazioni ostili dei file della versione 1: LegacyDocumentV1 e HostileDocumentTests.
         var size = TestDocuments.document(size: PixelSize(width: 0, height: 300))
         #expect(size.validationError() != nil)
         size = TestDocuments.document(size: PixelSize(width: 100_000, height: 300))
@@ -45,8 +38,8 @@ struct ValidationTests {
 
     @Test func reorderToleratesDuplicateIDs() {
         var document = TestDocuments.document()
-        document.annotations.append(document.annotations[0])
-        let command = ReorderAnnotations.bringToFront([document.annotations[1].id], in: document)
+        document.annotations.append(document.annotations[1])
+        let command = ReorderAnnotations.bringToFront([document.annotations[2].id], in: document)
         command.apply(to: &document)
         #expect(document.annotations.last?.id == TestDocuments.id(2))
     }

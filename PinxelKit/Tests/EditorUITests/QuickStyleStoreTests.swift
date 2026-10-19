@@ -56,8 +56,8 @@ struct QuickStyleStoreTests {
         model.session.selection = [arrow.id, shape.id]
         #expect(model.quickStyleTool == .arrow)
         model.applyQuickStyle(style(9))
-        #expect(model.session.document.annotations[0].style == style(9))
-        #expect(model.session.document.annotations[1].style == shape.style)
+        #expect(model.session.document.userAnnotations[0].style == style(9))
+        #expect(model.session.document.userAnnotations[1].style == shape.style)
     }
 
     @Test func withoutSelectionTheQuickStyleGoesToTheTool() {

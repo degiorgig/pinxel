@@ -37,7 +37,7 @@ struct SmartGuidesTests {
     private func move(by delta: CGSize, modifiers: ToolModifiers = []) -> (drag: ToolResult, document: PinxelDocument) {
         let controller = ToolController()
         controller.dragThreshold = 3
-        var document = TestDocuments.document(annotations: [left, right])
+        var document = TestDocuments.document(annotations: [left, right]).withoutCapture
         let start = CGPoint(x: 125, y: 125)
         let end = CGPoint(x: start.x + delta.width, y: start.y + delta.height)
         // ⇧ al clic toglierebbe l'oggetto dalla selezione: i modificatori contano durante il trascinamento.

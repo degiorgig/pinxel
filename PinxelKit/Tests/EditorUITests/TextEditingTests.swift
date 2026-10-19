@@ -22,9 +22,9 @@ struct TextEditingTests {
         let command = TextEditing.commit(newRequest, text: RichText("Nuovo"), minimumHeight: 48, document: document)
         #expect(command?.name == "Aggiungi testo")
         command?.apply(to: &document)
-        #expect(document.annotations.count == 1)
-        #expect(document.annotations[0].richText?.plainText == "Nuovo")
-        #expect(document.annotations[0].textRect?.height == 48)
+        #expect(document.userAnnotations.count == 1)
+        #expect(document.userAnnotations[0].richText?.plainText == "Nuovo")
+        #expect(document.userAnnotations[0].textRect?.height == 48)
     }
 
     @Test func editingExistingTextIsOneUpdateOnTheCurrentVersion() {
@@ -35,17 +35,17 @@ struct TextEditingTests {
         let command = TextEditing.commit(request, text: RichText("Ciao mondo"), minimumHeight: 0, document: document)
         #expect(command?.name == "Modifica testo")
         command?.apply(to: &document)
-        #expect(document.annotations[0].richText?.plainText == "Ciao mondo")
-        #expect(document.annotations[0].style.fill == .white)
+        #expect(document.userAnnotations[0].richText?.plainText == "Ciao mondo")
+        #expect(document.userAnnotations[0].style.fill == .white)
         command?.revert(on: &document)
-        #expect(document.annotations == [current])
+        #expect(document.userAnnotations == [current])
     }
 
     @Test func clearingExistingTextDeletesIt() {
         var document = TestDocuments.document(annotations: [existing])
         let command = TextEditing.commit(TextEditRequest(annotation: existing, isNew: false), text: RichText(runs: []), minimumHeight: 0, document: document)
         command?.apply(to: &document)
-        #expect(document.annotations.isEmpty)
+        #expect(document.userAnnotations.isEmpty)
     }
 
     @Test func unchangedLockedOrMissingTextIsNoCommand() {

@@ -150,11 +150,10 @@ final class AppEnvironment {
         }
     }
 
-    /// Apre un editor vuoto e trasparente, grande quanto una finestra media: poi ci si incolla uno screenshot.
+    /// Apre un editor vuoto, senza oggetti: poi ci si incolla uno screenshot, si trascina un'immagine o si disegna.
     func openBlank() {
         do {
-            DocumentOpener.open(try CaptureDocumentBuilder.blank(pointSize: CGSize(width: 800, height: 500),
-                                                                 scale: Double(NSScreen.main?.backingScaleFactor ?? 2)))
+            DocumentOpener.open(try CaptureDocumentBuilder.blank(scale: Double(NSScreen.main?.backingScaleFactor ?? 2)))
         } catch {
             notifier.failure(error)
         }

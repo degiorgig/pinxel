@@ -37,10 +37,14 @@ public struct ToolResult {
     public var tool: EditorTool?
     /// Guide magnetiche da disegnare durante lo spostamento.
     public var guides: [GuideLine]
+    /// Ritaglio da applicare a tutto il contenuto (servono i pixel: lo fa la vista).
+    public var crop: PixelRect?
+    /// Fascia da togliere con Taglia e ricuci.
+    public var cut: CutOut?
 
     public init(preview: [Annotation]? = nil, command: (any EditCommand)? = nil, selection: Set<UUID>? = nil,
                 marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil,
-                guides: [GuideLine] = []) {
+                guides: [GuideLine] = [], crop: PixelRect? = nil, cut: CutOut? = nil) {
         self.preview = preview
         self.command = command
         self.selection = selection
@@ -49,6 +53,8 @@ public struct ToolResult {
         self.editText = editText
         self.tool = tool
         self.guides = guides
+        self.crop = crop
+        self.cut = cut
     }
 }
 
@@ -360,7 +366,7 @@ public final class ToolController {
               pixel != PixelRect(x: 0, y: 0, width: size.width, height: size.height) else {
             return ToolResult(tool: .select)
         }
-        return ToolResult(command: ApplyImageOperation(.crop(pixel), in: document), selection: [], tool: .select)
+        return ToolResult(selection: [], tool: .select, crop: pixel)
     }
 
     // MARK: Taglia e ricuci
@@ -384,7 +390,7 @@ public final class ToolController {
                   let cut = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge) else {
                 return ToolResult()
             }
-            return ToolResult(command: ApplyImageOperation(.cutOut(cut), in: document), selection: [])
+            return ToolResult(selection: [], cut: cut)
         case .key:
             return ToolResult()
         }

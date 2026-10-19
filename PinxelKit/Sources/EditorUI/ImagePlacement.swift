@@ -50,4 +50,17 @@ public enum ImagePlacement {
         let y = min(max((center.y - height / 2).rounded(), 0), Double(imageSize.height) - height)
         return Placement(rect: CGRect(x: x, y: y, width: width, height: height), imageSize: imageSize)
     }
+
+    /// Riquadro di un'immagine aggiunta (trascinata o ⌥⌘V), centrata in `center`, alla densità del documento;
+    /// la tela si adatterà a lei, quindi non la si spinge dentro. Solo il lato massimo la rimpicciolisce.
+    public static func centered(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint,
+                                maxSide: Int = PinxelDocument.maxImageSide) -> CGRect {
+        let factor = documentScale / max(imageScale, 1)
+        var width = pixelSize.width * factor
+        var height = pixelSize.height * factor
+        let shrink = min(1, Double(maxSide) / max(width, 1), Double(maxSide) / max(height, 1))
+        width = max(1, (width * shrink).rounded())
+        height = max(1, (height * shrink).rounded())
+        return CGRect(x: (center.x - width / 2).rounded(), y: (center.y - height / 2).rounded(), width: width, height: height)
+    }
 }

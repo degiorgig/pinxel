@@ -27,29 +27,31 @@ struct PinxelArchiveTests {
         #expect(!contents.isReadOnly)
     }
 
-    @Test func aPastedBackgroundIsSavedAndReopened() throws {
+    @Test func aPastedCaptureIsSavedAndReopened() throws {
         let pasted = ImageAssetRef(name: "assets/00000000-0000-0000-0000-000000000009.png")
         var document = TestDocuments.document()
         let image = TestImages.solid(width: 30, height: 20, red: 1, green: 0, blue: 0)
-        ReplaceBackground(pasted, size: PixelSize(width: 30, height: 20), in: document).apply(to: &document)
+        document.annotations[0].kind = .image(PlacedImageData(rect: CGRect(x: 0, y: 0, width: 30, height: 20), asset: pasted))
         var files = try images()
         files[pasted] = try ImageCodec.encode(image, type: .png)
         let contents = try PinxelArchive.read(PinxelArchive.write(document: document, images: files, thumbnail: Data(), appVersion: "0.1.0"))
         #expect(contents.document == document)
         #expect(contents.images[pasted] != nil)
+        // L'immagine di prima non serve più e non viene salvata.
+        #expect(contents.images[TestDocuments.background] == nil)
     }
 
     @Test func archiveLayout() throws {
         let reader = try ZipReader(write())
         #expect(Set(reader.entries.map(\.name)) == ["manifest.json", "document.json", "background.png", TestDocuments.placedImage.name, "thumbnail.png"])
         let manifest = try JSONDecoder().decode(PinxelManifest.self, from: reader.data(for: "manifest.json"))
-        #expect(manifest == PinxelManifest(format: "pinxel", version: 1, appVersion: "0.1.0"))
+        #expect(manifest == PinxelManifest(format: "pinxel", version: 2, appVersion: "0.1.0"))
     }
 
     @Test func newerVersionOpensReadOnly() throws {
         let document = TestDocuments.document(annotations: [])
         var zip = ZipWriter()
-        try zip.add(name: "manifest.json", data: Data(#"{"format":"pinxel","version":2,"appVersion":"9.0"}"#.utf8), method: .deflate)
+        try zip.add(name: "manifest.json", data: Data(#"{"format":"pinxel","version":3,"appVersion":"9.0"}"#.utf8), method: .deflate)
         try zip.add(name: "document.json", data: JSONEncoder().encode(document), method: .deflate)
         try zip.add(name: "background.png", data: images()[TestDocuments.background]!, method: .store)
         let contents = try PinxelArchive.read(zip.finish())
@@ -63,7 +65,7 @@ struct PinxelArchiveTests {
         let document = TestDocuments.document(annotations: [Annotation(kind: .unknown(type: "sticker", raw: raw))])
         let once = try PinxelArchive.read(write(document))
         let twice = try PinxelArchive.read(PinxelArchive.write(document: once.document, images: once.images, thumbnail: Data(), appVersion: "0.1.0"))
-        #expect(twice.document.annotations.first?.kind == .unknown(type: "sticker", raw: raw))
+        #expect(twice.document.annotations.last?.kind == .unknown(type: "sticker", raw: raw))
     }
 
     @Test func rejectsZipWithoutManifest() throws {
@@ -101,7 +103,7 @@ struct PinxelArchiveTests {
             try PinxelArchive.write(document: document, images: [TestDocuments.background: Data([0])], thumbnail: Data(), appVersion: "0.1.0")
         }
         var zip = ZipWriter()
-        try zip.add(name: "manifest.json", data: Data(#"{"format":"pinxel","version":1,"appVersion":"0.1.0"}"#.utf8), method: .store)
+        try zip.add(name: "manifest.json", data: Data(#"{"format":"pinxel","version":2,"appVersion":"0.1.0"}"#.utf8), method: .store)
         try zip.add(name: "document.json", data: JSONEncoder().encode(document), method: .store)
         try zip.add(name: "background.png", data: images()[TestDocuments.background]!, method: .store)
         #expect(throws: PinxelArchiveError.missingAsset(TestDocuments.placedImage.name)) { try PinxelArchive.read(zip.finish()) }

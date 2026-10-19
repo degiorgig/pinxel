@@ -32,15 +32,12 @@ public struct RenderOptions: Sendable {
 }
 
 public enum RenderError: Error, Equatable {
-    case missingBackground
     case invalidSize
     case contextCreationFailed
 }
 
 /// Unico percorso di disegno per canvas, miniature ed export.
 public final class DocumentRenderer {
-    private var processedKey: String?
-    private var processedImage: CGImage?
     private let effects = EffectCache()
 
     public init() {}
@@ -52,25 +49,11 @@ public final class DocumentRenderer {
         return CGSize(width: Double(image.width) + 2 * padding, height: Double(image.height) + 2 * padding)
     }
 
-    public func processedBackground(for document: PinxelDocument, assets: any AssetProvider) throws -> CGImage {
-        guard let original = assets.image(for: document.background) else { throw RenderError.missingBackground }
-        let key = "\(ObjectIdentifier(original))|\(document.imageOperations)"
-        if key == processedKey, let cached = processedImage { return cached }
-        guard let processed = BackgroundProcessor.process(original, operations: document.imageOperations) else {
-            throw RenderError.invalidSize
-        }
-        processedKey = key
-        processedImage = processed
-        effects.removeAll()
-        return processed
-    }
-
     /// Disegna il documento in `ctx`, il cui spazio utente è l'output in pixel con origine in basso a sinistra.
     public func render(_ document: PinxelDocument, assets: any AssetProvider, in ctx: CGContext, options: RenderOptions = RenderOptions()) throws {
-        let background = try processedBackground(for: document, assets: assets)
         let canvas = canvasSize(for: document)
         let style = document.canvasStyle
-        let imageRect = CGRect(x: style.padding, y: style.padding, width: Double(background.width), height: Double(background.height))
+        let contentRect = CGRect(x: style.padding, y: style.padding, width: Double(document.imageSize.width), height: Double(document.imageSize.height))
 
         ctx.saveGState()
         defer { ctx.restoreGState() }
@@ -88,37 +71,36 @@ public final class DocumentRenderer {
             ctx.fill(fullCanvas)
         }
 
-        ctx.saveGState()
-        if let shadow = style.shadow {
-            ShadowStyle.apply(shadow, to: ctx, outputScale: options.outputScale)
-        }
-        ImageDrawing.draw(background, in: imageRect, context: ctx)
-        ctx.restoreGState()
-
-        if let border = style.border, border.width > 0 {
-            ctx.setStrokeColor(border.color.cgColor)
-            ctx.setLineWidth(border.width)
-            ctx.setLineDash(phase: 0, lengths: [])
-            ctx.stroke(imageRect.insetBy(dx: border.width / 2, dy: border.width / 2))
-        }
-
-        let content = document.imageSize
         let excluded = options.excludedAnnotationIDs
         var context: RenderContext!
         context = RenderContext(
-            contentSize: content,
+            contentSize: document.imageSize,
             stepLabels: StepNumbering.labels(for: document.annotations),
             assets: assets,
             outputScale: options.outputScale,
             effects: effects,
             layers: { [unowned self] index, region in
-                self.layers(below: index, region: region, document: document, background: background,
-                            excluded: excluded, context: context)
+                self.layers(below: index, region: region, document: document, excluded: excluded, context: context)
             }
         )
+        // Il contenuto in un livello unico: l'ombra della tela segue la sua sagoma.
+        ctx.saveGState()
+        if let shadow = style.shadow {
+            ShadowStyle.apply(shadow, to: ctx, outputScale: options.outputScale)
+        }
+        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         ctx.translateBy(x: style.padding, y: style.padding)
         for (index, annotation) in document.annotations.enumerated() where !excluded.contains(annotation.id) {
             AnnotationRenderer.draw(annotation, index: index, in: ctx, context: context)
+        }
+        ctx.endTransparencyLayer()
+        ctx.restoreGState()
+
+        if let border = style.border, border.width > 0, !contentRect.isEmpty {
+            ctx.setStrokeColor(border.color.cgColor)
+            ctx.setLineWidth(border.width)
+            ctx.setLineDash(phase: 0, lengths: [])
+            ctx.stroke(contentRect.insetBy(dx: border.width / 2, dy: border.width / 2))
         }
     }
 
@@ -126,25 +108,21 @@ public final class DocumentRenderer {
     private(set) var lastLayerSize: PixelSize?
     var effectCacheMisses: Int { effects.misses }
 
-    /// La regione con lo sfondo e le annotazioni sotto `index`, a 1 pixel per pixel del documento.
+    /// La regione con le annotazioni sotto `index`, a 1 pixel per pixel del documento.
     /// La chiave dipende solo da ciò che tocca la regione: spostare un oggetto lontano non la invalida.
-    private func layers(below index: Int, region: PixelRect, document: PinxelDocument, background: CGImage?,
+    private func layers(below index: Int, region: PixelRect, document: PinxelDocument,
                         excluded: Set<UUID>, context: RenderContext) -> (key: String, image: CGImage)? {
         let area = region.cgRect
         let below = document.annotations.prefix(index).enumerated().filter { _, annotation in
             !excluded.contains(annotation.id) && annotation.visualBounds.intersects(area)
         }
-        let backgroundKey = background.map { "\(ObjectIdentifier($0))" } ?? "-"
-        let key = "layers|\(region)|\(backgroundKey)|\(below.map { "\($0.offset):\($0.element)" })"
+        let key = "layers|\(region)|\(below.map { "\($0.offset):\($0.element)" })"
         let image = effects.image(for: key) {
             guard let ctx = ImageDrawing.makeContext(width: region.width, height: region.height) else { return nil }
             lastLayerSize = PixelSize(width: region.width, height: region.height)
             ctx.translateBy(x: 0, y: CGFloat(region.height))
             ctx.scaleBy(x: 1, y: -1)
             ctx.translateBy(x: -CGFloat(region.x), y: -CGFloat(region.y))
-            if let background {
-                ImageDrawing.draw(background, in: CGRect(x: 0, y: 0, width: background.width, height: background.height), context: ctx)
-            }
             let flat = RenderContext(contentSize: context.contentSize, stepLabels: context.stepLabels, assets: context.assets,
                                      outputScale: 1, effects: context.effects, layers: context.layers)
             for (offset, annotation) in below {

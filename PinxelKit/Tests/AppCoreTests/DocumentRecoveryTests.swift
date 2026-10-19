@@ -25,7 +25,10 @@ struct DocumentRecoveryTests {
         let contents = try #require(DocumentRecovery.contents(fromDamaged: data, scale: 2))
         #expect(contents.document.canvasSize == PixelSize(width: 400, height: 300))
         #expect(contents.document.scale == 2)
-        #expect(contents.document.annotations.isEmpty)
+        // Solo la cattura recuperata, come immagine in fondo.
+        #expect(contents.document.annotations.count == 1)
+        guard case .image(let capture) = contents.document.annotations.first?.kind else { Issue.record("no capture"); return }
+        #expect(capture.rect == CGRect(x: 0, y: 0, width: 400, height: 300))
     }
 
     @Test func garbageGivesNothing() {

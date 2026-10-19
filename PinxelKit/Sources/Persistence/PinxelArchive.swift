@@ -16,7 +16,7 @@ public struct PinxelManifest: Codable, Equatable, Sendable {
 
 public struct PinxelFileContents: Sendable {
     public var document: PinxelDocument
-    /// Byte codificati (PNG/HEIC) di ogni immagine referenziata, sfondo incluso.
+    /// Byte codificati (PNG/HEIC) di ogni immagine referenziata.
     public var images: [ImageAssetRef: Data]
     public var thumbnail: Data?
     /// Il file è di una versione più recente: va aperto in sola lettura.
@@ -43,15 +43,13 @@ public enum PinxelArchiveError: Error, Equatable {
 }
 
 public enum PinxelArchive {
-    public static let currentVersion = 1
+    public static let currentVersion = 2
 
     public static func requiredAssets(of document: PinxelDocument) -> [ImageAssetRef] {
-        var refs = [document.background]
-        var seen: Set<ImageAssetRef> = [document.background]
+        var refs: [ImageAssetRef] = []
+        var seen: Set<ImageAssetRef> = []
         for annotation in document.annotations {
-            if case .image(let data) = annotation.kind, seen.insert(data.asset).inserted {
-                refs.append(data.asset)
-            }
+            if case .image(let data) = annotation.kind, seen.insert(data.asset).inserted { refs.append(data.asset) }
         }
         return refs
     }
@@ -128,9 +126,6 @@ public enum PinxelArchive {
             guard let size = ImageCodec.pixelSize(of: data),
                   (1...limit).contains(size.width), (1...limit).contains(size.height) else {
                 throw PinxelArchiveError.invalidDocument("immagine non valida o troppo grande: \(ref.name)")
-            }
-            if ref == document.background, size != document.canvasSize {
-                throw PinxelArchiveError.invalidDocument("lo sfondo è \(size.width)×\(size.height), il documento dichiara \(document.canvasSize.width)×\(document.canvasSize.height)")
             }
             images[ref] = data
         }

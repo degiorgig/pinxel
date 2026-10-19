@@ -54,7 +54,7 @@ struct ResizeImageSheet: View {
                     .keyboardShortcut(.cancelAction)
                 Button("Ridimensiona") { apply() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(draft.operation == nil)
+                    .disabled(draft.targetSize == nil)
             }
             .padding()
         }
@@ -62,8 +62,11 @@ struct ResizeImageSheet: View {
     }
 
     private func apply() {
-        if let operation = draft.operation {
-            model.session.perform(ApplyImageOperation(operation, in: model.session.document))
+        if let size = draft.targetSize {
+            let session = model.session
+            let before = session.document.annotations
+            session.perform(SetAnnotations(name: "Ridimensiona", before: before,
+                                           after: ContentEditing.scaled(before, from: draft.original, to: size)))
         }
         dismiss()
     }

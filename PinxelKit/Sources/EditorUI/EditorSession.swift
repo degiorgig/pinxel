@@ -35,6 +35,9 @@ public final class EditorSession {
     @ObservationIgnored var now: () -> Date = { Date() }
     @ObservationIgnored private var lastBox: CommandBox?
     @ObservationIgnored private var coalescing: (key: String, date: Date)?
+    /// Chiamata quando un comando, annulla o ripeti trasla tutti gli oggetti per adattare la tela:
+    /// la vista sposta lo scorrimento della stessa quantità, così sullo schermo non salta niente.
+    @ObservationIgnored public var onCanvasShift: ((CGVector) -> Void)?
 
     public init(document: PinxelDocument, assets: any AssetProvider, undoManager: UndoManager = UndoManager(), isReadOnly: Bool = false) {
         self.document = document
@@ -49,8 +52,10 @@ public final class EditorSession {
         document.annotations.filter { selection.contains($0.id) }
     }
 
-    /// Esegue e registra un comando. Con `coalescingKey`, un `UpdateAnnotations` che segue entro 1 s
-    /// un altro con la stessa chiave sugli stessi oggetti si annulla insieme a lui.
+    /// Esegue e registra un comando, poi adatta la tela al contenuto nello stesso passo di annulla.
+    /// Con `coalescingKey`, un `UpdateAnnotations` che segue entro 1 s un altro con la stessa chiave sugli stessi oggetti
+    /// si annulla insieme a lui, ma solo se nessuno dei due ha spostato la tela: dopo un adattamento le coordinate
+    /// di `before` non sono più quelle del passo precedente.
     public func perform(_ command: any EditCommand, coalescingKey: String? = nil) {
         guard !isReadOnly else { return }
         preview = nil
@@ -59,14 +64,23 @@ public final class EditorSession {
            let previous = box.command as? UpdateAnnotations,
            let next = command as? UpdateAnnotations,
            let merged = previous.merged(with: next) {
-            next.apply(to: &document)
-            box.command = merged
-            coalescing = (key, now())
-            pruneSelection()
-            return
+            var trial = document
+            next.apply(to: &trial)
+            if FitCanvas(in: trial) == nil {
+                document = trial
+                box.command = merged
+                coalescing = (key, now())
+                pruneSelection()
+                return
+            }
         }
         command.apply(to: &document)
-        let box = CommandBox(command)
+        var recorded = command
+        if let fit = FitCanvas(in: document) {
+            fit.apply(to: &document)
+            recorded = CommandGroup(name: command.name, commands: [command, fit])
+        }
+        let box = CommandBox(recorded)
         if undoManager.groupsByEvent {
             registerUndo(box)
         } else {
@@ -74,9 +88,10 @@ public final class EditorSession {
             registerUndo(box)
             undoManager.endUndoGrouping()
         }
-        lastBox = box
-        coalescing = coalescingKey.map { ($0, now()) }
+        lastBox = recorded is UpdateAnnotations ? box : nil
+        coalescing = recorded is UpdateAnnotations ? coalescingKey.map { ($0, now()) } : nil
         pruneSelection()
+        notifyShift(of: recorded, sign: 1)
     }
 
     /// Sposta le annotazioni selezionate e non bloccate; spostamenti ravvicinati si annullano insieme.
@@ -118,12 +133,19 @@ public final class EditorSession {
             MainActor.assumeIsolated { session.redo(box) }
         }
         undoManager.setActionName(box.command.name)
+        notifyShift(of: box.command, sign: -1)
     }
 
     private func redo(_ box: CommandBox) {
         box.command.apply(to: &document)
         finishHistoryStep()
         registerUndo(box)
+        notifyShift(of: box.command, sign: 1)
+    }
+
+    private func notifyShift(of command: any EditCommand, sign: Double) {
+        guard let fit = (command as? CommandGroup)?.commands.compactMap({ $0 as? FitCanvas }).first, fit.offset != .zero else { return }
+        onCanvasShift?(CGVector(dx: fit.offset.dx * sign, dy: fit.offset.dy * sign))
     }
 
     private func finishHistoryStep() {

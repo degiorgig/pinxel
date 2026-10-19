@@ -48,9 +48,9 @@ public enum Exporter {
     }
 
     private static func pdf(_ document: PinxelDocument, assets: any AssetProvider, outputScale: Double, renderer: DocumentRenderer) throws -> Data {
-        // Verifica prima lo sfondo, così l'errore è lo stesso degli altri formati.
-        _ = try renderer.processedBackground(for: document, assets: assets)
         let canvas = renderer.canvasSize(for: document)
+        // Tela vuota: lo stesso errore degli altri formati.
+        guard canvas.width > 0, canvas.height > 0 else { throw RenderError.invalidSize }
         var mediaBox = CGRect(x: 0, y: 0, width: canvas.width * outputScale, height: canvas.height * outputScale)
         let data = NSMutableData()
         guard let consumer = CGDataConsumer(data: data as CFMutableData),

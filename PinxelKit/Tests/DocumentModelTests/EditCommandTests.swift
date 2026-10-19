@@ -21,18 +21,13 @@ struct EditCommandTests {
         Annotation(kind: .shape(ShapeData(rect: CGRect(x: 1, y: 2, width: 3, height: 4), shape: .rectangle)))
     }
 
-    @Test func replaceBackgroundSwapsImageSizeAndOperations() {
+    @Test func setAnnotationsReplacesTheWholeList() {
+        let after = [newShape()]
+        let command = SetAnnotations(name: "Ritaglia", before: base.annotations, after: after)
         var document = base
-        ApplyImageOperation(.crop(PixelRect(x: 0, y: 0, width: 50, height: 40)), in: document).apply(to: &document)
-        let pasted = ImageAssetRef(name: "assets/pasted.png")
-        let command = ReplaceBackground(pasted, size: PixelSize(width: 120, height: 90), in: document)
-        expectReversible(command, on: document)
-        var replaced = document
-        command.apply(to: &replaced)
-        #expect(replaced.background == pasted)
-        #expect(replaced.imageSize == PixelSize(width: 120, height: 90))
-        #expect(replaced.imageOperations.isEmpty)
-        #expect(replaced.annotations == document.annotations)
+        command.apply(to: &document)
+        #expect(document.annotations == after)
+        expectReversible(command, on: base)
     }
 
     @Test func addAppendsOrInserts() {
@@ -107,26 +102,19 @@ struct EditCommandTests {
         expectReversible(ReorderAnnotations.bringToFront(selected, in: base), on: base)
     }
 
-    @Test func imageOperationTransformsAnnotations() {
-        let command = ApplyImageOperation(.crop(PixelRect(x: 10, y: 20, width: 300, height: 200)), in: base)
+    @Test func aCommandFollowedByItsFitRevertsExactly() throws {
+        // La cattura spostata a sinistra: il gruppo comando + adattamento torna esattamente a `base`.
+        let capture = base.annotations[0]
+        let move = UpdateAnnotations(name: "Sposta", before: [capture], after: [capture.transformed(by: PointMapping { CGPoint(x: $0.x - 30, y: $0.y) })])
+        var moved = base
+        move.apply(to: &moved)
+        let fit = try #require(FitCanvas(in: moved))
+        let group = CommandGroup(name: "Sposta", commands: [move, fit])
         var document = base
-        command.apply(to: &document)
-        #expect(document.imageOperations.count == 1)
-        #expect(document.imageSize == PixelSize(width: 300, height: 200))
-        #expect(document.annotations[0].bounds.minX == base.annotations[0].bounds.minX - 10)
-        #expect(command.name == "Ritaglia")
-        expectReversible(command, on: base)
-    }
-
-    @Test func cropKeepsAnnotationsOutsideAndRevertsExactly() {
-        // Ritaglio sulla metà destra: molte annotazioni finiscono a coordinate negative.
-        let command = ApplyImageOperation(.crop(PixelRect(x: 200, y: 150, width: 200, height: 150)), in: base)
-        var document = base
-        command.apply(to: &document)
-        #expect(document.annotations.count == base.annotations.count)
-        #expect(document.annotations.contains { $0.bounds.maxX < 0 || $0.bounds.maxY < 0 })
-        command.revert(on: &document)
-        #expect(document == base)
+        group.apply(to: &document)
+        #expect(document.annotations[0].bounds.minX == 0)
+        #expect(document.annotations[1].bounds.minX == base.annotations[1].bounds.minX + 30)
+        expectReversible(group, on: base)
     }
 
     @Test func canvasStyleAndGroup() {

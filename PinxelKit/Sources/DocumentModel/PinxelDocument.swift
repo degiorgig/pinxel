@@ -55,41 +55,33 @@ public struct CaptureMetadata: Codable, Equatable, Sendable {
 }
 
 public struct PinxelDocument: Codable, Equatable, Sendable {
-    /// Immagine originale, mai modificata.
-    public var background: ImageAssetRef
-    /// Dimensioni in pixel dell'immagine originale.
+    /// Dimensioni della tela in pixel: il rettangolo che racchiude il contenuto (`FitCanvas`). Zero se non c'è niente.
     public var canvasSize: PixelSize
     /// Pixel per punto (2 su Retina).
     public var scale: Double
     public var colorSpace: ColorSpaceID
-    public var imageOperations: [ImageOperation]
+    /// Margine, colore, bordo e ombra intorno al contenuto.
     public var canvasStyle: CanvasStyle
-    /// Ordine = z-order (indice 0 = in fondo).
+    /// Ordine = z-order (indice 0 = in fondo). La cattura è un'immagine come le altre.
     public var annotations: [Annotation]
     public var metadata: CaptureMetadata
 
     public init(
-        background: ImageAssetRef,
         canvasSize: PixelSize,
         scale: Double = 1,
         colorSpace: ColorSpaceID = .sRGB,
-        imageOperations: [ImageOperation] = [],
         canvasStyle: CanvasStyle = CanvasStyle(),
         annotations: [Annotation] = [],
         metadata: CaptureMetadata
     ) {
-        self.background = background
         self.canvasSize = canvasSize
         self.scale = scale
         self.colorSpace = colorSpace
-        self.imageOperations = imageOperations
         self.canvasStyle = canvasStyle
         self.annotations = annotations
         self.metadata = metadata
     }
 
-    /// Dimensioni dell'immagine dopo tutte le operazioni.
-    public var imageSize: PixelSize {
-        imageOperations.reduce(canvasSize) { size, operation in operation.resultSize(from: size) }
-    }
+    /// Dimensioni del contenuto (uguali alla tela): il nome che usano libreria, esportazione e strumenti.
+    public var imageSize: PixelSize { canvasSize }
 }

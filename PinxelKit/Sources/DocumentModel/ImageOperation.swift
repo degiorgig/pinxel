@@ -53,7 +53,7 @@ public enum ImageOperation: Codable, Equatable, Sendable {
     case crop(PixelRect)
     case resize(PixelSize)
     case cutOut(CutOut)
-    /// Allarga la tela almeno fino a queste dimensioni: l'immagine resta in alto a sinistra, il resto è trasparente.
+    /// Solo nei file della versione 1: allargava la tela.
     case extend(PixelSize)
 
     public var name: String {

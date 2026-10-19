@@ -19,7 +19,7 @@ struct ReadOnlyTests {
         canvas.send(.down(CGPoint(x: 10, y: 10), [], clickCount: 1))
         canvas.send(.drag(CGPoint(x: 60, y: 60), []))
         canvas.send(.up(CGPoint(x: 60, y: 60), []))
-        #expect(canvas.model.session.document.annotations.isEmpty)
+        #expect(canvas.model.session.document.userAnnotations.isEmpty)
         #expect(canvas.model.session.selection.isEmpty)
         #expect(canvas.model.session.preview == nil)
     }

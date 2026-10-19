@@ -93,6 +93,22 @@ public struct UpdateAnnotations: EditCommand {
     }
 }
 
+/// Sostituisce tutta la lista degli oggetti (ritaglio, ridimensiona, taglia e ricuci): l'annullamento la rimette com'era.
+public struct SetAnnotations: EditCommand {
+    public let name: String
+    public let before: [Annotation]
+    public let after: [Annotation]
+
+    public init(name: String, before: [Annotation], after: [Annotation]) {
+        self.name = name
+        self.before = before
+        self.after = after
+    }
+
+    public func apply(to document: inout PinxelDocument) { document.annotations = after }
+    public func revert(on document: inout PinxelDocument) { document.annotations = before }
+}
+
 public struct ReorderAnnotations: EditCommand {
     public let name: String
     private let before: [UUID]
@@ -143,61 +159,6 @@ public struct ReorderAnnotations: EditCommand {
             i += 1
         }
         return ReorderAnnotations(name: "Porta indietro", newOrder: order, in: document)
-    }
-}
-
-public struct ApplyImageOperation: EditCommand {
-    public let operation: ImageOperation
-    private let annotationsBefore: [Annotation]
-
-    public var name: String { operation.name }
-
-    public init(_ operation: ImageOperation, in document: PinxelDocument) {
-        self.operation = operation
-        annotationsBefore = document.annotations
-    }
-
-    public func apply(to document: inout PinxelDocument) {
-        let mapping = operation.mapping(from: document.imageSize)
-        document.annotations = annotationsBefore.map { $0.transformed(by: mapping) }
-        document.imageOperations.append(operation)
-    }
-
-    public func revert(on document: inout PinxelDocument) {
-        if !document.imageOperations.isEmpty { document.imageOperations.removeLast() }
-        document.annotations = annotationsBefore
-    }
-}
-
-/// Un'altra immagine prende il posto della cattura (uno screenshot incollato): nuove dimensioni e nessuna
-/// operazione sull'immagine; le annotazioni restano dove sono.
-public struct ReplaceBackground: EditCommand {
-    public let name: String
-    public let background: ImageAssetRef
-    public let size: PixelSize
-    private let backgroundBefore: ImageAssetRef
-    private let sizeBefore: PixelSize
-    private let operationsBefore: [ImageOperation]
-
-    public init(_ background: ImageAssetRef, size: PixelSize, in document: PinxelDocument, name: String = "Sostituisci immagine") {
-        self.name = name
-        self.background = background
-        self.size = size
-        backgroundBefore = document.background
-        sizeBefore = document.canvasSize
-        operationsBefore = document.imageOperations
-    }
-
-    public func apply(to document: inout PinxelDocument) {
-        document.background = background
-        document.canvasSize = size
-        document.imageOperations = []
-    }
-
-    public func revert(on document: inout PinxelDocument) {
-        document.background = backgroundBefore
-        document.canvasSize = sizeBefore
-        document.imageOperations = operationsBefore
     }
 }
 

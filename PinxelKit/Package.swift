@@ -39,7 +39,7 @@ let package = Package(
         ),
         .testTarget(
             name: "PersistenceTests",
-            dependencies: ["Persistence", "PinxelTestSupport"]
+            dependencies: ["Persistence", "AppCore", "PinxelTestSupport"]
         ),
         .testTarget(
             name: "CaptureKitTests",
