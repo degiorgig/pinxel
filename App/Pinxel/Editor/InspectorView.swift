@@ -15,7 +15,7 @@ struct InspectorView: View {
         let kind = model.inspectedKind
         Form {
             if kind == .none {
-                Text("Seleziona un oggetto o scegli uno strumento per vederne le proprietà.")
+                Text("Select an object or choose a tool to see its properties.")
                     .foregroundStyle(.secondary)
             } else {
                 if kind.showsStyleSection { styleSection(kind) }
@@ -30,48 +30,48 @@ struct InspectorView: View {
     @ViewBuilder
     private func styleSection(_ kind: InspectedKind) -> some View {
         let style = model.inspectedStyle
-        Section("Stile") {
+        Section("Style") {
             if kind.showsStroke {
-                ColorPicker("Colore", selection: Binding(
+                ColorPicker("Color", selection: Binding(
                     get: { Color(nsColor: (model.inspectedStyle.stroke ?? .accentRed).nsColor) },
                     set: { model.setStyle(\.stroke, RGBA(nsColor: NSColor($0)), coalescing: true) }
                 ), supportsOpacity: false)
             }
             if kind.showsFill {
-                Toggle("Riempimento", isOn: Binding(
+                Toggle("Fill", isOn: Binding(
                     get: { model.inspectedStyle.fill != nil },
                     set: { model.setFill($0) }
                 ))
                 if style.fill != nil {
-                    ColorPicker("Colore riempimento", selection: Binding(
+                    ColorPicker("Fill Color", selection: Binding(
                         get: { Color(nsColor: (model.inspectedStyle.fill ?? .accentRed).nsColor) },
                         set: { model.setStyle(\.fill, RGBA(nsColor: NSColor($0)), coalescing: true) }
                     ), supportsOpacity: true)
                 }
             }
             if kind.showsLineWidth {
-                LabeledContent("Spessore") {
+                LabeledContent("Line Width") {
                     CommittingSlider(value: style.lineWidth, range: 1...40,
                                      preview: { model.previewStyle(\.lineWidth, $0) },
                                      commit: { model.setStyle(\.lineWidth, $0) })
                 }
             }
             if kind.showsDash {
-                Picker("Tratto", selection: Binding(get: { model.inspectedStyle.dash }, set: { model.setStyle(\.dash, $0) })) {
-                    Text("Continuo").tag(DashPattern.solid)
-                    Text("Tratteggiato").tag(DashPattern.dashed)
-                    Text("Punteggiato").tag(DashPattern.dotted)
+                Picker("Stroke", selection: Binding(get: { model.inspectedStyle.dash }, set: { model.setStyle(\.dash, $0) })) {
+                    Text("Solid").tag(DashPattern.solid)
+                    Text("Dashed").tag(DashPattern.dashed)
+                    Text("Dotted").tag(DashPattern.dotted)
                 }
             }
             if kind.showsOpacity {
-                LabeledContent("Opacità") {
+                LabeledContent("Opacity") {
                     CommittingSlider(value: style.opacity, range: 0.1...1,
                                      preview: { model.previewStyle(\.opacity, $0) },
                                      commit: { model.setStyle(\.opacity, $0) })
                 }
             }
             if kind.showsShadow {
-                Toggle("Ombra", isOn: Binding(
+                Toggle("Shadow", isOn: Binding(
                     get: { model.inspectedStyle.shadow != nil },
                     set: { model.setStyle(\.shadow, $0 ? Shadow() : nil) }
                 ))
@@ -83,42 +83,42 @@ struct InspectorView: View {
     private func kindSection(_ kind: InspectedKind) -> some View {
         switch kind {
         case .arrow:
-            Section("Freccia") {
-                Picker("Inizio", selection: headBinding(start: true)) { headOptions }
-                Picker("Fine", selection: headBinding(start: false)) { headOptions }
+            Section("Arrow") {
+                Picker("Start", selection: headBinding(start: true)) { headOptions }
+                Picker("End", selection: headBinding(start: false)) { headOptions }
             }
         case .shape:
-            Section("Forma") {
-                Picker("Tipo", selection: shapeBinding) {
-                    Text("Rettangolo").tag(ShapeChoice.rectangle)
-                    Text("Arrotondato").tag(ShapeChoice.rounded)
-                    Text("Ellisse").tag(ShapeChoice.ellipse)
+            Section("Shape") {
+                Picker("Type", selection: shapeBinding) {
+                    Text("Rectangle").tag(ShapeChoice.rectangle)
+                    Text("Rounded").tag(ShapeChoice.rounded)
+                    Text("Ellipse").tag(ShapeChoice.ellipse)
                 }
             }
         case .step:
             Section("Step") {
-                Picker("Sequenza", selection: Binding(
+                Picker("Sequence", selection: Binding(
                     get: { model.inspectedAnnotation?.stepSequence ?? model.toolStyles.stepSequence },
                     set: { sequence in
-                        model.update(name: "Sequenza", selection: { $0.stepSequence = sequence }, tool: { $0.stepSequence = sequence })
+                        model.update(name: CommandName.sequence, selection: { $0.stepSequence = sequence }, tool: { $0.stepSequence = sequence })
                     }
                 )) {
-                    Text("1, 2, 3").tag(StepSequence.numbers)
-                    Text("A, B, C").tag(StepSequence.uppercaseLetters)
-                    Text("a, b, c").tag(StepSequence.lowercaseLetters)
+                    Text(verbatim: "1, 2, 3").tag(StepSequence.numbers)
+                    Text(verbatim: "A, B, C").tag(StepSequence.uppercaseLetters)
+                    Text(verbatim: "a, b, c").tag(StepSequence.lowercaseLetters)
                 }
             }
         case .effect:
             Section("Privacy") {
-                Picker("Effetto", selection: Binding(
+                Picker("Effect", selection: Binding(
                     get: { model.inspectedAnnotation?.effectMode ?? model.toolStyles.effectMode },
                     set: { model.setEffectMode($0) }
                 )) {
-                    Text("Sfocatura").tag(EffectMode.blur)
-                    Text("Pixel").tag(EffectMode.pixelate)
+                    Text("Blur").tag(EffectMode.blur)
+                    Text("Pixelate").tag(EffectMode.pixelate)
                 }
                 .pickerStyle(.segmented)
-                LabeledContent("Intensità") {
+                LabeledContent("Intensity") {
                     CommittingSlider(
                         value: model.inspectedAnnotation?.effectAmount ?? model.toolStyles.effectAmount,
                         range: 2...40,
@@ -126,7 +126,7 @@ struct InspectorView: View {
                             model.previewUpdate(selection: { $0.effectAmount = amount }, tool: { $0.effectAmount = amount })
                         },
                         commit: { amount in
-                            model.update(name: "Intensità", selection: { $0.effectAmount = amount }, tool: { $0.effectAmount = amount })
+                            model.update(name: CommandName.intensity, selection: { $0.effectAmount = amount }, tool: { $0.effectAmount = amount })
                         }
                     )
                 }
@@ -146,10 +146,10 @@ struct InspectorView: View {
 
     @ViewBuilder
     private var headOptions: some View {
-        Text("Nessuna").tag(HeadStyle.none)
-        Text("Triangolo").tag(HeadStyle.triangle)
-        Text("Aperta").tag(HeadStyle.open)
-        Text("Cerchio").tag(HeadStyle.circle)
+        Text("None").tag(HeadStyle.none)
+        Text("Triangle").tag(HeadStyle.triangle)
+        Text("Open").tag(HeadStyle.open)
+        Text("Circle").tag(HeadStyle.circle)
     }
 
     private func headBinding(start: Bool) -> Binding<HeadStyle> {
@@ -162,7 +162,7 @@ struct InspectorView: View {
                 var heads = model.inspectedAnnotation?.arrowHeads ?? model.toolStyles.arrowHeads
                 if start { heads.start = head } else { heads.end = head }
                 let chosen = heads
-                model.update(name: "Punte", selection: { $0.arrowHeads = chosen }, tool: { $0.arrowHeads = chosen })
+                model.update(name: CommandName.arrowHeads, selection: { $0.arrowHeads = chosen }, tool: { $0.arrowHeads = chosen })
             }
         )
     }
@@ -182,7 +182,7 @@ struct InspectorView: View {
                 case .rounded: .roundedRectangle(cornerRadius: 12)
                 case .ellipse: .ellipse
                 }
-                model.update(name: "Forma", selection: { $0.shapeType = shape }, tool: { $0.shapeType = shape })
+                model.update(name: CommandName.shape, selection: { $0.shapeType = shape }, tool: { $0.shapeType = shape })
             }
         )
     }

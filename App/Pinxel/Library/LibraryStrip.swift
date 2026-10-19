@@ -30,7 +30,7 @@ struct LibraryStrip: View {
         VStack(spacing: 6) {
             filterBar
             if items.isEmpty {
-                Text(library.index.items.isEmpty ? "Le tue catture compariranno qui." : "Nessuna cattura corrisponde al filtro.")
+                Text(library.index.items.isEmpty ? String(localized: "Your captures will appear here.") : String(localized: "No capture matches the filter."))
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -99,23 +99,23 @@ struct LibraryStrip: View {
     private var filterBar: some View {
         HStack(spacing: 8) {
             Menu(folderTitle) {
-                Picker("Cartella", selection: $state.filter.folder) {
-                    Text("Tutte").tag(FolderScope.all)
-                    Text("Senza cartella").tag(FolderScope.unfiled)
+                Picker("Folder", selection: $state.filter.folder) {
+                    Text("All").tag(FolderScope.all)
+                    Text(String(localized: "No Folder")).tag(FolderScope.unfiled)
                     ForEach(sortedFolders) { folder in Text(folder.name).tag(FolderScope.folder(folder.id)) }
                 }
                 .pickerStyle(.inline)
                 Divider()
-                Button("Nuova cartella…") {
-                    if let name = askName(title: "Nuova cartella", initial: ""), let folder = library.createFolder(named: name) {
+                Button("New Folder…") {
+                    if let name = askName(title: String(localized: "New Folder"), initial: ""), let folder = library.createFolder(named: name) {
                         state.filter.folder = .folder(folder.id)
                     }
                 }
                 if case .folder(let id) = state.filter.folder, let folder = library.index.folder(id) {
-                    Button("Rinomina cartella…") {
-                        if let name = askName(title: "Rinomina cartella", initial: folder.name) { _ = library.renameFolder(id, to: name) }
+                    Button("Rename Folder…") {
+                        if let name = askName(title: String(localized: "Rename Folder"), initial: folder.name) { _ = library.renameFolder(id, to: name) }
                     }
-                    Button("Elimina cartella") {
+                    Button("Delete Folder") {
                         library.deleteFolder(id)
                         state.filter.folder = .all
                     }
@@ -123,15 +123,15 @@ struct LibraryStrip: View {
             }
             .fixedSize()
             .accessibilityIdentifier("pinxel.library.folderMenu")
-            Menu(state.filter.tag.map { "#\($0)" } ?? "Etichetta") {
-                Picker("Etichetta", selection: $state.filter.tag) {
-                    Text("Tutte").tag(String?.none)
+            Menu(state.filter.tag.map { "#\($0)" } ?? String(localized: "Tag")) {
+                Picker(String(localized: "Tag"), selection: $state.filter.tag) {
+                    Text("All").tag(String?.none)
                     ForEach(library.allTags, id: \.self) { tag in Text(tag).tag(Optional(tag)) }
                 }
                 .pickerStyle(.inline)
             }
             .fixedSize()
-            TextField("Cerca", text: $state.filter.text)
+            TextField("Search", text: $state.filter.text)
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 220)
             Spacer()
@@ -146,9 +146,9 @@ struct LibraryStrip: View {
 
     private var folderTitle: String {
         switch state.filter.folder {
-        case .all: "Tutte le cartelle"
-        case .unfiled: "Senza cartella"
-        case .folder(let id): library.index.folder(id)?.name ?? "Tutte le cartelle"
+        case .all: String(localized: "All Folders")
+        case .unfiled: String(localized: "No Folder")
+        case .folder(let id): library.index.folder(id)?.name ?? String(localized: "All Folders")
         }
     }
 
@@ -156,33 +156,33 @@ struct LibraryStrip: View {
 
     @ViewBuilder private func contextMenu(for item: Library.LibraryItem) -> some View {
         let files = targets(item)
-        Button("Copia") { copy(files) }
-        Button("Apri in una nuova finestra") { for target in items where files.contains(target.file) { open(target, true) } }
-        Menu("Sposta in") {
-            Button("Senza cartella") { library.move(files, to: nil) }
+        Button("Copy") { copy(files) }
+        Button("Open in New Window") { for target in items where files.contains(target.file) { open(target, true) } }
+        Menu("Move To") {
+            Button(String(localized: "No Folder")) { library.move(files, to: nil) }
             ForEach(sortedFolders) { folder in Button(folder.name) { library.move(files, to: folder.id) } }
             Divider()
-            Button("Nuova cartella…") {
-                if let name = askName(title: "Nuova cartella", initial: ""), let folder = library.createFolder(named: name) {
+            Button("New Folder…") {
+                if let name = askName(title: String(localized: "New Folder"), initial: ""), let folder = library.createFolder(named: name) {
                     library.move(files, to: folder.id)
                 }
             }
         }
-        Menu("Etichette") {
+        Menu("Tags") {
             ForEach(library.allTags, id: \.self) { tag in
                 let all = files.allSatisfy { file in library.index.item(file)?.tags.contains { $0.caseInsensitiveCompare(tag) == .orderedSame } ?? false }
                 Toggle(tag, isOn: Binding(get: { all }, set: { on in on ? library.addTag(tag, to: files) : library.removeTag(tag, from: files) }))
             }
             Divider()
-            Button("Nuova etichetta…") {
-                if let tag = askName(title: "Nuova etichetta", initial: "") { library.addTag(tag, to: files) }
+            Button("New Tag…") {
+                if let tag = askName(title: String(localized: "New Tag"), initial: "") { library.addTag(tag, to: files) }
             }
         }
-        Button("Mostra nel Finder") {
+        Button("Show in Finder") {
             NSWorkspace.shared.activateFileViewerSelecting(items.filter { files.contains($0.file) }.map { library.url(for: $0) })
         }
         Divider()
-        Button("Elimina", role: .destructive) { library.delete(files) }
+        Button("Delete", role: .destructive) { library.delete(files) }
     }
 
     // MARK: Appunti, trascinamenti
@@ -245,8 +245,8 @@ struct LibraryStrip: View {
         let field = NSTextField(string: initial)
         field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
         alert.accessoryView = field
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Annulla")
+        alert.addButton(withTitle: String(localized: "OK"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.window.initialFirstResponder = field
         return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }

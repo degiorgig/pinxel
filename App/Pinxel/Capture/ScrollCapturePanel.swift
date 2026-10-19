@@ -10,9 +10,9 @@ struct ScrollCapturePanel: View {
         HStack(spacing: 12) {
             thumbnail
             VStack(alignment: .leading, spacing: 2) {
-                Text("Cattura a scorrimento")
+                Text("Scrolling Capture")
                     .font(.headline)
-                Text("\(session.height) px")
+                Text(verbatim: "\(session.height) px")
                     .font(.callout)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
@@ -23,8 +23,8 @@ struct ScrollCapturePanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
-            Button("Annulla") { session.cancel() }
-            Button("Fine") { session.finish() }
+            Button("Cancel") { session.cancel() }
+            Button("Done") { session.finish() }
                 .buttonStyle(.borderedProminent)
         }
         .padding(12)
@@ -34,10 +34,10 @@ struct ScrollCapturePanel: View {
     }
 
     private var message: String {
-        if session.pause == .scrollBack { return "Troppo veloce: torna un po' su per riprendere." }
-        if session.pause == .similarRows { return "Righe troppo simili per agganciarsi: torna un po' su e scorri più piano." }
-        if narrowed { return "Area ristretta in larghezza per non esaurire la memoria. Scorri in giù o in su, poi Fine." }
-        return "Scorri in giù o in su, poi premi Fine o Invio."
+        if session.pause == .scrollBack { return String(localized: "Too fast: scroll back up a little to resume.") }
+        if session.pause == .similarRows { return String(localized: "Rows too similar to match: scroll back up a little and scroll more slowly.") }
+        if narrowed { return String(localized: "Area narrowed to save memory. Scroll down or up, then Done.") }
+        return String(localized: "Scroll down or up, then press Done or Return.")
     }
 
     @ViewBuilder private var thumbnail: some View {

@@ -20,39 +20,39 @@ struct ResizeImageSheet: View {
         VStack(spacing: 0) {
             Form {
                 Section {
-                    LabeledContent("Larghezza") {
+                    LabeledContent("Width") {
                         HStack {
-                            TextField("Larghezza", value: Binding(get: { draft.width }, set: { draft.setWidth($0) }), format: .number)
+                            TextField("Width", value: Binding(get: { draft.width }, set: { draft.setWidth($0) }), format: .number)
                                 .labelsHidden()
                                 .frame(width: 90)
-                            Text("px").foregroundStyle(.secondary)
+                            Text(verbatim: "px").foregroundStyle(.secondary)
                         }
                     }
-                    LabeledContent("Altezza") {
+                    LabeledContent("Height") {
                         HStack {
-                            TextField("Altezza", value: Binding(get: { draft.height }, set: { draft.setHeight($0) }), format: .number)
+                            TextField("Height", value: Binding(get: { draft.height }, set: { draft.setHeight($0) }), format: .number)
                                 .labelsHidden()
                                 .frame(width: 90)
-                            Text("px").foregroundStyle(.secondary)
+                            Text(verbatim: "px").foregroundStyle(.secondary)
                         }
                     }
-                    Toggle("Mantieni le proporzioni", isOn: $draft.keepsAspect)
-                    Picker("Scala", selection: Binding(get: { draft.percent }, set: { draft.setPercent(Double($0)) })) {
-                        ForEach(Self.percents, id: \.self) { Text("\($0)%").tag($0) }
-                        if !Self.percents.contains(draft.percent) { Text("\(draft.percent)%").tag(draft.percent) }
+                    Toggle("Keep Proportions", isOn: $draft.keepsAspect)
+                    Picker("Scale", selection: Binding(get: { draft.percent }, set: { draft.setPercent(Double($0)) })) {
+                        ForEach(Self.percents, id: \.self) { Text(verbatim: "\($0)%").tag($0) }
+                        if !Self.percents.contains(draft.percent) { Text(verbatim: "\(draft.percent)%").tag(draft.percent) }
                     }
                 } header: {
-                    Text("Ridimensiona immagine")
+                    Text("Resize Image")
                 } footer: {
-                    Text("Attuale: \(draft.original.width) × \(draft.original.height) px. Le annotazioni seguono l'immagine.")
+                    Text("Current: \(draft.original.width) × \(draft.original.height) px. Annotations follow the image.")
                 }
             }
             .formStyle(.grouped)
             HStack {
                 Spacer()
-                Button("Annulla", role: .cancel) { dismiss() }
+                Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Ridimensiona") { apply() }
+                Button("Resize") { apply() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(draft.targetSize == nil)
             }
@@ -65,7 +65,7 @@ struct ResizeImageSheet: View {
         if let size = draft.targetSize {
             let session = model.session
             let before = session.document.annotations
-            session.perform(SetAnnotations(name: "Ridimensiona", before: before,
+            session.perform(SetAnnotations(name: CommandName.resize, before: before,
                                            after: ContentEditing.scaled(before, from: draft.original, to: size)))
         }
         dismiss()
@@ -86,31 +86,31 @@ struct CanvasStyleSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                Section("Bordo") {
-                    Toggle("Bordo", isOn: Binding(get: { style.border != nil }, set: { style = CanvasStyleEditing.settingBorder($0, in: style) }))
+                Section("Border") {
+                    Toggle("Border", isOn: Binding(get: { style.border != nil }, set: { style = CanvasStyleEditing.settingBorder($0, in: style) }))
                     if let border = style.border {
-                        ColorPicker("Colore", selection: Binding(
+                        ColorPicker("Color", selection: Binding(
                             get: { Color(nsColor: border.color.nsColor) },
                             set: { style.border?.color = RGBA(nsColor: NSColor($0)) }
                         ), supportsOpacity: false)
-                        LabeledContent("Spessore") {
+                        LabeledContent("Line Width") {
                             Slider(value: Binding(get: { border.width }, set: { style.border?.width = $0.rounded() }), in: 1...40)
                         }
                     }
                 }
-                Section("Ombra") {
-                    Toggle("Ombra", isOn: Binding(get: { style.shadow != nil }, set: { style = CanvasStyleEditing.settingShadow($0, in: style) }))
+                Section("Shadow") {
+                    Toggle("Shadow", isOn: Binding(get: { style.shadow != nil }, set: { style = CanvasStyleEditing.settingShadow($0, in: style) }))
                 }
-                Section("Margini") {
-                    LabeledContent("Margine") {
+                Section("Padding") {
+                    LabeledContent("Margin") {
                         HStack {
                             Slider(value: Binding(get: { style.padding }, set: { style.padding = $0.rounded() }), in: 0...200)
-                            Text("\(Int(style.padding)) px").monospacedDigit().frame(width: 52, alignment: .trailing)
+                            Text(verbatim: "\(Int(style.padding)) px").monospacedDigit().frame(width: 52, alignment: .trailing)
                         }
                     }
-                    Toggle("Sfondo", isOn: Binding(get: { style.backgroundColor != nil }, set: { style = CanvasStyleEditing.settingBackground($0, in: style) }))
+                    Toggle("Background", isOn: Binding(get: { style.backgroundColor != nil }, set: { style = CanvasStyleEditing.settingBackground($0, in: style) }))
                     if let background = style.backgroundColor {
-                        ColorPicker("Colore sfondo", selection: Binding(
+                        ColorPicker("Background Color", selection: Binding(
                             get: { Color(nsColor: background.nsColor) },
                             set: { style.backgroundColor = RGBA(nsColor: NSColor($0)) }
                         ), supportsOpacity: true)
@@ -120,9 +120,9 @@ struct CanvasStyleSheet: View {
             .formStyle(.grouped)
             HStack {
                 Spacer()
-                Button("Annulla", role: .cancel) { dismiss() }
+                Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Applica") { apply() }
+                Button("Apply") { apply() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(style == model.session.document.canvasStyle)
             }
@@ -137,7 +137,7 @@ struct CanvasStyleSheet: View {
     private func apply() {
         let before = model.session.document.canvasStyle
         if style != before {
-            model.session.perform(UpdateCanvasStyle(before: before, after: style, name: "Bordo, ombra e margini"))
+            model.session.perform(UpdateCanvasStyle(before: before, after: style, name: CommandName.canvasStyle))
         }
         dismiss()
     }

@@ -20,8 +20,8 @@ final class PinxelDocumentController: NSDocumentController {
             completionHandler(document, false, nil)
         } catch {
             completionHandler(nil, false, NSError(domain: "com.degiorgi.pinxel", code: 3, userInfo: [
-                NSLocalizedDescriptionKey: "Impossibile aprire l'immagine «\(url.lastPathComponent)».",
-                NSLocalizedRecoverySuggestionErrorKey: "Il file non è un'immagine leggibile o è danneggiato.",
+                NSLocalizedDescriptionKey: String(localized: "Can't open the image “\(url.lastPathComponent)”."),
+                NSLocalizedRecoverySuggestionErrorKey: String(localized: "The file isn't a readable image or is damaged."),
                 NSUnderlyingErrorKey: error,
             ]))
         }

@@ -56,20 +56,20 @@ targets:
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: "© 2026 Giovanni De Giorgi"
         CFBundleDocumentTypes:
-          - CFBundleTypeName: Documento Pinxel
+          - CFBundleTypeName: Pinxel Document
             CFBundleTypeRole: Editor
             LSHandlerRank: Owner
             LSItemContentTypes: [com.degiorgi.pinxel.document]
             NSDocumentClass: PinxelFileDocument
           # Le immagini si aprono in un documento nuovo (PinxelDocumentController); Pinxel non le rivendica.
-          - CFBundleTypeName: Immagine
+          - CFBundleTypeName: Image
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             LSItemContentTypes: [public.png, public.jpeg, public.heic, public.tiff, com.compuserve.gif, com.microsoft.bmp, org.webmproject.webp]
             NSDocumentClass: PinxelFileDocument
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.degiorgi.pinxel.document
-            UTTypeDescription: Documento Pinxel
+            UTTypeDescription: Pinxel Document
             UTTypeConformsTo: [public.data, public.composite-content]
             UTTypeTagSpecification:
               public.filename-extension: [pinxel]

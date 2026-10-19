@@ -46,11 +46,11 @@ final class LibraryModel {
         indexUnreadable = load.problem == .unreadable
         switch load.problem {
         case .corrupt:
-            notifier.info("L'indice della libreria era danneggiato: ricostruito dai file. Cartelle ed etichette sono andate perse; la copia è in \(LibraryStore.corruptName).")
+            notifier.info(String(localized: "The library index was damaged and has been rebuilt from the files. Folders and tags were lost; a copy is in \(LibraryStore.corruptName)."))
         case .futureVersion:
-            notifier.info("L'indice della libreria è di una versione più recente di Pinxel: messo da parte in \(LibraryStore.corruptName) e ricostruito dai file.")
+            notifier.info(String(localized: "The library index comes from a newer version of Pinxel: it was set aside in \(LibraryStore.corruptName) and rebuilt from the files."))
         case .unreadable:
-            notifier.info("Impossibile leggere l'indice della libreria: cartelle ed etichette non si salvano finché non torna leggibile.")
+            notifier.info(String(localized: "Can't read the library index: folders and tags won't be saved until it is readable again."))
         case nil:
             break
         }
@@ -133,10 +133,10 @@ final class LibraryModel {
             try store.trash(files, in: &index)
         } catch LibraryError.trashUnavailable {
             let alert = NSAlert()
-            alert.messageText = files.count == 1 ? "Eliminare definitivamente la cattura?" : "Eliminare definitivamente \(files.count) catture?"
-            alert.informativeText = "Il Cestino non è disponibile: non si potranno recuperare."
-            alert.addButton(withTitle: "Elimina")
-            alert.addButton(withTitle: "Annulla")
+            alert.messageText = files.count == 1 ? String(localized: "Delete the capture permanently?") : String(localized: "Delete \(files.count) captures permanently?")
+            alert.informativeText = String(localized: "The Trash isn't available: they can't be recovered.")
+            alert.addButton(withTitle: String(localized: "Delete"))
+            alert.addButton(withTitle: String(localized: "Cancel"))
             if alert.runModal() == .alertFirstButtonReturn {
                 do { try store.deletePermanently(files, in: &index) } catch { notifier.failure(error) }
             }
@@ -192,8 +192,8 @@ final class LibraryModel {
     private func present(_ error: Error) {
         let alert = NSAlert()
         switch error {
-        case LibraryIndexError.emptyName: alert.messageText = "Il nome della cartella non può essere vuoto."
-        case LibraryIndexError.duplicateName: alert.messageText = "Esiste già una cartella con questo nome."
+        case LibraryIndexError.emptyName: alert.messageText = String(localized: "The folder name can't be empty.")
+        case LibraryIndexError.duplicateName: alert.messageText = String(localized: "A folder with this name already exists.")
         default: alert.messageText = Notifier.message(for: error)
         }
         alert.runModal()

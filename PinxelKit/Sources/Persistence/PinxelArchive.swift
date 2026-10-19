@@ -138,19 +138,19 @@ public enum PinxelArchive {
             // Controllo sull'intestazione: niente decodifica di immagini enormi o incoerenti.
             guard let size = ImageCodec.pixelSize(of: data),
                   (1...limit).contains(size.width), (1...limit).contains(size.height) else {
-                throw PinxelArchiveError.invalidDocument("immagine non valida o troppo grande: \(ref.name)")
+                throw PinxelArchiveError.invalidDocument("invalid or too large image: \(ref.name)")
             }
             images[ref] = data
         }
         if let legacy {
             guard let backgroundData = images[legacy.background],
                   let size = ImageCodec.pixelSize(of: backgroundData), size == legacy.canvasSize else {
-                throw PinxelArchiveError.invalidDocument("lo sfondo non corrisponde alle dimensioni del documento")
+                throw PinxelArchiveError.invalidDocument("the background does not match the document size")
             }
             // Senza operazioni lo sfondo resta il file che è; altrimenti lo si elabora una volta e lo si salva come PNG.
             if !legacy.imageOperations.isEmpty {
                 guard let processed = BackgroundProcessor.process(try ImageCodec.decode(backgroundData), operations: legacy.imageOperations) else {
-                    throw PinxelArchiveError.invalidDocument("impossibile elaborare lo sfondo")
+                    throw PinxelArchiveError.invalidDocument("the background cannot be processed")
                 }
                 let ref = ImageAssetRef(name: "assets/capture-v1.png")
                 images[legacy.background] = nil

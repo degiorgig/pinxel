@@ -12,22 +12,22 @@ struct MenuContent: View {
                 .globalShortcut(environment.settings.combo(for: action))
         }
         Divider()
-        Button("Modifica ultima cattura") { environment.openLastCapture() }
+        Button("Edit Last Capture") { environment.openLastCapture() }
             .disabled(environment.lastCapture == nil)
-        Button("Nuovo") { environment.openBlank() }
-        Button("Nuova dagli appunti") { environment.openClipboard() }
-        Button("Apri…") {
+        Button("New") { environment.openBlank() }
+        Button("New from Clipboard") { environment.openClipboard() }
+        Button("Open…") {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate()
             NSDocumentController.shared.openDocument(nil)
         }
-        Button("Preferenze…") {
+        Button("Settings…") {
             NSApp.activate()
             openSettings()
         }
             .keyboardShortcut(",")
         Divider()
-        Button("Esci da Pinxel") { NSApp.terminate(nil) }
+        Button("Quit Pinxel") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
 

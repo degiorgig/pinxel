@@ -22,7 +22,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.minSize = NSSize(width: 640, height: 420)
         window.setContentSize(Self.initialContentSize(for: model.session.document))
         window.center()
-        if model.session.isReadOnly { window.subtitle = "Sola lettura" }
+        if model.session.isReadOnly { window.subtitle = String(localized: "Read Only") }
         super.init(window: window)
         reference.controller = self
         // Il documento entra nella catena dei responder (Salva, Esporta…) tramite il delegato della finestra.
@@ -44,7 +44,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         EditorFocus.shared.resign(self.model)
         self.model = model
         hosting.rootView = Self.view(model: model, stripState: stripState, reference: reference)
-        window?.subtitle = model.session.isReadOnly ? "Sola lettura" : ""
+        window?.subtitle = model.session.isReadOnly ? String(localized: "Read Only") : ""
         if window?.isMainWindow ?? false { EditorFocus.shared.focus(model, isKey: window?.isKeyWindow ?? true) }
     }
 

@@ -10,7 +10,7 @@ struct QuickStylesSection: View {
         if let tool = model.quickStyleTool {
             let styles = model.quickStyles.styles(for: tool)
             if !styles.isEmpty {
-                Section("Stili rapidi") {
+                Section("Quick Styles") {
                     LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 8), count: 4), alignment: .leading, spacing: 8) {
                         ForEach(Array(styles.enumerated()), id: \.offset) { index, style in
                             Button {
@@ -19,8 +19,8 @@ struct QuickStylesSection: View {
                                 QuickStyleSwatch(style: style, tool: tool)
                             }
                             .buttonStyle(.plain)
-                            .help("Applica lo stile rapido \(index + 1)")
-                            .accessibilityLabel("Stile rapido \(index + 1)")
+                            .help("Apply quick style \(index + 1)")
+                            .accessibilityLabel("Quick style \(index + 1)")
                         }
                     }
                 }

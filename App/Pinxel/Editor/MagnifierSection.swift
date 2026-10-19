@@ -29,33 +29,33 @@ struct MagnifierSection: View {
     private static let zooms: [Double] = [1.5, 2, 3, 4]
 
     var body: some View {
-        Section("Lente") {
-            Picker("Forma", selection: Binding(
+        Section("Magnifier") {
+            Picker("Shape", selection: Binding(
                 get: { ShapeChoice(model.inspectedAnnotation?.magnifierShape ?? model.toolStyles.magnifierShape) },
                 set: { choice in
                     let shape = choice.shape
-                    model.update(name: "Forma lente", selection: { $0.magnifierShape = shape }, tool: { $0.magnifierShape = shape })
+                    model.update(name: CommandName.magnifierShape, selection: { $0.magnifierShape = shape }, tool: { $0.magnifierShape = shape })
                 }
             )) {
-                Text("Rettangolo").tag(ShapeChoice.rectangle)
-                Text("Arrotondata").tag(ShapeChoice.rounded)
-                Text("Cerchio").tag(ShapeChoice.ellipse)
+                Text("Rectangle").tag(ShapeChoice.rectangle)
+                Text("Rounded").tag(ShapeChoice.rounded)
+                Text("Circle").tag(ShapeChoice.ellipse)
             }
-            Picker("Ingrandimento", selection: Binding(
+            Picker("Magnification", selection: Binding(
                 get: {
                     let zoom = model.inspectedAnnotation?.magnifierZoom ?? model.toolStyles.magnifierZoom
                     return Self.zooms.min { abs($0 - zoom) < abs($1 - zoom) } ?? 2
                 },
                 set: { zoom in
-                    model.update(name: "Ingrandimento", selection: { $0.magnifierZoom = zoom }, tool: { $0.magnifierZoom = zoom })
+                    model.update(name: CommandName.magnification, selection: { $0.magnifierZoom = zoom }, tool: { $0.magnifierZoom = zoom })
                 }
             )) {
-                ForEach(Self.zooms, id: \.self) { Text("\($0.formatted())×").tag($0) }
+                ForEach(Self.zooms, id: \.self) { Text(verbatim: "\($0.formatted())×").tag($0) }
             }
-            Toggle("Connettore", isOn: Binding(
+            Toggle("Connector", isOn: Binding(
                 get: { model.inspectedAnnotation?.magnifierConnector ?? model.toolStyles.magnifierConnector },
                 set: { on in
-                    model.update(name: "Connettore", selection: { $0.magnifierConnector = on }, tool: { $0.magnifierConnector = on })
+                    model.update(name: CommandName.connector, selection: { $0.magnifierConnector = on }, tool: { $0.magnifierConnector = on })
                 }
             ))
         }

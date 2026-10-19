@@ -21,20 +21,20 @@ private struct ExportOptionsView: View {
 
     var body: some View {
         Form {
-            Picker("Formato", selection: $options.choice.fileType) {
+            Picker("Format", selection: $options.choice.fileType) {
                 ForEach(ExportFileType.allCases, id: \.self) { Text($0.title).tag($0) }
             }
             if options.choice.fileType.hasQuality {
-                LabeledContent("Qualità") {
+                LabeledContent("Quality") {
                     HStack {
                         Slider(value: $options.choice.quality, in: 0...100)
-                        Text("\(Int(options.choice.quality))").monospacedDigit().frame(width: 32, alignment: .trailing)
+                        Text(verbatim: "\(Int(options.choice.quality))").monospacedDigit().frame(width: 32, alignment: .trailing)
                     }
                 }
             }
-            Picker("Scala", selection: $options.choice.scale) {
-                Text("1x").tag(ExportScale.oneX)
-                Text("2x").tag(ExportScale.twoX)
+            Picker("Scale", selection: $options.choice.scale) {
+                Text(verbatim: "1x").tag(ExportScale.oneX)
+                Text(verbatim: "2x").tag(ExportScale.twoX)
             }
             .pickerStyle(.segmented)
         }
@@ -50,8 +50,8 @@ enum ExportPanel {
     static func run(document: PinxelDocument, assets: any AssetProvider, suggestedName: String, window: NSWindow) async {
         let options = ExportOptions(choice: ExportChoice(documentScale: document.scale))
         let panel = NSSavePanel()
-        panel.title = "Esporta"
-        panel.prompt = "Esporta"
+        panel.title = String(localized: "Export")
+        panel.prompt = String(localized: "Export")
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
         panel.allowedContentTypes = [options.choice.fileType.contentType]

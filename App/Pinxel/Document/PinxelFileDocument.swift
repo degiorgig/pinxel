@@ -58,7 +58,7 @@ final class PinxelFileDocument: NSDocument {
         }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",
+                NSLocalizedDescriptionKey: String(localized: "This document was created by a newer version of Pinxel and can only be viewed."),
             ])
         }
         let assets = try contents.assetProvider()
@@ -127,15 +127,15 @@ final class PinxelFileDocument: NSDocument {
     nonisolated private static func userError(for error: Error, data: Data) -> NSError {
         let reason: String
         switch error {
-        case PinxelArchiveError.notAPinxelFile: reason = "Il file non è un documento Pinxel."
-        case PinxelArchiveError.invalidDocument(let detail): reason = "Il documento è danneggiato (\(detail))."
-        case PinxelArchiveError.missingAsset(let name): reason = "Nel documento manca l'immagine \(name)."
-        default: reason = "Il file è danneggiato o illeggibile."
+        case PinxelArchiveError.notAPinxelFile: reason = String(localized: "The file isn't a Pinxel document.")
+        case PinxelArchiveError.invalidDocument(let detail): reason = String(localized: "The document is damaged (\(detail)).")
+        case PinxelArchiveError.missingAsset(let name): reason = String(localized: "The image \(name) is missing from the document.")
+        default: reason = String(localized: "The file is damaged or unreadable.")
         }
         var info: [String: Any] = [NSLocalizedDescriptionKey: reason]
         if PinxelArchive.recoverBackground(data) != nil {
-            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra: puoi aprirla in un documento nuovo."
-            info[NSLocalizedRecoveryOptionsErrorKey] = ["Apri l'immagine", "Annulla"]
+            info[NSLocalizedRecoverySuggestionErrorKey] = String(localized: "The original image is intact: you can open it in a new document.")
+            info[NSLocalizedRecoveryOptionsErrorKey] = [String(localized: "Open Image"), String(localized: "Cancel")]
             info[NSRecoveryAttempterErrorKey] = RecoveryAttempter(data: data)
         }
         return NSError(domain: "com.degiorgi.pinxel", code: 2, userInfo: info)

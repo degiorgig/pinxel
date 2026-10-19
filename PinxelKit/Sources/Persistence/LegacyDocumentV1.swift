@@ -23,15 +23,15 @@ struct LegacyDocumentV1: Codable, Equatable {
         let limit = PinxelDocument.maxImageSide
         func sizeError(_ size: PixelSize, _ what: String) -> String? {
             guard (1...limit).contains(size.width), (1...limit).contains(size.height) else {
-                return "\(what) fuori dai limiti: \(size.width)×\(size.height)"
+                return "\(what) out of range: \(size.width)×\(size.height)"
             }
             return nil
         }
-        if let error = sizeError(canvasSize, "dimensioni immagine") { return error }
+        if let error = sizeError(canvasSize, "image size") { return error }
         var size = canvasSize
         for operation in imageOperations {
             size = operation.resultSize(from: size)
-            if let error = sizeError(size, "risultato di \(operation.name)") { return error }
+            if let error = sizeError(size, "result of \(operation.name)") { return error }
         }
         return nil
     }

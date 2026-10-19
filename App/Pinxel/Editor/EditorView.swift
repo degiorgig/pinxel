@@ -48,10 +48,10 @@ struct EditorView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Picker("Strumento", selection: $model.tool) {
+                    Picker("Tool", selection: $model.tool) {
                         ForEach(EditorTool.allCases, id: \.self) { tool in
                             Label(tool.title, systemImage: tool.symbolName)
-                                .help("\(tool.title) (\(String(tool.shortcut).uppercased()))")
+                                .help(Text(verbatim: "\(tool.title) (\(String(tool.shortcut).uppercased()))"))
                                 .tag(tool)
                         }
                     }
@@ -66,37 +66,37 @@ struct EditorView: View {
                     Button {
                         model.canvas?.bringToFront(nil)
                     } label: {
-                        Label("In primo piano", systemImage: "square.3.layers.3d.top.filled")
+                        Label("To Front", systemImage: "square.3.layers.3d.top.filled")
                     }
-                    .help("Porta la selezione in primo piano (⇧⌘])")
+                    .help("Bring the selection to the front (⇧⌘])")
                     .disabled(!canArrange)
                     Button {
                         model.canvas?.sendToBack(nil)
                     } label: {
-                        Label("In fondo", systemImage: "square.3.layers.3d.bottom.filled")
+                        Label("To Back", systemImage: "square.3.layers.3d.bottom.filled")
                     }
-                    .help("Porta la selezione in fondo (⇧⌘[)")
+                    .help("Send the selection to the back (⇧⌘[)")
                     .disabled(!canArrange)
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))
-                        .help("Condividi l'immagine")
+                    ShareLink(item: SharedCapture(model: model), preview: SharePreview("Pinxel Capture"))
+                        .help("Share the image")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         stripVisible.toggle()
                     } label: {
-                        Label("Carosello", systemImage: "rectangle.bottomthird.inset.filled")
+                        Label("Strip", systemImage: "rectangle.bottomthird.inset.filled")
                     }
-                    .help("Mostra o nascondi il carosello delle catture (⌃⌘L)")
+                    .help("Show or hide the capture strip (⌃⌘L)")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         model.isInspectorPresented.toggle()
                     } label: {
-                        Label("Proprietà", systemImage: "sidebar.trailing")
+                        Label("Properties", systemImage: "sidebar.trailing")
                     }
-                    .help("Mostra o nascondi il pannello proprietà")
+                    .help("Show or hide the properties panel")
                 }
             }
     }
@@ -116,7 +116,7 @@ struct CanvasRepresentable: NSViewRepresentable {
 /// Avviso sopra la tela per i documenti di una versione più recente (spec §8, §10).
 private struct ReadOnlyBanner: View {
     var body: some View {
-        Label("Creato con una versione più recente di Pinxel: puoi guardarlo ed esportarlo, ma non modificarlo.", systemImage: "lock.fill")
+        Label("Created with a newer version of Pinxel: you can view and export it, but not edit it.", systemImage: "lock.fill")
             .font(.callout)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)

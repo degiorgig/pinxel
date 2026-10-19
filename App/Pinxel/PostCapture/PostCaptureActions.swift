@@ -70,7 +70,7 @@ final class PostCaptureActions {
                 }
             case .copyToClipboard:
                 Clipboard.copy(image)
-                notifier.info("Cattura copiata negli appunti")
+                notifier.info(String(localized: "Capture copied to the clipboard"))
             case .autoSave:
                 do {
                     _ = try autoSaver.save(contents, settings: settings, date: contents.document.metadata.captureDate)

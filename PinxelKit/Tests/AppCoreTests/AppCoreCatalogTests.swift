@@ -33,4 +33,13 @@ struct AppCoreCatalogTests {
         #expect(HotKeyAction.area.title == "Capture Area")
         #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.control).displayString.contains("Space"))
     }
+
+    @Test func appCatalogsAreComplete() throws {
+        let root = Catalogs.url(module: "AppCore").deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        for name in ["Localizable", "InfoPlist"] {
+            let url = root.appendingPathComponent("App/Pinxel/\(name).xcstrings")
+            #expect(try CatalogValidation.problems(inCatalogAt: url) == [], "\(name)")
+        }
+    }
 }

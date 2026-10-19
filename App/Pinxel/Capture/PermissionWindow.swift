@@ -7,7 +7,7 @@ final class PermissionWindowController: NSWindowController {
     convenience init(permission: any ScreenRecordingPermission) {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 260), styleMask: [.titled, .closable],
                               backing: .buffered, defer: false)
-        window.title = "Permesso di registrazione schermo"
+        window.title = String(localized: "Screen Recording Permission")
         window.contentView = NSHostingView(rootView: PermissionView(permission: permission))
         window.center()
         window.isReleasedWhenClosed = false
@@ -20,16 +20,16 @@ private struct PermissionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Pinxel deve poter registrare lo schermo").font(.title3).bold()
-            Text("Serve per catturare schermate. Le immagini restano sul tuo Mac. Concedi l'accesso in Impostazioni di Sistema → Privacy e sicurezza → Registrazione schermo e audio, poi riavvia Pinxel.")
+            Text("Pinxel needs to record the screen").font(.title3).bold()
+            Text("It needs this to take screenshots. Images stay on your Mac. Grant access in System Settings → Privacy & Security → Screen & System Audio Recording, then relaunch Pinxel.")
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button("Concedi accesso…") {
+                Button("Grant Access…") {
                     permission.request()
                     permission.openSystemSettings()
                 }
                 .keyboardShortcut(.defaultAction)
-                Button("Riavvia Pinxel", action: relaunch)
+                Button("Relaunch Pinxel", action: relaunch)
             }
         }
         .padding(24)

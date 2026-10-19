@@ -138,7 +138,7 @@ final class CaptureCoordinator {
             guard let display = ScreenGeometry.display(at: center, in: snapshot.displays.map(\.info)) else { throw CaptureError.displayNotFound }
             logger.notice("scrolling capture: area \(String(describing: selected), privacy: .public) on display \(String(describing: display.frame), privacy: .public) scale \(display.scale, privacy: .public), accessibility \(self.scrolling.accessibility.isGranted, privacy: .public)")
             guard let prepared = ScrollCaptureGeometry.prepare(selected, on: display, maxHeight: Self.maxScrollingHeight) else {
-                AppEnvironment.shared.notifier.info("Area troppo bassa per la cattura a scorrimento: almeno \(Int(ScrollCaptureGeometry.minimumHeight)) punti")
+                AppEnvironment.shared.notifier.info(String(localized: "Area too short for scrolling capture: at least \(Int(ScrollCaptureGeometry.minimumHeight)) points"))
                 frontmost?.activate()
                 return
             }
@@ -157,9 +157,9 @@ final class CaptureCoordinator {
             let plan = PostCaptureRouter.plan(for: current)
             actions.perform(plan, contents: contents, image: image, settings: current)
             if session.outcome == .reachedLimit {
-                AppEnvironment.shared.notifier.info("Raggiunta l'altezza massima di \(Self.maxScrollingHeight) pixel")
+                AppEnvironment.shared.notifier.info(String(localized: "Reached the maximum height of \(Self.maxScrollingHeight) pixels"))
             } else if session.outcome == .contentChanging {
-                AppEnvironment.shared.notifier.info("Il contenuto cambia da solo: cattura fermata")
+                AppEnvironment.shared.notifier.info(String(localized: "The content changes by itself: capture stopped"))
             }
         } catch {
             logger.error("scrolling capture failed: \(String(describing: error), privacy: .public)")

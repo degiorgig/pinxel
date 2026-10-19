@@ -26,7 +26,7 @@ struct CaptureDragHandle: View {
                     .allowsHitTesting(false)
             }
             .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
-            .help("Trascina l'immagine in un'altra app o nel Finder")
+            .help("Drag the image into another app or the Finder")
     }
 }
 
@@ -51,7 +51,7 @@ final class CaptureDragSourceView: NSView, NSDraggingSource {
         super.init(frame: .zero)
         setAccessibilityElement(true)
         setAccessibilityRole(.image)
-        setAccessibilityLabel("Trascina l'immagine")
+        setAccessibilityLabel(String(localized: "Drag Image"))
     }
 
 

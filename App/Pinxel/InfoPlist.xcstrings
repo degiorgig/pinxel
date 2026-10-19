@@ -1,0 +1,15 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : { "shouldTranslate" : false },
+    "Image" : { "localizations" : {
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Immagine" } },
+      "de" : { "stringUnit" : { "state" : "translated", "value" : "Bild" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Image" } } } },
+    "Pinxel Document" : { "localizations" : {
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Documento Pinxel" } },
+      "de" : { "stringUnit" : { "state" : "translated", "value" : "Pinxel-Dokument" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Document Pinxel" } } } }
+  },
+  "version" : "1.0"
+}

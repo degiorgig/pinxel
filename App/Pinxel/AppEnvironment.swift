@@ -162,7 +162,7 @@ final class AppEnvironment {
     /// Apre nell'editor l'immagine negli appunti.
     func openClipboard() {
         guard let (image, scale) = Clipboard.image() else {
-            notifier.info("Negli appunti non c'è un'immagine")
+            notifier.info(String(localized: "There's no image on the clipboard"))
             return
         }
         do {
