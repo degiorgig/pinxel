@@ -15,6 +15,7 @@ chat, mail, documenti, liste — in **qualsiasi app**, browser compreso.
 |------|-----------|
 | App supportate | Tutte allo stesso modo (nessuna integrazione specifica col browser) |
 | Chi scorre | Sempre l'utente, con mouse o trackpad; Pinxel cattura e cuce finché si preme Fine o Invio (rivisto il 2026-10-18: lo scorrimento automatico "lottava" con quello a mano) |
+| Direzione | In giù e in su: salendo oltre il punto di partenza le righe vanno in cima (aggiunto il 2026-10-19, per esempio per le chat lette dal fondo) |
 | Selezione | Rettangolo trascinato, come la cattura area |
 | Direzione | Solo verticale, verso il basso |
 | Destinazione | Come le altre catture: segue l'impostazione "Dopo la cattura" |

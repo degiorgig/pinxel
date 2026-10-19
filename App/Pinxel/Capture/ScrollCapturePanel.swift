@@ -36,8 +36,8 @@ struct ScrollCapturePanel: View {
     private var message: String {
         if session.pause == .scrollBack { return "Troppo veloce: torna un po' su per riprendere." }
         if session.pause == .similarRows { return "Righe troppo simili per agganciarsi: torna un po' su e scorri più piano." }
-        if narrowed { return "Area ristretta in larghezza per non esaurire la memoria. Scorri verso il basso, poi Fine." }
-        return "Scorri verso il basso, poi premi Fine o Invio."
+        if narrowed { return "Area ristretta in larghezza per non esaurire la memoria. Scorri in giù o in su, poi Fine." }
+        return "Scorri in giù o in su, poi premi Fine o Invio."
     }
 
     @ViewBuilder private var thumbnail: some View {

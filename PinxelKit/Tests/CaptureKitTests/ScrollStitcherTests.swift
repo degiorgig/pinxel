@@ -290,6 +290,24 @@ struct ScrollStitcherTests {
         #expect(wrong.isEmpty, "\(wrong.count) righe sporche, la prima \(wrong.first ?? -1)")
     }
 
+    @Test func scrollingAboveTheStartAddsRowsAtTheTop() {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120,
+                                     header: TestImages.solid(width: 64, height: 20, red: 1, green: 0, blue: 0),
+                                     footer: TestImages.solid(width: 64, height: 12, red: 0, green: 0, blue: 1), scale: 1)
+        let stitcher = ScrollStitcher(maxHeight: 32768)
+        page.scrollTo(400)
+        _ = stitcher.add(page.currentFrame(), hint: nil)
+        var steps: [StitchStep] = []
+        // Su fino all'inizio, poi giù fino in fondo.
+        for position in Array(stride(from: 360, through: 0, by: -40)) + Array(stride(from: 40, to: page.maxPosition, by: 40)) + [page.maxPosition] {
+            page.scrollTo(position)
+            steps.append(stitcher.add(page.currentFrame(), hint: nil))
+        }
+        #expect(steps.prefix(10).allSatisfy { $0 == .appended(40) }, "\(steps.prefix(10))")
+        expectEqual(stitcher.image(), page.expectedImage)
+        expectEqual(stitcher.finalImage(), page.expectedImage)
+    }
+
     /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
     func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)

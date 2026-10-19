@@ -11,8 +11,8 @@ l'utente; Accessibilità serve solo perché Esc e Invio non arrivino all'app sot
 | S4 | Finder in vista elenco con molti file | Righe tutte presenti, nessuna ripetuta (contenuto ripetitivo) |
 | S5 | Un PDF in Anteprima | Come S1 |
 | S6 | Una pagina quasi tutta bianca | Nessun errore; l'immagine ha la lunghezza giusta |
-| S7 | Durante S1 scorri anche verso l'alto, poi di nuovo giù | Non si aggiunge nulla tornando su, nulla di duplicato scendendo |
-| S8 | Senza toccare niente dopo la selezione | Pinxel non scorre da solo; il pannello dice "Scorri verso il basso, poi premi Fine o Invio" |
+| S7 | Durante S1 scorri anche verso l'alto, senza superare il punto di partenza, poi di nuovo giù | Non si aggiunge nulla tornando su, nulla di duplicato scendendo |
+| S8 | Senza toccare niente dopo la selezione | Pinxel non scorre da solo; il pannello dice "Scorri in giù o in su, poi premi Fine o Invio" |
 | S9 | Area che occupa tutto lo schermo | Il pannello sta in basso a destra; non compare nell'immagine |
 | S10 | Esc durante la cattura | Nessuna immagine, nessuna notifica |
 | S11 | Invio o Fine a metà | L'immagine contiene la parte cucita fin lì |
@@ -26,3 +26,4 @@ l'utente; Accessibilità serve solo perché Esc e Invio non arrivino all'app sot
 | S19 | Area con elenchi che si evidenziano al passaggio del puntatore o mostrano un suggerimento | Nessuna evidenziazione o suggerimento ripetuto nell'immagine |
 | S20 | Un colpo veloce sul trackpad | Il pannello dice in arancione "Troppo veloce: torna un po' su per riprendere"; tornando su la cattura riprende senza righe doppie |
 | S21 | Pagina con una tabella dalle righe tutte uguali (stesso layout, cambiano solo i numeri): cattura scorrendo con il trackpad, poi con una rotella a scatti, a velocità normale | L'altezza cresce senza fermarsi; nell'immagine nessuna riga doppia o mancante. Con la rotella, i primi scatti su contenuto vario servono a tarare: se si parte subito dalla tabella può chiedere una volta di scorrere più piano | |
+| S22 | Una chat lunga aperta in fondo: avvia la cattura e scorri verso l'alto fino a dove vuoi, poi Fine. Poi una pagina avviata a metà: sali fino all'inizio e scendi fino in fondo | L'immagine contiene tutto ciò che è passato nell'area, nell'ordine giusto, senza righe doppie; un'intestazione fissa compare una volta sola, in cima |

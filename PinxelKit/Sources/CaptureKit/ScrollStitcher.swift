@@ -87,7 +87,8 @@ public final class ScrollStitcher: @unchecked Sendable {
     private var previous: Frame?
     /// Riga del contenuto in cima alla zona che scorre del fotogramma di riferimento.
     private var position = 0
-    /// Righe di contenuto che scorre già nell'immagine.
+    /// Righe di contenuto che scorre nell'immagine: da `firstRow` (negativa se si è saliti oltre l'inizio) a `captured`.
+    private var firstRow = 0
     private var captured = 0
     /// Per ogni riga di contenuto nell'immagine, quanto distava dal centro della zona che scorre nel fotogramma da cui
     /// viene: si tiene la copia più centrale, lontana da ciò che sta fermo sui bordi (il pulsante "vai in fondo" di una
@@ -140,6 +141,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             bandsKnown = true
             position += shift
             refresh(from: frame)
+            if position < firstRow { return prepend(from: frame) }
             if shift < 0 { return .movedBack }
             let newBottom = position + regionHeight
             guard newBottom >= captured else { return .appended(0) }
@@ -147,7 +149,7 @@ public final class ScrollStitcher: @unchecked Sendable {
             bottomRows = Array(frame.bytes[(frameHeight - bottomBand) * rowBytes ..< frameHeight * rowBytes])
             guard newBottom > captured, let canvas else { return .appended(0) }
             let wanted = newBottom - captured
-            let room = max(0, maxHeight - (topBand + captured + bottomBand))
+            let room = max(0, maxHeight - (canvas.rows + bottomBand))
             let rows = min(wanted, room)
             let start = topBand + regionHeight - wanted
             frame.bytes.withUnsafeBytes { canvas.append($0.baseAddress! + start * rowBytes, rows: rows) }
@@ -182,8 +184,27 @@ public final class ScrollStitcher: @unchecked Sendable {
         canvas.truncate(to: keep)
         bottomRows = Array(old.bytes[(frameHeight - bottom) * rowBytes ..< frameHeight * rowBytes])
         captured = keep - top
+        firstRow = 0
         position = 0
         rowDistance = (0..<captured).map { Int32(abs($0 - regionHeight / 2)) }
+    }
+
+    /// Si è saliti oltre la prima riga catturata: le righe scoperte vanno in cima, sotto la fascia superiore, che viene
+    /// da questo fotogramma come quella inferiore viene dall'ultimo in fondo.
+    private func prepend(from frame: Frame) -> StitchStep {
+        guard let canvas else { return .appended(0) }
+        let wanted = firstRow - position
+        let room = max(0, maxHeight - (canvas.rows + bottomBand))
+        let rows = min(wanted, room)
+        guard rows > 0 else { return .reachedLimit }
+        frame.bytes.withUnsafeBytes { source in
+            // Le più vicine a quelle già catturate, se non c'è posto per tutte.
+            canvas.insert(source.baseAddress! + (topBand + wanted - rows) * rowBytes, rows: rows, after: topBand)
+            memcpy(canvas.pointer, source.baseAddress!, topBand * rowBytes)
+        }
+        rowDistance.insert(contentsOf: (0..<rows).map { Int32(abs(wanted - rows + $0 - regionHeight / 2)) }, at: 0)
+        firstRow -= rows
+        return rows < wanted ? .reachedLimit : .appended(rows)
     }
 
     /// Le righe già nell'immagine che in questo fotogramma stanno più vicine al centro prendono i suoi pixel.
@@ -192,8 +213,8 @@ public final class ScrollStitcher: @unchecked Sendable {
         let rowBytes = rowBytes, center = regionHeight / 2
         frame.bytes.withUnsafeBytes { source in
             for y in 0..<regionHeight {
-                let row = position + y
-                guard row >= 0, row < captured else { continue }
+                let row = position + y - firstRow
+                guard row >= 0, position + y < captured else { continue }
                 let distance = Int32(abs(y - center))
                 guard distance < rowDistance[row] else { continue }
                 memcpy(canvas.pointer + (topBand + row) * rowBytes, source.baseAddress! + (topBand + y) * rowBytes, rowBytes)
@@ -499,24 +520,51 @@ public final class ScrollStitcher: @unchecked Sendable {
 final class PixelRows: @unchecked Sendable {
     let rowBytes: Int
     let capacityRows: Int
-    let pointer: UnsafeMutableRawPointer
+    private let base: UnsafeMutableRawPointer
+    /// Prima riga occupata del buffer: lo spazio libero davanti permette di aggiungere righe in cima senza spostare tutto.
+    private var start = 0
     private(set) var rows = 0
 
     init(rowBytes: Int, capacityRows: Int) {
         self.rowBytes = rowBytes
         self.capacityRows = capacityRows
-        pointer = UnsafeMutableRawPointer.allocate(byteCount: max(1, rowBytes * capacityRows), alignment: 16)
+        base = UnsafeMutableRawPointer.allocate(byteCount: max(1, rowBytes * capacityRows), alignment: 16)
     }
 
     deinit {
-        pointer.deallocate()
+        base.deallocate()
     }
+
+    /// La prima riga.
+    var pointer: UnsafeMutableRawPointer { base + start * rowBytes }
 
     func append(_ source: UnsafeRawPointer, rows count: Int) {
         let count = min(count, capacityRows - rows)
         guard count > 0 else { return }
+        if start + rows + count > capacityRows { move(to: (capacityRows - rows - count) / 2) }
         memcpy(pointer + rows * rowBytes, source, count * rowBytes)
         rows += count
+    }
+
+    /// Inserisce `count` righe dopo le prime `after`.
+    func insert(_ source: UnsafeRawPointer, rows count: Int, after: Int) {
+        let count = min(count, capacityRows - rows)
+        guard count > 0 else { return }
+        if start < count {
+            let free = capacityRows - rows
+            move(to: count + (free - count) / 2)
+        }
+        start -= count
+        if after > 0 { memmove(pointer, pointer + count * rowBytes, after * rowBytes) }
+        memcpy(pointer + after * rowBytes, source, count * rowBytes)
+        rows += count
+    }
+
+    /// Sposta le righe nel buffer perché la prima sia a `newStart`.
+    private func move(to newStart: Int) {
+        guard newStart != start else { return }
+        memmove(base + newStart * rowBytes, pointer, rows * rowBytes)
+        start = newStart
     }
 
     func truncate(to count: Int) {

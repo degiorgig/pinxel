@@ -239,6 +239,19 @@ struct ScrollCaptureSessionTests {
         #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
     }
 
+    @Test func aChatCanBeCapturedFromTheBottomUp() async {
+        let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 600), viewportHeight: 120, scale: 1)
+        page.scrollTo(page.maxPosition)
+        let session = makeSession(page)
+        page.onFrame = { count in
+            guard count > 1 else { return }
+            if page.position > 0 { page.scrollTo(page.position - 50) } else if count > 30 { session.finish() }
+        }
+        let image = await session.run()
+        #expect(session.height == 600)
+        #expect(image.map(PixelBuffer.init) == PixelBuffer(page.expectedImage))
+    }
+
     @Test func scrollingBackUpAddsNothingTwice() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
