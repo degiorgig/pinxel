@@ -1,20 +1,38 @@
 import EditorUI
+import Library
 import SwiftUI
 
 /// Contenuto della finestra: tela al centro, strumenti nella toolbar nativa, proprietà a destra.
 struct EditorView: View {
     @Bindable var model: EditorModel
+    let stripState: LibraryStripState
+    /// File della finestra, letto a ogni disegno: un documento senza titolo può diventare un file.
+    let currentURL: () -> URL?
+    /// La finestra che ospita questa vista: il clic sul carosello decide su di lei, non sulla finestra in primo piano.
+    let window: () -> NSWindow?
+    @AppStorage("libraryStripVisible") private var stripVisible = true
 
     var body: some View {
-        CanvasRepresentable(model: model)
-            .frame(minWidth: 320, minHeight: 240)
-            .overlay(alignment: .bottomTrailing) {
-                HStack(spacing: 8) {
-                    ZoomControls(model: model)
-                    CaptureDragHandle(model: model)
+        VStack(spacing: 0) {
+            CanvasRepresentable(model: model)
+                // Cattura cambiata nella stessa finestra: una tela nuova, non quella vecchia con un altro modello.
+                .id(ObjectIdentifier(model))
+                .frame(minWidth: 320, minHeight: 240)
+                .overlay(alignment: .bottomTrailing) {
+                    HStack(spacing: 8) {
+                        ZoomControls(model: model)
+                        CaptureDragHandle(model: model)
+                    }
+                    .padding(12)
                 }
-                .padding(12)
+            if stripVisible {
+                let library = AppEnvironment.shared.library
+                LibraryStrip(library: library, state: stripState,
+                             currentFile: currentURL().flatMap { library.file(for: $0) }) { item, newWindow in
+                    LibraryOpener.open(item, from: window(), newWindow: newWindow)
+                }
             }
+        }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if model.session.isReadOnly { ReadOnlyBanner() }
             }
@@ -44,6 +62,14 @@ struct EditorView: View {
                 ToolbarItem(placement: .primaryAction) {
                     ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))
                         .help("Condividi l'immagine")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        stripVisible.toggle()
+                    } label: {
+                        Label("Carosello", systemImage: "rectangle.bottomthird.inset.filled")
+                    }
+                    .help("Mostra o nascondi il carosello delle catture (⌃⌘L)")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {

@@ -3,6 +3,7 @@ import AppKit
 import CaptureKit
 import DocumentModel
 import Foundation
+import Library
 import Observation
 import os
 import Persistence
@@ -15,14 +16,21 @@ final class AppEnvironment {
     let isUITesting: Bool
     private(set) var settings: CaptureSettings
     private(set) var hotKeyConflicts: Set<HotKeyAction> = []
-    /// L'ultima cattura di questa sessione, per riaprirla nell'editor anche se è andata solo negli appunti.
-    private(set) var lastCapture: PinxelFileContents?
+    /// L'ultima cattura di questa sessione, per riaprirla nell'editor anche se è andata solo negli appunti:
+    /// il file della libreria, o i contenuti se non è entrata nella libreria.
+    private(set) var lastCapture: LastCapture?
+
+    enum LastCapture {
+        case file(URL)
+        case contents(PinxelFileContents)
+    }
 
     @ObservationIgnored private let store: SettingsStore
     @ObservationIgnored private let hotKeys = HotKeyCenter()
     @ObservationIgnored let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "app")
     @ObservationIgnored let notifier: Notifier
     @ObservationIgnored private var coordinator: CaptureCoordinator!
+    @ObservationIgnored let library: LibraryModel
 
     private init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         isUITesting = arguments.contains("-PinxelUITestFakeCapture")
@@ -46,8 +54,22 @@ final class AppEnvironment {
         let selection: any SelectionProvider = isUITesting
             ? FixedSelectionProvider(result: .area(FakeCaptureEngine.redSquare))
             : OverlaySelectionProvider()
-        let actions = PostCaptureActions(notifier: notifier)
-        actions.onCapture = { [unowned self] contents in self.lastCapture = contents }
+        let libraryFolder: URL
+        if let index = arguments.firstIndex(of: "-PinxelLibraryFolder"), index + 1 < arguments.count {
+            libraryFolder = URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
+        } else if isUITesting {
+            // I test non devono mai scrivere nella libreria vera. La cartella è nella temporanea di Pinxel (quella del test sta
+            // nella sua sandbox, e scriverci chiederebbe un permesso); con un nome dato, più avvii la ritrovano.
+            let name = arguments.firstIndex(of: "-PinxelUITestLibraryName").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
+                ?? UUID().uuidString
+            libraryFolder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-uitest-library-\(name)", isDirectory: true)
+        } else {
+            libraryFolder = LibraryStore.defaultFolder
+        }
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
+        library = LibraryModel(store: LibraryStore(folder: libraryFolder, appVersion: version), notifier: notifier)
+        let actions = PostCaptureActions(notifier: notifier, library: library)
+        actions.onCapture = { [unowned self] capture in self.lastCapture = capture }
         let scrolling: ScrollCaptureDependencies
         if arguments.contains("-PinxelUITestFakeScrolling") {
             // 200×150 pt a 2x come l'area finta: pagina di rumore 400×1200 px, che "l'utente" scorre di 60 px a fotogramma.
@@ -121,8 +143,11 @@ final class AppEnvironment {
     }
 
     func openLastCapture() {
-        guard let lastCapture else { return }
-        DocumentOpener.open(lastCapture)
+        switch lastCapture {
+        case .file(let url): DocumentOpener.open(url: url)
+        case .contents(let contents): DocumentOpener.open(contents)
+        case nil: break
+        }
     }
 
     /// Apre un editor vuoto e trasparente, grande quanto una finestra media: poi ci si incolla uno screenshot.

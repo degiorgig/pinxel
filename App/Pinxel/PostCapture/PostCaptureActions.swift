@@ -1,37 +1,47 @@
 import AppCore
 import AppKit
+import Library
 import Persistence
 
 @MainActor
 final class PostCaptureActions {
     private let notifier: Notifier
     private let autoSaver: AutoSaver
+    private let library: LibraryModel
     private var previews: [QuickPreviewController] = []
     /// Chiamato a ogni cattura, qualunque sia l'azione scelta.
-    var onCapture: ((PinxelFileContents) -> Void)?
+    var onCapture: ((AppEnvironment.LastCapture) -> Void)?
 
-    init(notifier: Notifier, autoSaver: AutoSaver = AutoSaver()) {
+    init(notifier: Notifier, library: LibraryModel, autoSaver: AutoSaver = AutoSaver()) {
         self.notifier = notifier
+        self.library = library
         self.autoSaver = autoSaver
     }
 
     func perform(_ plan: PostCapturePlan, contents: PinxelFileContents, image: CGImage, settings: CaptureSettings) {
-        onCapture?(contents)
+        // Prima di tutto nell'archivio; se non riesce, la cattura segue la via di sempre.
+        var libraryURL: URL?
+        do {
+            libraryURL = try library.add(contents)
+        } catch {
+            notifier.failure(error)
+        }
+        onCapture?(libraryURL.map { .file($0) } ?? .contents(contents))
         var editorOpened = false
-        run(plan.immediate, contents: contents, image: image, settings: settings, editorOpened: &editorOpened)
+        run(plan.immediate, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &editorOpened)
         guard plan.showsQuickPreview else { return }
         // Ogni anteprima toglie dall'elenco solo se stessa: le altre ancora visibili devono restare vive.
         weak var finished: QuickPreviewController?
         let preview = QuickPreviewController(
             image: image, scale: contents.document.scale,
             onOpen: { [weak self] in
-                DocumentOpener.open(contents)
+                self?.openEditor(contents, libraryURL: libraryURL)
                 self?.removePreview(finished)
             },
             onExpire: { [weak self] in
                 guard let self else { return }
                 var opened = false
-                self.run(plan.afterPreview, contents: contents, image: image, settings: settings, editorOpened: &opened)
+                self.run(plan.afterPreview, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &opened)
                 self.removePreview(finished)
             }
         )
@@ -46,12 +56,16 @@ final class PostCaptureActions {
         for (index, remaining) in previews.enumerated() { remaining.move(toStackIndex: index) }
     }
 
-    private func run(_ steps: [PostCaptureStep], contents: PinxelFileContents, image: CGImage, settings: CaptureSettings, editorOpened: inout Bool) {
+    private func openEditor(_ contents: PinxelFileContents, libraryURL: URL?) {
+        if let libraryURL { DocumentOpener.open(url: libraryURL) } else { DocumentOpener.open(contents) }
+    }
+
+    private func run(_ steps: [PostCaptureStep], contents: PinxelFileContents, libraryURL: URL?, image: CGImage, settings: CaptureSettings, editorOpened: inout Bool) {
         for step in steps {
             switch step {
             case .openEditor:
                 if !editorOpened {
-                    DocumentOpener.open(contents)
+                    openEditor(contents, libraryURL: libraryURL)
                     editorOpened = true
                 }
             case .copyToClipboard:
@@ -64,7 +78,7 @@ final class PostCaptureActions {
                     notifier.failure(error)
                     // La cattura non va persa: resta aperta in una finestra.
                     if !editorOpened {
-                        DocumentOpener.open(contents)
+                        openEditor(contents, libraryURL: libraryURL)
                         editorOpened = true
                     }
                 }
