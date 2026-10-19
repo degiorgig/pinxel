@@ -79,8 +79,8 @@ public enum PinxelArchive {
         try? ZipReader(data).data(for: "thumbnail.png")
     }
 
-    /// Manifest e documento validati, senza leggere le immagini.
-    private static func manifestAndDocument(_ zip: ZipReader) throws -> (PinxelManifest, PinxelDocument) {
+    /// Manifest e documento validati, senza leggere le immagini. Un file della versione 1 torna anche come `legacy`.
+    private static func manifestAndDocument(_ zip: ZipReader) throws -> (PinxelManifest, PinxelDocument, LegacyDocumentV1?) {
         let decoder = JSONDecoder()
 
         let manifest: PinxelManifest
@@ -93,25 +93,38 @@ public enum PinxelArchive {
         }
         guard manifest.format == "pinxel" else { throw PinxelArchiveError.notAPinxelFile }
 
+        let json: Data
+        do {
+            json = try zip.data(for: "document.json")
+        } catch ZipError.missingEntry(_) {
+            throw PinxelArchiveError.invalidDocument("document.json missing")
+        }
+        if manifest.version < 2 {
+            let legacy: LegacyDocumentV1
+            do {
+                legacy = try decoder.decode(LegacyDocumentV1.self, from: json)
+            } catch {
+                throw PinxelArchiveError.invalidDocument(String(describing: error))
+            }
+            if let reason = legacy.validationError() { throw PinxelArchiveError.invalidDocument(reason) }
+            let document = legacy.converted(capture: legacy.background)
+            if let reason = document.validationError() { throw PinxelArchiveError.invalidDocument(reason) }
+            return (manifest, document, legacy)
+        }
         let document: PinxelDocument
         do {
-            document = try decoder.decode(PinxelDocument.self, from: zip.data(for: "document.json"))
-        } catch let error as ZipError {
-            if case .missingEntry = error { throw PinxelArchiveError.invalidDocument("document.json missing") }
-            throw error
+            document = try decoder.decode(PinxelDocument.self, from: json)
         } catch {
             throw PinxelArchiveError.invalidDocument(String(describing: error))
         }
-
-        if let reason = document.validationError() {
-            throw PinxelArchiveError.invalidDocument(reason)
-        }
-        return (manifest, document)
+        if let reason = document.validationError() { throw PinxelArchiveError.invalidDocument(reason) }
+        return (manifest, document, nil)
     }
 
     public static func read(_ data: Data, limits: ZipLimits = .default) throws -> PinxelFileContents {
         let zip = try ZipReader(data, limits: limits)
-        let (manifest, document) = try manifestAndDocument(zip)
+        let (manifest, read, legacy) = try manifestAndDocument(zip)
+        var document = read
 
         var images: [ImageAssetRef: Data] = [:]
         let limit = PinxelDocument.maxImageSide
@@ -128,6 +141,22 @@ public enum PinxelArchive {
                 throw PinxelArchiveError.invalidDocument("immagine non valida o troppo grande: \(ref.name)")
             }
             images[ref] = data
+        }
+        if let legacy {
+            guard let backgroundData = images[legacy.background],
+                  let size = ImageCodec.pixelSize(of: backgroundData), size == legacy.canvasSize else {
+                throw PinxelArchiveError.invalidDocument("lo sfondo non corrisponde alle dimensioni del documento")
+            }
+            // Senza operazioni lo sfondo resta il file che è; altrimenti lo si elabora una volta e lo si salva come PNG.
+            if !legacy.imageOperations.isEmpty {
+                guard let processed = BackgroundProcessor.process(try ImageCodec.decode(backgroundData), operations: legacy.imageOperations) else {
+                    throw PinxelArchiveError.invalidDocument("impossibile elaborare lo sfondo")
+                }
+                let ref = ImageAssetRef(name: "assets/capture-v1.png")
+                images[legacy.background] = nil
+                images[ref] = try ImageCodec.encode(processed, type: .png)
+                document = legacy.converted(capture: ref)
+            }
         }
         let thumbnail = try? zip.data(for: "thumbnail.png")
         return PinxelFileContents(document: document, images: images, thumbnail: thumbnail, isReadOnly: manifest.version > currentVersion)

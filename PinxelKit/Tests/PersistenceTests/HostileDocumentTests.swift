@@ -44,7 +44,7 @@ struct HostileDocumentTests {
         expectInvalid(try archive(json: JSONEncoder().encode(document), version: 2), sourceLocation: sourceLocation)
     }
 
-    @Test(.disabled("v1 conversion: Task 5")) func overflowingCropIsRejected() throws {
+    @Test func overflowingCropIsRejected() throws {
         expectInvalid(try archive(json: v1JSON(operations: [.crop(PixelRect(x: Int.max, y: 0, width: 10, height: 10))]), version: 1))
     }
 
@@ -54,7 +54,7 @@ struct HostileDocumentTests {
         try expectInvalid(document)
     }
 
-    @Test(.disabled("v1 conversion: Task 5")) func hugeResizeIsRejected() throws {
+    @Test func hugeResizeIsRejected() throws {
         expectInvalid(try archive(json: v1JSON(operations: [.resize(PixelSize(width: 60000, height: 60000))]), version: 1))
     }
 
@@ -69,7 +69,7 @@ struct HostileDocumentTests {
         try expectInvalid(TestDocuments.document(annotations: [shape, shape]))
     }
 
-    @Test(.disabled("v1 conversion: Task 5")) func backgroundSizeMismatchIsRejected() throws {
+    @Test func backgroundSizeMismatchIsRejected() throws {
         let other = try ImageCodec.encode(TestImages.solid(width: 50, height: 50, red: 1, green: 0, blue: 0), type: .png)
         expectInvalid(try archive(json: v1JSON(), version: 1, background: other))
     }
