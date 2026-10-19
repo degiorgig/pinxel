@@ -56,3 +56,11 @@ DEVELOPMENT_TEAM = <your team ID>
 ```
 
 Package tests: `cd PinxelKit && swift test`.
+
+## License
+
+Pinxel is free for personal, non-commercial use: you may download, use and build it at no cost for private purposes.
+
+Use by companies, organizations or for any commercial purpose — including use by employees on the job — requires a paid commercial license. To obtain one, contact the author through [GitHub](https://github.com/degiorgig).
+
+Redistribution of the app or of modified versions is not permitted without the author's written consent. The software is provided "as is", without warranty of any kind. See [LICENSE](LICENSE) for the full terms.

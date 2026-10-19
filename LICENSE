@@ -1,0 +1,66 @@
+Pinxel License
+
+Copyright (c) 2026 Giovanni Degiorgi. All rights reserved.
+
+1. Definitions
+
+"Software" means Pinxel, including its source code, compiled builds,
+documentation and any other files distributed with it.
+
+"Personal Use" means use by an individual for private purposes that are
+not commercial and not performed on behalf of, or for the benefit of, a
+company, organization, public body or other legal entity.
+
+"Commercial Use" means any use that is not Personal Use, including use by
+or on behalf of a company, organization or public body, use by employees,
+contractors or freelancers in the course of their work, and use to
+provide paid services or to produce material for commercial purposes.
+
+2. Personal Use
+
+Subject to the terms of this license, the author grants you a free,
+non-exclusive, non-transferable, worldwide license to download, install,
+use, build from source and modify the Software for Personal Use only.
+
+3. Commercial Use
+
+Commercial Use requires a separate paid commercial license from the
+author. No Commercial Use is permitted under this license. To request a
+commercial license, contact the author through
+https://github.com/degiorgig.
+
+4. Restrictions
+
+Without the author's prior written consent you may not:
+
+  a. redistribute, publish, sell, rent, lease or sublicense the Software
+     or any modified version of it, in source or compiled form;
+  b. remove or alter this license or any copyright notice in the
+     Software;
+  c. use the Software, or any part of it, in another product or service.
+
+5. Ownership
+
+The Software is licensed, not sold. The author retains all rights,
+title and interest in the Software not expressly granted by this
+license.
+
+6. Termination
+
+This license terminates automatically if you breach any of its terms.
+Upon termination you must stop using the Software and delete all copies
+in your possession.
+
+7. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+8. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
