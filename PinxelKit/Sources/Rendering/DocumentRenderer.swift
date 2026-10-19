@@ -102,17 +102,57 @@ public final class DocumentRenderer {
             ctx.stroke(imageRect.insetBy(dx: border.width / 2, dy: border.width / 2))
         }
 
-        let context = RenderContext(
-            background: background,
+        let content = document.imageSize
+        let excluded = options.excludedAnnotationIDs
+        var context: RenderContext!
+        context = RenderContext(
+            contentSize: content,
             stepLabels: StepNumbering.labels(for: document.annotations),
             assets: assets,
             outputScale: options.outputScale,
-            effects: effects
+            effects: effects,
+            layers: { [unowned self] index, region in
+                self.layers(below: index, region: region, document: document, background: background,
+                            excluded: excluded, context: context)
+            }
         )
         ctx.translateBy(x: style.padding, y: style.padding)
-        for annotation in document.annotations where !options.excludedAnnotationIDs.contains(annotation.id) {
-            AnnotationRenderer.draw(annotation, in: ctx, context: context)
+        for (index, annotation) in document.annotations.enumerated() where !excluded.contains(annotation.id) {
+            AnnotationRenderer.draw(annotation, index: index, in: ctx, context: context)
         }
+    }
+
+    /// Dimensioni dell'ultima immagine di livelli calcolata (per i test).
+    private(set) var lastLayerSize: PixelSize?
+    var effectCacheMisses: Int { effects.misses }
+
+    /// La regione con lo sfondo e le annotazioni sotto `index`, a 1 pixel per pixel del documento.
+    /// La chiave dipende solo da ciò che tocca la regione: spostare un oggetto lontano non la invalida.
+    private func layers(below index: Int, region: PixelRect, document: PinxelDocument, background: CGImage?,
+                        excluded: Set<UUID>, context: RenderContext) -> (key: String, image: CGImage)? {
+        let area = region.cgRect
+        let below = document.annotations.prefix(index).enumerated().filter { _, annotation in
+            !excluded.contains(annotation.id) && annotation.visualBounds.intersects(area)
+        }
+        let backgroundKey = background.map { "\(ObjectIdentifier($0))" } ?? "-"
+        let key = "layers|\(region)|\(backgroundKey)|\(below.map { "\($0.offset):\($0.element)" })"
+        let image = effects.image(for: key) {
+            guard let ctx = ImageDrawing.makeContext(width: region.width, height: region.height) else { return nil }
+            lastLayerSize = PixelSize(width: region.width, height: region.height)
+            ctx.translateBy(x: 0, y: CGFloat(region.height))
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.translateBy(x: -CGFloat(region.x), y: -CGFloat(region.y))
+            if let background {
+                ImageDrawing.draw(background, in: CGRect(x: 0, y: 0, width: background.width, height: background.height), context: ctx)
+            }
+            let flat = RenderContext(contentSize: context.contentSize, stepLabels: context.stepLabels, assets: context.assets,
+                                     outputScale: 1, effects: context.effects, layers: context.layers)
+            for (offset, annotation) in below {
+                AnnotationRenderer.draw(annotation, index: offset, in: ctx, context: flat)
+            }
+            return ctx.makeImage()
+        }
+        return image.map { (key, $0) }
     }
 
     public func renderImage(_ document: PinxelDocument, assets: any AssetProvider, options: RenderOptions = RenderOptions()) throws -> CGImage {
