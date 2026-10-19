@@ -181,6 +181,35 @@ struct LibraryStoreTests {
         #expect(index.item(item.file)?.pixelHeight == 50)
     }
 
+    /// L'editor ritaglia aggiungendo un'operazione: `canvasSize` resta quello della cattura.
+    func cropped(_ contents: PinxelFileContents) throws -> Data {
+        var document = contents.document
+        document.imageOperations.append(.crop(PixelRect(x: 0, y: 0, width: 120, height: 80)))
+        return try PinxelArchive.write(document: document, images: contents.images, thumbnail: Data([1]), appVersion: "0.1.0")
+    }
+
+    @Test func refreshedItemReadsCroppedSize() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = LibraryStore(folder: folder)
+        var index = LibraryIndex()
+        let item = try store.add(contents(), to: &index)
+        try cropped(contents()).write(to: store.url(for: item))
+        store.refreshed(item.file, in: &index)
+        #expect(index.item(item.file)?.pixelWidth == 120)
+        #expect(index.item(item.file)?.pixelHeight == 80)
+    }
+
+    @Test func fileFoundInTheFolderUsesCroppedSize() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try cropped(contents()).write(to: folder.appendingPathComponent("Ritagliata.pinxel"))
+        let load = LibraryStore(folder: folder).load()
+        #expect(load.index.item("Ritagliata.pinxel")?.pixelWidth == 120)
+        #expect(load.index.item("Ritagliata.pinxel")?.pixelHeight == 80)
+    }
+
     @Test func trashRemovesFilesAndEntries() throws {
         let folder = temporaryFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

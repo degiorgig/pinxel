@@ -142,7 +142,7 @@ public final class LibraryStore {
     public func refreshed(_ file: String, in index: inout LibraryIndex) {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent(file), options: .mappedIfSafe),
               let document = try? PinxelArchive.readDocument(data) else { return }
-        index.update(file, pixelWidth: document.canvasSize.width, pixelHeight: document.canvasSize.height)
+        index.update(file, pixelWidth: document.imageSize.width, pixelHeight: document.imageSize.height)
     }
 
     public func trash(_ files: Set<String>, in index: inout LibraryIndex) throws {
@@ -226,7 +226,7 @@ public final class LibraryStore {
     private func item(file: String, document: PinxelDocument, added: Date) -> LibraryItem {
         LibraryItem(file: file, added: Self.whole(added), captureDate: Self.whole(document.metadata.captureDate),
                     appName: document.metadata.appName, windowTitle: document.metadata.windowTitle,
-                    pixelWidth: document.canvasSize.width, pixelHeight: document.canvasSize.height)
+                    pixelWidth: document.imageSize.width, pixelHeight: document.imageSize.height)
     }
 
     /// `library.json` tiene le date al secondo (ISO 8601): l'indice in memoria deve essere uguale a quello riletto.
