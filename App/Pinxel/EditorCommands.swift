@@ -7,6 +7,7 @@ import SwiftUI
 /// Senza editor in primo piano, o mentre si scrive un testo, le voci di modifica restano attive per i campi di testo.
 struct EditorCommands: Commands {
     @ObservedObject private var focus = EditorFocus.shared
+    @AppStorage("libraryStripVisible") private var stripVisible = true
 
     var body: some Commands {
         let state = focus.state
@@ -57,6 +58,9 @@ struct EditorCommands: Commands {
                 .keyboardShortcut("a")
         }
         CommandGroup(after: .toolbar) {
+            Button(stripVisible ? "Nascondi carosello" : "Mostra carosello") { stripVisible.toggle() }
+                .keyboardShortcut("l", modifiers: [.command, .control])
+            Divider()
             Group {
                 Button("Ingrandisci") { send(#selector(EditorActions.zoomIn(_:))) }
                     .keyboardShortcut("+")

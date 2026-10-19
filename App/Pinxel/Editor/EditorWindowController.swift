@@ -7,10 +7,15 @@ import SwiftUI
 @MainActor
 final class EditorWindowController: NSWindowController, NSWindowDelegate {
     let model: EditorModel
+    /// Filtro e selezione del carosello di questa finestra.
+    let stripState = LibraryStripState()
 
     init(model: EditorModel) {
         self.model = model
-        let hosting = NSHostingController(rootView: EditorView(model: model))
+        weak var weakSelf: EditorWindowController?
+        let hosting = NSHostingController(rootView: EditorView(model: model, stripState: stripState) {
+            (weakSelf?.document as? NSDocument)?.fileURL
+        })
         hosting.sceneBridgingOptions = [.toolbars]
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
@@ -20,6 +25,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         if model.session.isReadOnly { window.subtitle = "Sola lettura" }
         super.init(window: window)
+        weakSelf = self
         // Il documento entra nella catena dei responder (Salva, Esporta…) tramite il delegato della finestra.
         window.delegate = self
         shouldCascadeWindows = true
