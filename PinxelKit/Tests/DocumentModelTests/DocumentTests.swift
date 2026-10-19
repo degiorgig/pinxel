@@ -93,7 +93,7 @@ struct DocumentTests {
         let op = ImageOperation.extend(PixelSize(width: 600, height: 200))
         #expect(op.resultSize(from: size) == PixelSize(width: 600, height: 300))
         #expect(op.mapping(from: size).map(CGPoint(x: 12, y: 34)) == CGPoint(x: 12, y: 34))
-        #expect(op.name == "Estendi tela")
+        #expect(op.name == CommandName.extendCanvas)
     }
 
     @Test func extendRoundTripsThroughJSON() throws {

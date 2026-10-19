@@ -23,7 +23,7 @@ struct EditCommandTests {
 
     @Test func setAnnotationsReplacesTheWholeList() {
         let after = [newShape()]
-        let command = SetAnnotations(name: "Ritaglia", before: base.annotations, after: after)
+        let command = SetAnnotations(name: CommandName.crop, before: base.annotations, after: after)
         var document = base
         command.apply(to: &document)
         #expect(document.annotations == after)
@@ -69,8 +69,8 @@ struct EditCommandTests {
         step1.rotation = 0.1
         var step2 = step1
         step2.rotation = 0.2
-        let first = UpdateAnnotations(name: "Sposta", before: [original], after: [step1])
-        let second = UpdateAnnotations(name: "Sposta", before: [step1], after: [step2])
+        let first = UpdateAnnotations(name: CommandName.move, before: [original], after: [step1])
+        let second = UpdateAnnotations(name: CommandName.move, before: [step1], after: [step2])
         let merged = first.merged(with: second)
         #expect(merged?.before == [original])
         #expect(merged?.after == [step2])
@@ -105,11 +105,11 @@ struct EditCommandTests {
     @Test func aCommandFollowedByItsFitRevertsExactly() throws {
         // La cattura spostata a sinistra: il gruppo comando + adattamento torna esattamente a `base`.
         let capture = base.annotations[0]
-        let move = UpdateAnnotations(name: "Sposta", before: [capture], after: [capture.transformed(by: PointMapping { CGPoint(x: $0.x - 30, y: $0.y) })])
+        let move = UpdateAnnotations(name: CommandName.move, before: [capture], after: [capture.transformed(by: PointMapping { CGPoint(x: $0.x - 30, y: $0.y) })])
         var moved = base
         move.apply(to: &moved)
         let fit = try #require(FitCanvas(in: moved))
-        let group = CommandGroup(name: "Sposta", commands: [move, fit])
+        let group = CommandGroup(name: CommandName.move, commands: [move, fit])
         var document = base
         group.apply(to: &document)
         #expect(document.annotations[0].bounds.minX == 0)
@@ -122,7 +122,7 @@ struct EditCommandTests {
         expectReversible(style, on: base)
 
         let shape = newShape()
-        let group = CommandGroup(name: "Incolla", commands: [
+        let group = CommandGroup(name: CommandName.paste, commands: [
             AddAnnotations([shape]),
             ReorderAnnotations(newOrder: [shape.id] + base.annotations.map(\.id), in: base),
         ])

@@ -15,7 +15,7 @@ public struct AddAnnotations: EditCommand {
     public let annotations: [Annotation]
     public let index: Int?
 
-    public init(_ annotations: [Annotation], at index: Int? = nil, name: String = "Aggiungi") {
+    public init(_ annotations: [Annotation], at index: Int? = nil, name: String = CommandName.add) {
         self.annotations = annotations
         self.index = index
         self.name = name
@@ -44,7 +44,7 @@ public struct DeleteAnnotations: EditCommand {
     public let name: String
     private let removed: [Removed]
 
-    public init(ids: Set<UUID>, in document: PinxelDocument, name: String = "Elimina") {
+    public init(ids: Set<UUID>, in document: PinxelDocument, name: String = CommandName.delete) {
         self.name = name
         removed = document.annotations.enumerated()
             .filter { ids.contains($0.element.id) }
@@ -68,7 +68,7 @@ public struct UpdateAnnotations: EditCommand {
     public let before: [Annotation]
     public let after: [Annotation]
 
-    public init(name: String = "Modifica", before: [Annotation], after: [Annotation]) {
+    public init(name: String = CommandName.edit, before: [Annotation], after: [Annotation]) {
         self.name = name
         self.before = before
         self.after = after
@@ -114,7 +114,7 @@ public struct ReorderAnnotations: EditCommand {
     private let before: [UUID]
     private let after: [UUID]
 
-    public init(name: String = "Disponi", newOrder: [UUID], in document: PinxelDocument) {
+    public init(name: String = CommandName.arrange, newOrder: [UUID], in document: PinxelDocument) {
         self.name = name
         before = document.annotations.map(\.id)
         after = newOrder
@@ -133,12 +133,12 @@ public struct ReorderAnnotations: EditCommand {
 
     public static func bringToFront(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
         let order = document.annotations.map(\.id)
-        return ReorderAnnotations(name: "Porta in primo piano", newOrder: order.filter { !ids.contains($0) } + order.filter { ids.contains($0) }, in: document)
+        return ReorderAnnotations(name: CommandName.bringToFront, newOrder: order.filter { !ids.contains($0) } + order.filter { ids.contains($0) }, in: document)
     }
 
     public static func sendToBack(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
         let order = document.annotations.map(\.id)
-        return ReorderAnnotations(name: "Porta in fondo", newOrder: order.filter { ids.contains($0) } + order.filter { !ids.contains($0) }, in: document)
+        return ReorderAnnotations(name: CommandName.sendToBack, newOrder: order.filter { ids.contains($0) } + order.filter { !ids.contains($0) }, in: document)
     }
 
     public static func bringForward(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
@@ -148,7 +148,7 @@ public struct ReorderAnnotations: EditCommand {
             if ids.contains(order[i]) && !ids.contains(order[i + 1]) { order.swapAt(i, i + 1) }
             i -= 1
         }
-        return ReorderAnnotations(name: "Porta avanti", newOrder: order, in: document)
+        return ReorderAnnotations(name: CommandName.bringForward, newOrder: order, in: document)
     }
 
     public static func sendBackward(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
@@ -158,7 +158,7 @@ public struct ReorderAnnotations: EditCommand {
             if ids.contains(order[i]) && !ids.contains(order[i - 1]) { order.swapAt(i - 1, i) }
             i += 1
         }
-        return ReorderAnnotations(name: "Porta indietro", newOrder: order, in: document)
+        return ReorderAnnotations(name: CommandName.sendBackward, newOrder: order, in: document)
     }
 }
 
@@ -167,7 +167,7 @@ public struct UpdateCanvasStyle: EditCommand {
     public let before: CanvasStyle
     public let after: CanvasStyle
 
-    public init(before: CanvasStyle, after: CanvasStyle, name: String = "Stile tela") {
+    public init(before: CanvasStyle, after: CanvasStyle, name: String = CommandName.canvasStyle) {
         self.before = before
         self.after = after
         self.name = name
@@ -198,7 +198,7 @@ public struct CommandGroup: EditCommand {
 /// Porta il rettangolo del contenuto a partire da (0,0) e ci adatta la tela; la sessione lo aggiunge dopo ogni comando.
 /// Tiene le annotazioni di prima: l'annullamento è esatto anche con rettangoli non normalizzati.
 public struct FitCanvas: EditCommand {
-    public let name = "Adatta tela"
+    public let name = CommandName.fitCanvas
     /// Spostamento applicato a tutti gli oggetti, in pixel interi del documento.
     public let offset: CGVector
     public let sizeAfter: PixelSize

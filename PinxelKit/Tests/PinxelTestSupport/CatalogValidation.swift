@@ -70,3 +70,17 @@ public enum Catalogs {
         return url.deletingLastPathComponent().appendingPathComponent("Sources/\(module)/Localizable.xcstrings")
     }
 }
+
+extension Bundle {
+    /// Il bundle delle risorse di un modulo di PinxelKit (`PinxelKit_<Modulo>.bundle`), cercato accanto ai test.
+    public static func module(for module: String) -> Bundle? {
+        let name = "PinxelKit_\(module).bundle"
+        // Sotto `swift test` i bundle delle risorse stanno accanto al `.xctest` che contiene questo codice.
+        let candidates = [Bundle(for: BundleMarker.self).bundleURL.deletingLastPathComponent(),
+                          Bundle.main.bundleURL, Bundle.main.bundleURL.deletingLastPathComponent()]
+            + Bundle.allBundles.map { $0.bundleURL.deletingLastPathComponent() }
+        return candidates.lazy.map { $0.appendingPathComponent(name) }.compactMap { Bundle(url: $0) }.first
+    }
+}
+
+private final class BundleMarker {}

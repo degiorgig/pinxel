@@ -58,10 +58,10 @@ public enum ImageOperation: Codable, Equatable, Sendable {
 
     public var name: String {
         switch self {
-        case .crop: "Ritaglia"
-        case .resize: "Ridimensiona"
-        case .cutOut: "Taglia e ricuci"
-        case .extend: "Estendi tela"
+        case .crop: CommandName.crop
+        case .resize: CommandName.resize
+        case .cutOut: CommandName.cutOut
+        case .extend: CommandName.extendCanvas
         }
     }
 
