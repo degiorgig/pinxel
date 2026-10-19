@@ -1,58 +1,58 @@
 # Pinxel
 
-Cattura dello schermo e editor di annotazioni per macOS, nativo (SwiftUI + AppKit).
+Native screen capture and annotation editor for macOS (SwiftUI + AppKit).
 
-## Cosa fa
+## What it does
 
-- **Catture:** area, finestra (con o senza ombra), schermo intero, ripeti l'ultima area e cattura a scorrimento (scorri tu, Pinxel ricuce).
-- **Dopo la cattura:** apri l'editor, un'anteprima veloce o copia solo negli appunti. Ogni cattura finisce anche nella libreria.
+- **Capture:** an area, a window (with or without its shadow), the full screen, the last area again, and scrolling capture (you scroll, Pinxel stitches).
+- **After capture:** open the editor, a quick preview, or copy to the clipboard only. Every capture also goes into the library.
 - **Editor:**
-  - **Strumenti:** frecce, linee, forme, testo, callout, step numerati, penna, evidenziatore, sfocatura e pixelatura, lente d'ingrandimento.
-  - **Immagine:** ritaglio, taglia e ricuci, ridimensiona, bordo, ombra e margini.
-  - **Oggetti:** la cattura e le immagini trascinate sono oggetti come gli altri. Si spostano, si ruotano e si mettono sopra o sotto; la tela si adatta sempre al contenuto.
-  - **Comodità:** stili rapidi, guide magnetiche, oggetti bloccati, annulla e ripeti.
-- **Libreria:** tutte le catture in `~/Pictures/Pinxel/Libreria`, con il carosello sotto l'editor (⌃⌘L), cartelle, etichette e ricerca.
-- **Esportazione:** PNG, JPEG, HEIC e PDF. Puoi anche condividere o trascinare la cattura in un'altra app.
-- **Formato:** i documenti `.pinxel` tengono annotazioni modificabili e immagini originali.
+  - **Tools:** arrows, lines, shapes, text, callouts, numbered steps, pen, highlighter, blur and pixelate, magnifier.
+  - **Image:** crop, cut out a band, resize, border, shadow and padding.
+  - **Objects:** the capture and any dropped image are ordinary objects. Move them, rotate them, bring them forward or send them back; the canvas always fits the content.
+  - **Conveniences:** quick styles, smart guides, locked objects, undo and redo.
+- **Library:** every capture in `~/Pictures/Pinxel/Libreria`, with a strip under the editor (⌃⌘L), folders, tags and search.
+- **Export:** PNG, JPEG, HEIC and PDF. You can also share the capture or drag it into another app.
+- **Format:** `.pinxel` documents keep editable annotations and the original images.
 
-## Scorciatoie predefinite
+## Default shortcuts
 
-| Scorciatoia | Azione |
+| Shortcut | Action |
 |---|---|
-| ⌃⇧1 | Cattura un'area |
-| ⌃⇧2 | Cattura una finestra |
-| ⌃⇧3 | Cattura lo schermo intero |
-| ⌃⇧4 | Ripeti l'ultima area |
-| ⌃⇧5 | Cattura a scorrimento |
+| ⌃⇧1 | Capture an area |
+| ⌃⇧2 | Capture a window |
+| ⌃⇧3 | Capture the full screen |
+| ⌃⇧4 | Repeat the last area |
+| ⌃⇧5 | Scrolling capture |
 
-Si cambiano in Impostazioni. Nell'editor ogni strumento ha la sua lettera (passaci sopra col puntatore per vederla).
+You can change them in Settings. In the editor every tool has its own letter (hover over a tool to see it).
 
-## Requisiti
+## Requirements
 
-- macOS 15 o successivo (Apple Silicon e Intel).
-- Permesso di **Registrazione schermo** (Impostazioni di Sistema ▸ Privacy e sicurezza), richiesto al primo avvio.
+- macOS 15 or later (Apple Silicon and Intel).
+- **Screen Recording** permission (System Settings ▸ Privacy & Security), requested on first launch.
 
-## Installazione
+## Install
 
-Scarica `Pinxel-<versione>.dmg` o `.zip` dalle [release](https://github.com/degiorgig/pinxel/releases) e trascina Pinxel in Applicazioni.
+Download `Pinxel-<version>.dmg` or `.zip` from the [releases](https://github.com/degiorgig/pinxel/releases) and drag Pinxel into Applications.
 
-Le build pubblicate non sono notarizzate da Apple. Su un Mac diverso da quello che le ha firmate, macOS le blocca al primo avvio: apri l'app con clic destro ▸ Apri, oppure da Impostazioni di Sistema ▸ Privacy e sicurezza ▸ Apri comunque.
+Published builds are not notarized by Apple. On a Mac other than the one that signed them, macOS blocks them on first launch: open the app with right-click ▸ Open, or from System Settings ▸ Privacy & Security ▸ Open Anyway.
 
-## Compilare dai sorgenti
+## Building from source
 
-Servono Xcode (provato con Xcode 27) e [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+You need Xcode (tested with Xcode 27) and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
 xcodegen generate
 open Pinxel.xcodeproj
 ```
 
-Senza altre impostazioni l'app è firmata ad hoc, e macOS chiede di nuovo il permesso di Registrazione schermo a ogni build. Per una firma stabile crea `App/Config/Signing.local.xcconfig` (escluso da git) con il tuo certificato:
+Without further setup the app is signed ad hoc, and macOS asks for the Screen Recording permission again after every build. For a stable signature create `App/Config/Signing.local.xcconfig` (ignored by git) with your certificate:
 
 ```
 CODE_SIGN_STYLE = Manual
 CODE_SIGN_IDENTITY = Apple Development
-DEVELOPMENT_TEAM = <il tuo team ID>
+DEVELOPMENT_TEAM = <your team ID>
 ```
 
-Test del pacchetto: `cd PinxelKit && swift test`.
+Package tests: `cd PinxelKit && swift test`.
