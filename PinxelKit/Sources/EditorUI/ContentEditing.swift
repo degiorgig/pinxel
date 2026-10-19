@@ -20,6 +20,8 @@ public enum ContentEditing {
             let frame = data.rect.standardized
             guard !area.contains(frame) else { return annotation }
             let inside = frame.intersection(area)
+            // Nel riquadro entra solo l'ombra: i pixel sono tutti fuori.
+            guard !inside.isNull, !inside.isEmpty else { return nil }
             var copy = annotation
             if let source = images(data.asset), let part = crop(source, frame: frame, to: inside), let ref = add(part) {
                 data.asset = ref

@@ -52,4 +52,17 @@ struct CanvasShiftTests {
         viewport.keepInView(canvasSize: CGSize(width: 100, height: 100), in: CGSize(width: 1000, height: 800))
         #expect(viewport.origin == CGPoint(x: 1000 - 100 - 20, y: 40))
     }
+
+    @Test func panningASmallOffCentreCanvasDoesNotRecenterIt() {
+        // Dopo un adattamento la tela piccola resta dov'era: il primo scorrimento non deve farla saltare al centro.
+        var viewport = Viewport(documentScale: 1, zoom: 1, origin: CGPoint(x: 30, y: 40))
+        viewport.pan(by: CGSize(width: 5, height: 5), canvasSize: CGSize(width: 100, height: 100), in: CGSize(width: 1000, height: 800))
+        #expect(viewport.origin == CGPoint(x: 30, y: 40))
+    }
+
+    @Test func panningALargeCanvasStillMovesWithinItsEdges() {
+        var viewport = Viewport(documentScale: 1, zoom: 1, origin: CGPoint(x: -100, y: 20))
+        viewport.pan(by: CGSize(width: -50, height: 0), canvasSize: CGSize(width: 2000, height: 100), in: CGSize(width: 1000, height: 800))
+        #expect(viewport.origin == CGPoint(x: -150, y: 20))
+    }
 }

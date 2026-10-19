@@ -80,4 +80,22 @@ struct LayerEffectTests {
         _ = try render([Annotation(kind: .blur(BlurData(rect: CGRect(x: 10, y: 20, width: 30, height: 40), radius: 4)))], renderer: renderer)
         #expect(renderer.lastLayerSize == PixelSize(width: 30, height: 40))
     }
+
+    @Test func stepNumbersUnderAnEffectFollowRenumbering() throws {
+        // Lente sopra lo step "2": lo step "1" diventa una forma (stesso posto nella pila), il badge passa a "1"
+        // e la lente deve mostrarlo, non la copia in cache.
+        let renderer = DocumentRenderer()
+        let first = Annotation(id: TestDocuments.id(60), kind: .step(StepData(center: CGPoint(x: 20, y: 180), diameter: 20, label: StepLabel())),
+                               style: Style(stroke: nil, fill: .accentRed))
+        let second = Annotation(id: TestDocuments.id(61), kind: .step(StepData(center: CGPoint(x: 60, y: 60), diameter: 40, label: StepLabel())),
+                                style: Style(stroke: nil, fill: .accentRed))
+        let magnifier = Annotation(kind: .magnifier(MagnifierData(source: CGRect(x: 40, y: 40, width: 40, height: 40), target: CGRect(x: 110, y: 110, width: 80, height: 80),
+                                                                  shape: .rectangle, showsConnector: false)), style: Style(stroke: nil))
+        _ = try render([first, second, magnifier], renderer: renderer)
+        var shape = first
+        shape.kind = .shape(ShapeData(rect: CGRect(x: 10, y: 170, width: 20, height: 20), shape: .rectangle))
+        let cached = PixelBuffer(try render([shape, second, magnifier], renderer: renderer))
+        let fresh = PixelBuffer(try render([shape, second, magnifier]))
+        #expect(cached.differingPixelFraction(from: fresh, channelTolerance: 1) == 0)
+    }
 }

@@ -116,7 +116,8 @@ public final class DocumentRenderer {
         let below = document.annotations.prefix(index).enumerated().filter { _, annotation in
             !excluded.contains(annotation.id) && annotation.visualBounds.intersects(area)
         }
-        let key = "layers|\(region)|\(below.map { "\($0.offset):\($0.element)" })"
+        // Il numero di uno step dipende dagli altri step: entra nella chiave.
+        let key = "layers|\(region)|\(below.map { "\($0.offset):\(context.stepLabels[$0.element.id] ?? ""):\($0.element)" })"
         let image = effects.image(for: key) {
             guard let ctx = ImageDrawing.makeContext(width: region.width, height: region.height) else { return nil }
             lastLayerSize = PixelSize(width: region.width, height: region.height)

@@ -75,11 +75,13 @@ public struct Viewport: Equatable, Sendable {
         center(canvasSize: canvasSize, in: viewSize)
     }
 
-    /// Sposta la tela, ma solo entro i suoi bordi (vedi `constrain`).
+    /// Sposta la tela, ma solo entro i suoi bordi. Lungo un lato che entra nella vista non si scorre: la tela resta
+    /// dov'è (anche fuori centro dopo un adattamento, senza saltare), solo tenuta dentro la vista.
     public mutating func pan(by delta: CGSize, canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
-        origin.x += delta.width
-        origin.y += delta.height
-        constrain(canvasSize: canvasSize, in: viewSize, margin: margin)
+        let content = CGSize(width: canvasSize.width * pointsPerPixel, height: canvasSize.height * pointsPerPixel)
+        if content.width + 2 * margin > viewSize.width { origin.x += delta.width }
+        if content.height + 2 * margin > viewSize.height { origin.y += delta.height }
+        keepInView(canvasSize: canvasSize, in: viewSize, margin: margin)
     }
 
     /// Come una vista che scorre: in ogni direzione la tela che entra nella vista resta centrata; quella più grande

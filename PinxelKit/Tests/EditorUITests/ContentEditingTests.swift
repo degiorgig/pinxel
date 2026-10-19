@@ -42,6 +42,15 @@ struct ContentEditingTests {
         #expect(pixels.width == 200 && pixels.height == 150)
     }
 
+    @Test func anImageWhoseOnlyShadowReachesTheCropIsDropped() {
+        // L'ombra (12 px in basso) entra nel riquadro, i pixel no: niente immagine con un riquadro nullo (non si salverebbe).
+        let images = Images()
+        var shadowed = placed(CGRect(x: 0, y: 0, width: 100, height: 100), ImageAssetRef(name: "s.png"))
+        shadowed.style.shadow = Shadow()
+        let result = ContentEditing.cropped([shadowed], to: PixelRect(x: 0, y: 105, width: 100, height: 50), images: images.image, add: images.add)
+        #expect(result.isEmpty)
+    }
+
     @Test func cropKeepsAnnotationsAcrossTheEdgeWhole() {
         let images = Images()
         let crossing = step(CGPoint(x: 200, y: 75))
