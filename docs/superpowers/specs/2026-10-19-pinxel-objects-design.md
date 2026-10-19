@@ -1,7 +1,7 @@
 # Pinxel — Immagini come oggetti e tela adattata al contenuto — Design
 
 - **Data:** 2026-10-19
-- **Stato:** proposta, in revisione
+- **Stato:** approvata, implementata
 - **Ramo:** `feat/pinxel-objects` (parte da `feat/pinxel-library`, PR #8)
 
 ## 1. Obiettivo
@@ -45,6 +45,8 @@ allarga solo a destra e in basso). L'utente vuole che:
 | Estendi tela | Rimossa: non serve più |
 | Formato | `.pinxel` versione 2; i file versione 1 si convertono all'apertura |
 | Trascinamento dal carosello | Invariato: arriva un'immagine appiattita |
+| Immagini ruotate nel ritaglio | Restano intere come le annotazioni (scelta del piano) |
+| Ritaglio senza oggetti dentro | Un bip, nessuna modifica (scelta del piano) |
 
 Alternative scartate: composizione solo dopo il primo trascinamento (l'utente
 vuole l'immagine sempre modificabile); tela con origine mobile nel modello
@@ -155,8 +157,8 @@ All'apertura di un file con `version == 1`, in memoria:
 
 - Il riquadro di ritaglio parte dall'intera tela.
 - Conferma: per ogni immagine che il riquadro taglia, nuovo asset con solo la
-  parte dentro (rotazione compresa: si ritaglia nello spazio dell'immagine,
-  l'area fuori diventa trasparente se l'immagine è ruotata); immagini del tutto
+  parte dentro (le immagini ruotate a cavallo del bordo restano intere, come le
+  annotazioni: vedi §2); immagini del tutto
   fuori eliminate; annotazioni del tutto fuori eliminate; annotazioni a cavallo
   restano intere; poi `FitCanvas`.
 - Un solo passo di annulla (gli asset vecchi restano nell'archivio finché la
@@ -223,7 +225,7 @@ All'apertura di un file con `version == 1`, in memoria:
 |------------|---------------|
 | File versione 1 il cui sfondo non si elabora | Errore di apertura come oggi per un file rovinato |
 | Contenuto oltre il lato massimo | Tela fermata al limite (§3.2) |
-| Ritaglio che non contiene nessun oggetto | Pulsante di conferma disattivato |
+| Ritaglio che non contiene nessun oggetto | Un bip, nessuna modifica (§2) |
 | Versione file maggiore di 2 | Sola lettura con avviso (regola esistente) |
 
 ## 9. Test

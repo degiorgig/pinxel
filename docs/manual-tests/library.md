@@ -13,7 +13,7 @@ Avvia l'app normale (libreria in `~/Pictures/Pinxel/Libreria`).
 | L7 | Etichette ▸ Nuova etichetta… "bug" su una, poi "BUG" su un'altra | Una sola etichetta "bug"; il filtro le mostra entrambe |
 | L8 | Cerca "safari", poi la data di oggi (2026-10-19) | Filtri corretti; accenti e maiuscole ignorati |
 | L9 | Elimina (⌫) una cattura aperta in un'altra finestra | La finestra si chiude; il file è nel Cestino |
-| L10 | Trascina una miniatura vicino al bordo destro della tela | Diventa un oggetto immagine, annotazioni comprese; la tela si allarga per contenerlo; ⌘Z annulla tutto in un passo |
+| L10 | Trascina una miniatura oltre il bordo sinistro della tela | Diventa un oggetto immagine, annotazioni comprese; la tela si allarga da quella parte; ⌘Z annulla tutto in un passo |
 | L11 | Trascina una miniatura nel Finder | Arriva un PNG con il nome della cattura |
 | L12 | Trascina un PNG dal Finder sulla striscia | Entra nella libreria; l'originale resta |
 | L13 | Nascondi il carosello (toolbar, menu Vista o ⌃⌘L), apri un'altra cattura | Nascosto anche lì; riavviando resta nascosto |
