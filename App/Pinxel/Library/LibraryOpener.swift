@@ -1,49 +1,85 @@
 import AppKit
+import EditorUI
 import Library
+import os
 
 @MainActor
 enum LibraryOpener {
-    /// Clic su una miniatura: porta avanti la finestra che la mostra già, la sostituisce nella finestra se questa mostra una
-    /// cattura dell'archivio (già salvata), altrimenti apre una finestra nuova.
+    private static let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "library")
+
+    /// Clic su una miniatura: porta avanti la finestra che la mostra già, altrimenti la mostra nella stessa finestra.
+    /// Un documento senza titolo con qualcosa dentro entra prima nella libreria, così non si perde.
     static func open(_ item: Library.LibraryItem, from window: NSWindow?, newWindow: Bool = false) {
         let library = AppEnvironment.shared.library
         let url = library.url(for: item).standardizedFileURL
         let existing = NSDocumentController.shared.documents.first { $0.fileURL?.standardizedFileURL == url }
-        let current = window.flatMap { NSDocumentController.shared.document(for: $0) }
-        let showsLibraryItem = current?.fileURL.flatMap { library.file(for: $0) } != nil
-        let decision = newWindow && existing == nil ? .openNewWindow
-            : LibraryOpenDecision.decide(targetAlreadyOpen: existing != nil, windowShowsLibraryItem: showsLibraryItem)
+        let controller = window?.windowController as? EditorWindowController
+        guard !newWindow || existing != nil, let controller, let current = controller.document as? PinxelFileDocument else {
+            if let existing { existing.showWindows() } else { DocumentOpener.open(url: url) }
+            return
+        }
+        let decision = LibraryOpenDecision.decide(targetAlreadyOpen: existing != nil, current: content(of: current, controller: controller))
+        logger.notice("open \(item.file, privacy: .public): \(String(describing: decision), privacy: .public)")
         switch decision {
         case .focusExisting:
             existing?.showWindows()
-        case .openNewWindow:
-            DocumentOpener.open(url: url)
         case .replaceInWindow:
-            guard let current, let controller = window?.windowController as? EditorWindowController else {
-                return DocumentOpener.open(url: url)
-            }
-            // Il documento è nell'archivio: si salva dove sta, poi la nuova cattura entra nella stessa finestra (cornice,
-            // toolbar e carosello restano). Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
+            // Si salva dove sta (se ha un file), poi la nuova cattura entra nella stessa finestra.
+            guard current.fileURL != nil else { return replace(current, in: controller, with: url, item: item) }
             current.autosave(withImplicitCancellability: false) { error in
                 MainActor.assumeIsolated {
+                    // Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
                     if let error {
-                        current.presentError(error)
+                        _ = current.presentError(error)
                         return
                     }
-                    NSDocumentController.shared.openDocument(withContentsOf: url, display: false) { document, _, error in
-                        if let error {
-                            NSApp.presentError(error)
-                            return
-                        }
-                        guard let next = document as? PinxelFileDocument, let model = next.makeEditorModel() else { return }
-                        current.removeWindowController(controller)
-                        current.close()
-                        next.addWindowController(controller)
-                        controller.show(model)
-                        controller.stripState.selection = [item.file]
-                        controller.synchronizeWindowTitleWithDocumentName()
-                    }
+                    replace(current, in: controller, with: url, item: item)
                 }
+            }
+        case .keepInLibraryThenReplace:
+            let date = current.editorModel?.session.document.metadata.captureDate ?? Date()
+            let destination: URL
+            do {
+                destination = try library.store.newURL(for: date)
+            } catch {
+                _ = current.presentError(error)
+                return
+            }
+            current.save(to: destination, ofType: "com.degiorgi.pinxel.document", for: .saveAsOperation) { error in
+                MainActor.assumeIsolated {
+                    if let error {
+                        _ = current.presentError(error)
+                        return
+                    }
+                    replace(current, in: controller, with: url, item: item)
+                }
+            }
+        }
+    }
+
+    private static func content(of document: PinxelFileDocument, controller: EditorWindowController) -> WindowContent {
+        if let url = document.fileURL {
+            return AppEnvironment.shared.library.file(for: url) != nil ? .libraryItem : .otherFile
+        }
+        let blank = (controller.model.canvas as? CanvasView)?.isBlank ?? false
+        return .untitled(blank: blank && !document.isDocumentEdited)
+    }
+
+    /// La finestra passa al documento nuovo: cornice, toolbar, pannello e carosello restano, cambia la tela.
+    private static func replace(_ current: PinxelFileDocument, in controller: EditorWindowController, with url: URL, item: Library.LibraryItem) {
+        NSDocumentController.shared.openDocument(withContentsOf: url, display: false) { document, _, error in
+            MainActor.assumeIsolated {
+                if let error {
+                    _ = NSApp.presentError(error)
+                    return
+                }
+                guard let next = document as? PinxelFileDocument, let model = next.makeEditorModel() else { return }
+                current.removeWindowController(controller)
+                current.close()
+                next.addWindowController(controller)
+                controller.show(model)
+                controller.stripState.selection = [item.file]
+                controller.synchronizeWindowTitleWithDocumentName()
             }
         }
     }

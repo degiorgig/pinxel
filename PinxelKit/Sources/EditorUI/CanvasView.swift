@@ -234,7 +234,7 @@ public final class CanvasView: NSView, EditorActions {
     }
 
     /// Documento di Nuovo ancora intatto: nessuna annotazione o modifica e sfondo tutto trasparente.
-    var isBlank: Bool {
+    public var isBlank: Bool {
         let document = session.document
         guard document.annotations.isEmpty, document.imageOperations.isEmpty, document.canvasStyle == CanvasStyle() else { return false }
         let ref = document.background

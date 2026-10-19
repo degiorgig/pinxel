@@ -73,4 +73,20 @@ final class LibraryUITests: XCTestCase {
         XCTAssertEqual(app.windows.count, 1)
         app.terminate()
     }
+
+    /// Una finestra con un documento senza titolo (come "Nuova dagli appunti"): il clic resta lì e il documento entra
+    /// nella libreria invece di andare perso.
+    func testClickingAThumbnailInAnUntitledWindowKeepsTheWindowAndTheDocument() {
+        var app = launch(["-PinxelUITestCaptureOnLaunch"])
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
+        app.terminate()
+        app = launch(["-PinxelUITestOpenSample"])
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
+        app.activate()
+        XCTAssertTrue(waitForItems(app, count: 1))
+        items(app).element(boundBy: 0).click()
+        XCTAssertTrue(waitForItems(app, count: 2))
+        XCTAssertEqual(app.windows.count, 1)
+        app.terminate()
+    }
 }

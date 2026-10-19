@@ -114,6 +114,13 @@ public final class LibraryStore {
         return item
     }
 
+    /// Un nome libero nell'archivio, per salvarci un documento che ancora non c'è (per esempio uno senza titolo).
+    public func newURL(for date: Date) throws -> URL {
+        try ensureFolder()
+        let baseName = FileNamer.baseName(template: FileNamer.defaultTemplate, date: date)
+        return FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: "pinxel", fileManager: fileManager)
+    }
+
     /// Copia nell'archivio un'immagine o un `.pinxel`; l'originale resta com'è.
     public func importFile(at source: URL, into index: inout LibraryIndex) throws -> LibraryItem {
         let name = source.lastPathComponent

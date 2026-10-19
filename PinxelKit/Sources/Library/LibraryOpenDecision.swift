@@ -1,11 +1,22 @@
-/// Cosa fa il clic su una miniatura (spec §2): mai chiudere un documento che non sta nell'archivio.
+/// Cosa mostra la finestra in cui si clicca una miniatura.
+public enum WindowContent: Equatable, Sendable {
+    /// Una cattura dell'archivio: si salva da sola dove sta.
+    case libraryItem
+    /// Un altro file `.pinxel`: si salva da solo dove sta.
+    case otherFile
+    /// Un documento senza titolo; `blank` se è vuoto (Nuovo senza niente dentro).
+    case untitled(blank: Bool)
+}
+
+/// Cosa fa il clic su una miniatura: resta sempre nella stessa finestra, senza mai perdere quello che c'era.
 public enum LibraryOpenDecision: Equatable, Sendable {
     case focusExisting
     case replaceInWindow
-    case openNewWindow
+    /// Il documento senza titolo entra prima nella libreria, poi la cattura scelta prende il suo posto.
+    case keepInLibraryThenReplace
 
-    public static func decide(targetAlreadyOpen: Bool, windowShowsLibraryItem: Bool) -> LibraryOpenDecision {
+    public static func decide(targetAlreadyOpen: Bool, current: WindowContent) -> LibraryOpenDecision {
         if targetAlreadyOpen { return .focusExisting }
-        return windowShowsLibraryItem ? .replaceInWindow : .openNewWindow
+        return current == .untitled(blank: false) ? .keepInLibraryThenReplace : .replaceInWindow
     }
 }

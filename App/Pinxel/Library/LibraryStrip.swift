@@ -200,7 +200,15 @@ struct LibraryStrip: View {
         guard let png = renderedPNG(url),
               let file = try? TemporaryFiles.uniqueURL(fileName: (item.file as NSString).deletingPathExtension + ".png"),
               (try? png.write(to: file)) != nil else { return NSItemProvider() }
-        return NSItemProvider(contentsOf: file) ?? NSItemProvider()
+        // L'URL del file (Finder, Mail) più i byte PNG: la tela e le altre app leggono l'immagine direttamente.
+        // `NSItemProvider(contentsOf:)` offrirebbe solo un file promesso, che la tela non accetta.
+        let provider = NSItemProvider(object: file as NSURL)
+        provider.registerDataRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { completion in
+            completion(png, nil)
+            return nil
+        }
+        provider.suggestedName = file.deletingPathExtension().lastPathComponent
+        return provider
     }
 
     private func renderedPNG(_ url: URL) -> Data? {

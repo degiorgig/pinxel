@@ -258,4 +258,16 @@ struct LibraryStoreTests {
         #expect(throws: LibraryError.writeFailed(store.url(for: item).path)) { try store.trash([item.file], in: &index) }
         #expect(index.items.count == 1)
     }
+
+    @Test func newURLIsFreeAndInsideTheFolder() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = LibraryStore(folder: folder)
+        var index = LibraryIndex()
+        let item = try store.add(contents(), to: &index)
+        let url = try store.newURL(for: date)
+        #expect(store.file(for: url) != nil)
+        #expect(url.lastPathComponent != item.file)
+        #expect(url.pathExtension == "pinxel")
+    }
 }
