@@ -57,7 +57,7 @@ salvataggio automatico.
 - Striscia alta ~110 pt in fondo a ogni finestra dell'editor, sotto la tela;
   i controlli di zoom e la maniglia di trascinamento salgono sopra di essa.
 - Si mostra e nasconde con un pulsante nella toolbar e con
-  Vista ▸ Mostra/Nascondi carosello (⌥⌘L); la scelta vale per tutte le
+  Vista ▸ Mostra/Nascondi carosello (⌃⌘L; ⌥⌘L è già Sblocca); la scelta vale per tutte le
   finestre ed è ricordata nelle preferenze. Visibile per impostazione
   predefinita.
 - Miniature dalla più nuova (a sinistra) alla più vecchia, scorrimento
