@@ -59,6 +59,16 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         RichTextBridge.richText(from: textView.attributedString(), template: template)
     }
 
+    /// La tela si è adattata e ha traslato gli oggetti di `offset`: il riquadro segue il suo testo. Un testo nuovo,
+    /// non ancora nel documento, verrà aggiunto nel punto traslato.
+    func shift(by offset: CGVector) {
+        frame = frame.offsetBy(dx: offset.dx, dy: offset.dy)
+        if request.isNew {
+            let dx = offset.dx, dy = offset.dy
+            request.annotation = request.annotation.transformed(by: PointMapping { CGPoint(x: $0.x + dx, y: $0.y + dy) })
+        }
+    }
+
     /// Mette il contenitore sulla tela; `convert` porta un rettangolo del documento in punti della vista.
     func place(in convert: (CGRect) -> CGRect) {
         // La cornice si posa dritta, poi ruota attorno alla sua origine e torna con il centro al suo posto.
