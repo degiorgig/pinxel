@@ -79,17 +79,20 @@ salvataggio automatico.
 
 ### Azioni sulle miniature
 
-- **Clic**: apre la cattura.
-  - Se la finestra mostra una cattura dell'archivio, quella viene sostituita
-    nella stessa finestra (stessa posizione e dimensione).
-  - Se mostra un documento esterno o senza titolo, la cattura si apre in una
-    finestra nuova: nulla di non salvato va perso.
-  - Se la cattura è già aperta in un'altra finestra, si porta avanti quella.
+- **Clic**: apre la cattura **sempre nella stessa finestra** (stessa cornice, toolbar, pannello e carosello);
+  se è già aperta in un'altra finestra, si porta avanti quella. Prima del cambio (rivisto il 2026-10-19 su
+  richiesta dell'utente):
+  - una cattura dell'archivio o un altro file `.pinxel` si salva dove sta; se il salvataggio non riesce la
+    finestra resta com'è;
+  - un documento senza titolo con qualcosa dentro (per esempio "Nuova dagli appunti") entra nella libreria;
+  - un documento di Nuovo ancora vuoto si chiude e basta.
 - **Selezione multipla**: ⌘-clic aggiunge o toglie, ⇧-clic estende; il clic
   semplice seleziona e apre.
 - **Trascinare sulla tela**: diventa un oggetto immagine nella cattura
-  attuale, come ⌥⌘V, con le annotazioni della cattura trascinata già
-  incorporate.
+  attuale, con le annotazioni della cattura trascinata già incorporate,
+  centrato dove lo si lascia. Se esce a destra o in basso la tela si allarga
+  per contenerlo (un solo passo da annullare); in alto e a sinistra resta
+  dentro la tela.
 - **Trascinare fuori**: file PNG renderizzato, con il nome del file della
   cattura.
 - **Trascinare file dal Finder sulla striscia**: immagini e `.pinxel` entrano
