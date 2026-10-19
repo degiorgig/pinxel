@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
         .library(name: "AppCore", targets: ["AppCore"]),
         .library(name: "EditorUI", targets: ["EditorUI"]),
+        .library(name: "Library", targets: ["Library"]),
     ],
     targets: [
         .target(name: "DocumentModel"),
@@ -21,6 +22,7 @@ let package = Package(
         .target(name: "CaptureKit", swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"]),
         .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"]),
+        .target(name: "Library", dependencies: ["DocumentModel", "Persistence", "AppCore"]),
         .target(
             name: "PinxelTestSupport",
             dependencies: ["DocumentModel"],
@@ -46,6 +48,10 @@ let package = Package(
         .testTarget(
             name: "AppCoreTests",
             dependencies: ["AppCore", "PinxelTestSupport"]
+        ),
+        .testTarget(
+            name: "LibraryTests",
+            dependencies: ["Library", "AppCore", "Persistence", "PinxelTestSupport"]
         ),
         .testTarget(
             name: "EditorUITests",

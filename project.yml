@@ -33,6 +33,8 @@ targets:
         product: AppCore
       - package: PinxelKit
         product: EditorUI
+      - package: PinxelKit
+        product: Library
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.degiorgi.pinxel
