@@ -72,6 +72,8 @@ public final class CanvasView: NSView, EditorActions {
             // Da qui la tela non segue più la finestra: ricentrarla farebbe saltare gli oggetti.
             self.followsWindow = false
             self.viewport.shift(byCanvas: offset)
+            self.textEditor?.shift(by: offset)
+            self.layoutTextEditor()
         }
         // Immagini trascinate dal Finder, da altre app o dal carosello della libreria.
         registerForDraggedTypes([.fileURL, .png, .tiff])
@@ -758,7 +760,8 @@ public final class CanvasView: NSView, EditorActions {
 
     private func setZoom(_ zoom: Double, anchor: CGPoint) {
         viewport.setZoom(zoom, anchor: anchor)
-        viewport.constrain(canvasSize: canvasSize, in: bounds.size)
+        // Come lo scorrimento: la tela resta dove la porta lo zoom, solo tenuta dentro la vista.
+        viewport.keepInView(canvasSize: canvasSize, in: bounds.size)
         followsWindow = false
         layoutTextEditor()
         needsDisplay = true
