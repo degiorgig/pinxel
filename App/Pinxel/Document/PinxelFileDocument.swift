@@ -85,22 +85,31 @@ final class PinxelFileDocument: NSDocument {
 
     override func makeWindowControllers() {
         MainActor.assumeIsolated {
-            guard let contents else { return }
-            do {
-                let session = EditorSession(
-                    document: contents.document,
-                    assets: try contents.assetProvider(),
-                    undoManager: undoManager ?? UndoManager(),
-                    isReadOnly: contents.isReadOnly
-                )
-                let model = EditorModel(session: session)
-                editorModel = model
-                addWindowController(EditorWindowController(model: model))
-            } catch {
-                // Senza immagini il documento non si può mostrare: avvisa e chiudi, niente documenti senza finestra.
-                presentError(error)
-                perform(#selector(NSDocument.close), with: nil, afterDelay: 0)
-            }
+            guard let model = makeEditorModel() else { return }
+            addWindowController(EditorWindowController(model: model))
+        }
+    }
+
+    /// Il modello dell'editor per questo documento, senza finestra: serve anche per mostrarlo in una finestra già aperta.
+    @MainActor
+    func makeEditorModel() -> EditorModel? {
+        if let editorModel { return editorModel }
+        guard let contents else { return nil }
+        do {
+            let session = EditorSession(
+                document: contents.document,
+                assets: try contents.assetProvider(),
+                undoManager: undoManager ?? UndoManager(),
+                isReadOnly: contents.isReadOnly
+            )
+            let model = EditorModel(session: session)
+            editorModel = model
+            return model
+        } catch {
+            // Senza immagini il documento non si può mostrare: avvisa e chiudi, niente documenti senza finestra.
+            presentError(error)
+            perform(#selector(NSDocument.close), with: nil, afterDelay: 0)
+            return nil
         }
     }
 

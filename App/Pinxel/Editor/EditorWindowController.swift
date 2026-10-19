@@ -6,16 +6,15 @@ import SwiftUI
 /// Finestra dell'editor: vista SwiftUI con toolbar nativa (via `sceneBridgingOptions`) e pannello proprietà.
 @MainActor
 final class EditorWindowController: NSWindowController, NSWindowDelegate {
-    let model: EditorModel
-    /// Filtro e selezione del carosello di questa finestra.
+    private(set) var model: EditorModel
+    /// Filtro e selezione del carosello di questa finestra: restano quando cambia la cattura mostrata.
     let stripState = LibraryStripState()
+    private let hosting: NSHostingController<EditorView>
+    private let reference = WeakReference()
 
     init(model: EditorModel) {
         self.model = model
-        weak var weakSelf: EditorWindowController?
-        let hosting = NSHostingController(rootView: EditorView(model: model, stripState: stripState,
-                                                               currentURL: { (weakSelf?.document as? NSDocument)?.fileURL },
-                                                               window: { weakSelf?.window }))
+        hosting = NSHostingController(rootView: Self.view(model: model, stripState: stripState, reference: reference))
         hosting.sceneBridgingOptions = [.toolbars]
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
@@ -25,7 +24,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         if model.session.isReadOnly { window.subtitle = "Sola lettura" }
         super.init(window: window)
-        weakSelf = self
+        reference.controller = self
         // Il documento entra nella catena dei responder (Salva, Esporta…) tramite il delegato della finestra.
         window.delegate = self
         shouldCascadeWindows = true
@@ -33,6 +32,26 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    private static func view(model: EditorModel, stripState: LibraryStripState, reference: WeakReference) -> EditorView {
+        EditorView(model: model, stripState: stripState,
+                   currentURL: { (reference.controller?.document as? NSDocument)?.fileURL },
+                   window: { reference.controller?.window })
+    }
+
+    /// Un'altra cattura nella stessa finestra (clic sul carosello): stessa cornice, stesso carosello, tela nuova.
+    func show(_ model: EditorModel) {
+        EditorFocus.shared.resign(self.model)
+        self.model = model
+        hosting.rootView = Self.view(model: model, stripState: stripState, reference: reference)
+        window?.subtitle = model.session.isReadOnly ? "Sola lettura" : ""
+        if window?.isMainWindow ?? false { EditorFocus.shared.focus(model, isKey: window?.isKeyWindow ?? true) }
+    }
+
+    @MainActor
+    private final class WeakReference {
+        weak var controller: EditorWindowController?
+    }
 
     // I menu seguono l'editor della finestra principale (un foglio come Esporta lascia la finestra principale).
     func windowDidBecomeMain(_ notification: Notification) {

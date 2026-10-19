@@ -15,6 +15,8 @@ struct EditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             CanvasRepresentable(model: model)
+                // Cattura cambiata nella stessa finestra: una tela nuova, non quella vecchia con un altro modello.
+                .id(ObjectIdentifier(model))
                 .frame(minWidth: 320, minHeight: 240)
                 .overlay(alignment: .bottomTrailing) {
                     HStack(spacing: 8) {

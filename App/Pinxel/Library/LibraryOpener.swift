@@ -19,26 +19,29 @@ enum LibraryOpener {
         case .openNewWindow:
             DocumentOpener.open(url: url)
         case .replaceInWindow:
-            guard let current, let window else { return DocumentOpener.open(url: url) }
-            let frame = window.frame
-            let strip = (window.windowController as? EditorWindowController)?.stripState
-            // Il documento è nell'archivio: si salva dove sta, poi la nuova cattura prende la stessa cornice e lo stesso
-            // filtro del carosello. Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
+            guard let current, let controller = window?.windowController as? EditorWindowController else {
+                return DocumentOpener.open(url: url)
+            }
+            // Il documento è nell'archivio: si salva dove sta, poi la nuova cattura entra nella stessa finestra (cornice,
+            // toolbar e carosello restano). Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
             current.autosave(withImplicitCancellability: false) { error in
                 MainActor.assumeIsolated {
                     if let error {
                         current.presentError(error)
                         return
                     }
-                    current.close()
-                    DocumentOpener.open(url: url) { document in
-                        let controller = document?.windowControllers.first as? EditorWindowController
-                        if let strip, let next = controller?.stripState {
-                            next.filter = strip.filter
-                            next.anchor = strip.anchor
-                            next.selection = [item.file]
+                    NSDocumentController.shared.openDocument(withContentsOf: url, display: false) { document, _, error in
+                        if let error {
+                            NSApp.presentError(error)
+                            return
                         }
-                        controller?.window?.setFrame(frame, display: true)
+                        guard let next = document as? PinxelFileDocument, let model = next.makeEditorModel() else { return }
+                        current.removeWindowController(controller)
+                        current.close()
+                        next.addWindowController(controller)
+                        controller.show(model)
+                        controller.stripState.selection = [item.file]
+                        controller.synchronizeWindowTitleWithDocumentName()
                     }
                 }
             }
