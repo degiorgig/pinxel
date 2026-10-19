@@ -40,12 +40,12 @@ struct ReviewFollowUpTests {
         source.pasteboard.clearContents()
         source.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
         source.pasteKeepingCanvas(nil)
-        source.model.session.selection = Set(source.model.session.document.annotations.map(\.id))
+        source.model.session.selection = Set(source.model.session.document.userAnnotations.map(\.id))
         source.cut(nil)
 
         let target = makeCanvas(pasteboard: source.pasteboard)
         target.paste(nil)
-        let pasted = target.model.session.document.annotations
+        let pasted = target.model.session.document.userAnnotations
         #expect(pasted.count == 2)
         let image = try #require(pasted.compactMap { annotation -> PlacedImageData? in
             if case .image(let data) = annotation.kind { return data }

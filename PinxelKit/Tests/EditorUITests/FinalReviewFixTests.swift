@@ -47,7 +47,7 @@ struct FinalReviewFixTests {
         type("Errore 42", in: canvas)
         canvas.model.commitTextEditing()
         #expect(canvas.textEditor == nil)
-        #expect(canvas.model.session.document.annotations[0].richText?.plainText == "Errore 42")
+        #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Errore 42")
     }
 
     // 2. Stile e stili rapidi cambiati mentre si scrive un callout nuovo arrivano al fumetto.
@@ -60,7 +60,7 @@ struct FinalReviewFixTests {
         canvas.model.setStyle(\.fill, .highlightYellow)
         canvas.model.applyQuickStyle(Style(stroke: .black, fill: .highlightYellow, lineWidth: 7))
         canvas.finishTextEditing()
-        let created = canvas.model.session.document.annotations.first
+        let created = canvas.model.session.document.userAnnotations.first
         #expect(created?.style.fill == .highlightYellow)
         #expect(created?.style.lineWidth == 7)
     }
@@ -81,8 +81,8 @@ struct FinalReviewFixTests {
             window.sendEvent(event)
         }
         #expect(canvas.textEditor == nil)
-        #expect(canvas.model.session.document.annotations.count == 1)
-        #expect(canvas.model.session.document.annotations[0].richText?.plainText == "Cambiato")
+        #expect(canvas.model.session.document.userAnnotations.count == 1)
+        #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Cambiato")
     }
 
     // 4. Con un foglio (Salva, Esporta, Ridimensiona) in primo piano le voci di modifica vanno ai suoi campi.
@@ -102,12 +102,12 @@ struct FinalReviewFixTests {
         canvas.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
         canvas.pasteKeepingCanvas(nil)
         let session = canvas.model.session
-        let pasted = try #require(session.document.annotations.first)
+        let pasted = try #require(session.document.userAnnotations.first)
         session.selection = [pasted.id]
         canvas.cut(nil)
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
         canvas.paste(nil)
-        guard case .image(let data) = session.document.annotations.first?.kind else { Issue.record("no image back"); return }
+        guard case .image(let data) = session.document.userAnnotations.first?.kind else { Issue.record("no image back"); return }
         guard case .image(let original) = pasted.kind else { return }
         #expect(data.asset == original.asset)
     }
@@ -126,7 +126,7 @@ struct FinalReviewFixTests {
         canvas.pasteboard.clearContents()
         canvas.pasteboard.setData(pngData(width: PinxelDocument.maxImageSide + 232, height: 2), forType: .png)
         canvas.pasteKeepingCanvas(nil)
-        guard case .image(let data) = canvas.model.session.document.annotations.first?.kind else { Issue.record("no image"); return }
+        guard case .image(let data) = canvas.model.session.document.userAnnotations.first?.kind else { Issue.record("no image"); return }
         let stored = try #require(canvas.model.session.assets.image(for: data.asset))
         #expect(stored.width <= PinxelDocument.maxImageSide)
     }

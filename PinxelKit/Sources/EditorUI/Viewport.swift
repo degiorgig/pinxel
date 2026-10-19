@@ -75,11 +75,13 @@ public struct Viewport: Equatable, Sendable {
         center(canvasSize: canvasSize, in: viewSize)
     }
 
-    /// Sposta la tela, ma solo entro i suoi bordi (vedi `constrain`).
+    /// Sposta la tela, ma solo entro i suoi bordi. Lungo un lato che entra nella vista non si scorre: la tela resta
+    /// dov'è (anche fuori centro dopo un adattamento, senza saltare), solo tenuta dentro la vista.
     public mutating func pan(by delta: CGSize, canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
-        origin.x += delta.width
-        origin.y += delta.height
-        constrain(canvasSize: canvasSize, in: viewSize, margin: margin)
+        let content = CGSize(width: canvasSize.width * pointsPerPixel, height: canvasSize.height * pointsPerPixel)
+        if content.width + 2 * margin > viewSize.width { origin.x += delta.width }
+        if content.height + 2 * margin > viewSize.height { origin.y += delta.height }
+        keepInView(canvasSize: canvasSize, in: viewSize, margin: margin)
     }
 
     /// Come una vista che scorre: in ogni direzione la tela che entra nella vista resta centrata; quella più grande
@@ -87,6 +89,24 @@ public struct Viewport: Equatable, Sendable {
     public mutating func constrain(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         func axis(_ origin: Double, content: Double, view: Double) -> Double {
             if content + 2 * margin <= view { return (view - content) / 2 }
+            return min(margin, max(view - content - margin, origin))
+        }
+        origin = CGPoint(x: axis(origin.x, content: canvasSize.width * pointsPerPixel, view: viewSize.width),
+                         y: axis(origin.y, content: canvasSize.height * pointsPerPixel, view: viewSize.height))
+    }
+
+    /// Gli oggetti sono stati traslati di `offset` (pixel del documento) per adattare la tela: la si sposta al contrario,
+    /// così sullo schermo restano dove erano.
+    public mutating func shift(byCanvas offset: CGVector) {
+        origin.x -= offset.dx * pointsPerPixel
+        origin.y -= offset.dy * pointsPerPixel
+    }
+
+    /// Dopo una modifica: la tela resta dov'è finché se ne vede abbastanza; non si ricentra (gli oggetti salterebbero).
+    /// Una tela più piccola della vista resta tutta dentro, una più grande non lascia vuoti oltre `margin`.
+    public mutating func keepInView(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
+        func axis(_ origin: Double, content: Double, view: Double) -> Double {
+            if content + 2 * margin <= view { return min(max(origin, margin), view - content - margin) }
             return min(margin, max(view - content - margin, origin))
         }
         origin = CGPoint(x: axis(origin.x, content: canvasSize.width * pointsPerPixel, view: viewSize.width),

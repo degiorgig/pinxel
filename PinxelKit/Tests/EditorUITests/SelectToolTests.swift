@@ -8,8 +8,12 @@ struct SelectToolTests {
     private let a = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 100, y: 100, width: 100, height: 50), shape: .rectangle)), style: Style(fill: .white))
     private let b = Annotation(id: TestDocuments.id(2), kind: .shape(ShapeData(rect: CGRect(x: 300, y: 100, width: 50, height: 50), shape: .rectangle)), style: Style(fill: .white))
 
+    /// Solo le annotazioni, senza la cattura in fondo: qui si prova lo strumento sugli oggetti
+    /// (la cattura ha i suoi test in ImageSelectionTests).
     private func document(_ annotations: [Annotation]) -> PinxelDocument {
-        TestDocuments.document(annotations: annotations)
+        var document = TestDocuments.document(annotations: annotations)
+        document.annotations = annotations
+        return document
     }
 
     private func controller() -> ToolController {

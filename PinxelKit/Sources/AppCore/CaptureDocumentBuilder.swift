@@ -4,27 +4,19 @@ import DocumentModel
 import Persistence
 
 public enum CaptureDocumentBuilder {
-    /// Nuovo documento senza annotazioni con la cattura come sfondo.
+    /// Nuovo documento con la cattura come immagine in fondo alla pila, grande quanto la tela.
     public static func make(image: CGImage, scale: Double, metadata: CaptureMetadata) throws -> PinxelFileContents {
         let (ref, data) = try ImageCodec.encodeBackground(image)
-        let document = PinxelDocument(
-            background: ref,
-            canvasSize: PixelSize(width: image.width, height: image.height),
-            scale: scale,
-            metadata: metadata
-        )
+        let size = PixelSize(width: image.width, height: image.height)
+        let capture = Annotation(kind: .image(PlacedImageData(rect: CGRect(origin: .zero, size: size.cgSize), asset: ref)),
+                                 style: Style(stroke: nil, lineWidth: 0))
+        let document = PinxelDocument(canvasSize: size, scale: scale, annotations: [capture], metadata: metadata)
         return PinxelFileContents(document: document, images: [ref: data])
     }
 
-    /// Documento vuoto e trasparente, per cominciare senza cattura (Nuovo): poi si incolla o si disegna.
-    public static func blank(pointSize: CGSize, scale: Double) throws -> PinxelFileContents {
-        let width = max(1, Int((pointSize.width * scale).rounded()))
-        let height = max(1, Int((pointSize.height * scale).rounded()))
-        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-              let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: space,
-                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
-              let image = ctx.makeImage() else { throw CocoaError(.fileWriteUnknown) }
-        return try make(image: image, scale: scale, metadata: CaptureMetadata())
+    /// Documento vuoto, per cominciare senza cattura (Nuovo): poi si incolla, si trascina o si disegna.
+    public static func blank(scale: Double) throws -> PinxelFileContents {
+        PinxelFileContents(document: PinxelDocument(canvasSize: PixelSize(width: 0, height: 0), scale: scale, metadata: CaptureMetadata()), images: [:])
     }
 
     /// Scala di un'immagine incollata: pixel per punto, arrotondata e limitata a 1...3.

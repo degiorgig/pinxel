@@ -8,20 +8,30 @@ struct DocumentTests {
 
     @Test func documentRoundTrips() throws {
         var document = TestDocuments.document()
-        document.imageOperations = [.crop(PixelRect(x: 10, y: 10, width: 300, height: 200)), .resize(PixelSize(width: 150, height: 100))]
         document.canvasStyle = CanvasStyle(padding: 12, backgroundColor: .white, border: Border(color: .black, width: 2), shadow: Shadow())
         #expect(try roundTrip(document) == document)
     }
 
-    @Test func imageSizeFollowsOperations() {
+    @Test func imageSizeIsTheCanvas() {
         var document = TestDocuments.document(size: size)
         #expect(document.imageSize == size)
-        document.imageOperations = [
-            .crop(PixelRect(x: 50, y: 50, width: 300, height: 200)),
-            .cutOut(CutOut(axis: .horizontal, start: 50, length: 40, edge: .straight)),
-            .resize(PixelSize(width: 150, height: 80)),
-        ]
+        document.canvasSize = PixelSize(width: 150, height: 80)
         #expect(document.imageSize == PixelSize(width: 150, height: 80))
+    }
+
+    @Test func theCaptureIsTheFirstObject() {
+        let document = TestDocuments.document(size: size)
+        #expect(document.annotations.first == TestDocuments.capture(size: size))
+        #expect(document.userAnnotations == TestDocuments.allKindsAnnotations())
+    }
+
+    @Test func emptyCanvasIsValidOnlyWhenBothSidesAreZero() {
+        var document = TestDocuments.document(annotations: [])
+        document.annotations = []
+        document.canvasSize = PixelSize(width: 0, height: 0)
+        #expect(document.validationError() == nil)
+        document.canvasSize = PixelSize(width: 0, height: 10)
+        #expect(document.validationError() != nil)
     }
 
     @Test func cropOutsideImageIsClamped() {

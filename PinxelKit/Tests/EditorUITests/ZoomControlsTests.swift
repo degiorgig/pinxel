@@ -67,7 +67,7 @@ struct ZoomControlsTests {
         canvas.mouseDragged(with: try mouse(.leftMouseDragged, at: NSPoint(x: 300, y: 400), in: window))
         canvas.mouseUp(with: try mouse(.leftMouseUp, at: NSPoint(x: 300, y: 400), in: window))
         #expect(canvas.viewport.origin == CGPoint(x: before.x - 100, y: before.y - 100))
-        #expect(canvas.model.session.document.annotations.isEmpty)
+        #expect(canvas.model.session.document.userAnnotations.isEmpty)
         #expect(canvas.model.isPanning) // resta attiva finché non la si spegne
     }
 

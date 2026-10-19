@@ -59,6 +59,25 @@ struct EditorView: View {
                     .labelStyle(.iconOnly)
                     .disabled(model.session.isReadOnly)
                 }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    // Gli stessi comandi di Disponi, a portata di mano: le scorciatoie con [ e ] sono scomode
+                    // sulle tastiere che li fanno con ⌥.
+                    let canArrange = EditorMenuState(model: model).hasEditableSelection
+                    Button {
+                        model.canvas?.bringToFront(nil)
+                    } label: {
+                        Label("In primo piano", systemImage: "square.3.layers.3d.top.filled")
+                    }
+                    .help("Porta la selezione in primo piano (⇧⌘])")
+                    .disabled(!canArrange)
+                    Button {
+                        model.canvas?.sendToBack(nil)
+                    } label: {
+                        Label("In fondo", systemImage: "square.3.layers.3d.bottom.filled")
+                    }
+                    .help("Porta la selezione in fondo (⇧⌘[)")
+                    .disabled(!canArrange)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     ShareLink(item: SharedCapture(model: model), preview: SharePreview("Cattura Pinxel"))
                         .help("Condividi l'immagine")

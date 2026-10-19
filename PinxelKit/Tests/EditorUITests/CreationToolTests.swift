@@ -5,7 +5,8 @@ import Testing
 @testable import EditorUI
 
 struct CreationToolTests {
-    private let empty = TestDocuments.document(annotations: [])
+    /// Documenti senza la cattura in fondo: qui si provano gli strumenti sugli oggetti.
+    private let empty = TestDocuments.document(annotations: []).withoutCapture
 
     private func controller(_ tool: EditorTool) -> ToolController {
         let controller = ToolController()
@@ -113,7 +114,7 @@ struct CreationToolTests {
 
     @Test func creationPreviewShowsTheNewAnnotationOnTopOfTheDocument() {
         let existing = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 0, y: 0, width: 10, height: 10), shape: .rectangle)))
-        let doc = TestDocuments.document(annotations: [existing])
+        let doc = TestDocuments.document(annotations: [existing]).withoutCapture
         let tool = controller(.shape)
         _ = tool.handle(.down(CGPoint(x: 20, y: 20), [], clickCount: 1), document: doc, selection: [])
         let drag = tool.handle(.drag(CGPoint(x: 60, y: 60), []), document: doc, selection: [])

@@ -24,13 +24,15 @@ struct ImageImportTests {
         return data as Data
     }
 
-    @Test func pngBecomesTheBackgroundOfANewDocument() throws {
+    @Test func pngBecomesTheCaptureOfANewDocument() throws {
         let data = try encode(try image(width: 120, height: 80), as: .png)
         let contents = try ImageImport.contents(fromImageData: data)
         #expect(contents.document.canvasSize == PixelSize(width: 120, height: 80))
         #expect(contents.document.scale == 1)
-        #expect(contents.document.annotations.isEmpty)
-        #expect(contents.images[contents.document.background] != nil)
+        #expect(contents.document.annotations.count == 1)
+        guard case .image(let capture) = contents.document.annotations.first?.kind else { Issue.record("no capture"); return }
+        #expect(capture.rect == CGRect(x: 0, y: 0, width: 120, height: 80))
+        #expect(contents.images[capture.asset] != nil)
     }
 
     @Test func retinaResolutionGivesScaleTwo() throws {

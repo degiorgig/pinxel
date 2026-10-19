@@ -25,23 +25,24 @@ final class EditorUITests: XCTestCase {
         wait(for: [expectation(for: predicate, evaluatedWith: element)], timeout: 5)
     }
 
+    // La cattura è un oggetto: nel conteggio c'è sempre anche lei.
     func testDrawShapeThenUndoAndRedo() {
         let app = launchWithSample()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
-        waitForValue(canvas, prefix: "Annotazioni: 0")
+        waitForValue(canvas, prefix: "Annotazioni: 1")
 
         canvas.click()
         canvas.typeKey("r", modifierFlags: [])
         let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.35, dy: 0.35))
         let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.6))
         start.click(forDuration: 0.1, thenDragTo: end)
-        waitForValue(canvas, prefix: "Annotazioni: 1")
+        waitForValue(canvas, prefix: "Annotazioni: 2")
 
         app.typeKey("z", modifierFlags: .command)
-        waitForValue(canvas, prefix: "Annotazioni: 0")
-        app.typeKey("z", modifierFlags: [.command, .shift])
         waitForValue(canvas, prefix: "Annotazioni: 1")
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        waitForValue(canvas, prefix: "Annotazioni: 2")
         app.terminate()
     }
 
@@ -65,9 +66,9 @@ final class EditorUITests: XCTestCase {
         canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.45)).click()
         app.typeText("Ciao")
         app.typeKey(.escape, modifierFlags: [])
-        waitForValue(canvas, prefix: "Annotazioni: 1")
+        waitForValue(canvas, prefix: "Annotazioni: 2")
         app.typeKey("z", modifierFlags: .command)
-        waitForValue(canvas, prefix: "Annotazioni: 0")
+        waitForValue(canvas, prefix: "Annotazioni: 1")
         app.terminate()
     }
 
@@ -91,6 +92,8 @@ final class EditorUITests: XCTestCase {
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
         canvas.click()
+        // Il clic ha selezionato la cattura: Esc toglie la selezione.
+        canvas.typeKey(.escape, modifierFlags: [])
         let arrange = app.menuBars.menuBarItems["Disponi"]
         arrange.click()
         XCTAssertFalse(arrange.menuItems["Duplica"].isEnabled)
@@ -99,7 +102,7 @@ final class EditorUITests: XCTestCase {
         let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.4))
         let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.55))
         start.click(forDuration: 0.1, thenDragTo: end)
-        waitForValue(canvas, prefix: "Annotazioni: 1")
+        waitForValue(canvas, prefix: "Annotazioni: 2")
         arrange.click()
         XCTAssertTrue(arrange.menuItems["Duplica"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
@@ -165,7 +168,7 @@ final class EditorUITests: XCTestCase {
         canvas.click()
         app.typeKey("v", modifierFlags: .command)
         // La tela prende le dimensioni dello screenshot (in pixel del documento, che dipendono dalla scala dello schermo).
-        let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 0", blankValue)
+        let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 1", blankValue)
         wait(for: [expectation(for: pasted, evaluatedWith: canvas)], timeout: 5)
         let size = try XCTUnwrap((canvas.value as? String)?.components(separatedBy: "immagine: ").last)
         XCTAssertNotEqual(size, blankValue.components(separatedBy: "immagine: ").last)
@@ -209,11 +212,11 @@ final class EditorUITests: XCTestCase {
         let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.40))
         let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
         start.click(forDuration: 0.2, thenDragTo: end)
-        // Lo screenshot è l'immagine della cattura: la fascia sparisce e l'altezza cala, senza oggetti schiacciati.
+        // Lo screenshot è l'immagine in fondo: la fascia sparisce e l'altezza cala, senza oggetti schiacciati.
         wait(for: [expectation(for: NSPredicate(format: "value != %@", pastedValue), evaluatedWith: canvas)], timeout: 5)
         func height(_ value: String) -> Int? { value.components(separatedBy: "\u{00D7}").last.flatMap { Int($0) } }
         let cutValue = try XCTUnwrap(canvas.value as? String)
-        XCTAssertTrue(cutValue.hasPrefix("Annotazioni: 0"))
+        XCTAssertTrue(cutValue.hasPrefix("Annotazioni: 1"))
         XCTAssertLessThan(try XCTUnwrap(height(cutValue)), try XCTUnwrap(height(pastedValue)))
         snapshot(app, "3-tagliato")
         app.terminate()
@@ -237,7 +240,7 @@ final class EditorUITests: XCTestCase {
         let app = launchWithSample()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
-        waitForValue(canvas, prefix: "Annotazioni: 0")
+        waitForValue(canvas, prefix: "Annotazioni: 1")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setData(png, forType: .png)
         canvas.click()

@@ -181,10 +181,13 @@ struct LibraryStoreTests {
         #expect(index.item(item.file)?.pixelHeight == 50)
     }
 
-    /// L'editor ritaglia aggiungendo un'operazione: `canvasSize` resta quello della cattura.
+    /// Il documento dopo un ritaglio nell'editor: la cattura e la tela sono più piccole della cattura originale.
     func cropped(_ contents: PinxelFileContents) throws -> Data {
         var document = contents.document
-        document.imageOperations.append(.crop(PixelRect(x: 0, y: 0, width: 120, height: 80)))
+        guard case .image(var capture) = document.annotations[0].kind else { throw CocoaError(.fileReadCorruptFile) }
+        capture.rect = CGRect(x: 0, y: 0, width: 120, height: 80)
+        document.annotations[0].kind = .image(capture)
+        document.canvasSize = PixelSize(width: 120, height: 80)
         return try PinxelArchive.write(document: document, images: contents.images, thumbnail: Data([1]), appVersion: "0.1.0")
     }
 

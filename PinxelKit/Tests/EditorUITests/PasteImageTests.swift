@@ -13,6 +13,11 @@ struct PasteImageTests {
         return rep.representation(using: .png, properties: [:])!
     }
 
+    private func captureAsset(_ session: EditorSession) -> ImageAssetRef? {
+        guard case .image(let data) = session.document.annotations.first?.kind else { return nil }
+        return data.asset
+    }
+
     private func makeCanvas(_ annotations: [Annotation] = [], readOnly: Bool = false) -> CanvasView {
         let undo = UndoManager()
         undo.groupsByEvent = false
@@ -69,6 +74,16 @@ struct PasteImageTests {
         #expect(placement.rect == CGRect(x: 300, y: 0, width: 100, height: 100))
     }
 
+    @Test func addedImagesAreCenteredWithoutBeingPushedInside() {
+        // Vicino al bordo l'oggetto resta dov'è: sarà la tela ad adattarsi.
+        #expect(ImagePlacement.centered(pixelSize: CGSize(width: 100, height: 100), imageScale: 1, documentScale: 1, center: CGPoint(x: 390, y: 10))
+                == CGRect(x: 340, y: -40, width: 100, height: 100))
+        #expect(ImagePlacement.centered(pixelSize: CGSize(width: 200, height: 100), imageScale: 2, documentScale: 2, center: CGPoint(x: 300, y: 200))
+                == CGRect(x: 200, y: 150, width: 200, height: 100))
+        #expect(ImagePlacement.centered(pixelSize: CGSize(width: 40_000, height: 100), imageScale: 1, documentScale: 1, center: .zero).width
+                == CGFloat(PinxelDocument.maxImageSide))
+    }
+
     @Test func adaptingNeverPassesTheDocumentLimit() {
         let placement = ImagePlacement.place(pixelSize: CGSize(width: 30_000, height: 100), imageScale: 1, documentScale: 2,
                                              center: .zero, imageSize: PixelSize(width: 400, height: 300), adaptCanvas: true)
@@ -83,13 +98,14 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 150, height: 100))
-        // Lo screenshot diventa l'immagine della cattura, non un oggetto sopra.
-        #expect(session.document.annotations.isEmpty)
-        #expect(session.document.background != TestDocuments.background)
-        #expect(session.assets.image(for: session.document.background)?.width == 150)
+        // Lo screenshot prende il posto della cattura, non diventa un oggetto in più.
+        #expect(session.document.userAnnotations.isEmpty)
+        let pasted = try #require(captureAsset(session))
+        #expect(pasted != TestDocuments.background)
+        #expect(session.assets.image(for: pasted)?.width == 150)
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
-        #expect(session.document.background == TestDocuments.background)
+        #expect(captureAsset(session) == TestDocuments.background)
     }
 
     @Test func pastingWithoutAdaptingKeepsTheCanvas() throws {
@@ -99,7 +115,7 @@ struct PasteImageTests {
         canvas.pasteKeepingCanvas(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
-        guard case .image(let data) = session.document.annotations.first?.kind else { Issue.record("no image"); return }
+        guard case .image(let data) = session.document.annotations.last?.kind else { Issue.record("no image"); return }
         #expect(data.rect == CGRect(x: 180, y: 140, width: 40, height: 20))
     }
 
@@ -110,11 +126,11 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
         #expect(session.undoManager.undoActionName == "Incolla immagine")
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
-        #expect(session.document.background == TestDocuments.background)
+        #expect(captureAsset(session) == TestDocuments.background)
         session.undoManager.redo()
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
     }
@@ -138,7 +154,10 @@ struct PasteImageTests {
         canvas.pasteboard.setData(bandsPNG(), forType: .png)
         canvas.paste(nil)
         let session = canvas.model.session
-        session.perform(ApplyImageOperation(.cutOut(CutOut(axis: .horizontal, start: 30, length: 40)), in: session.document))
+        let before = session.document.annotations
+        session.perform(SetAnnotations(name: "Taglia e ricuci", before: before,
+                                       after: ContentEditing.cut(before, CutOut(axis: .horizontal, start: 30, length: 40), canvas: session.document.imageSize,
+                                                                 images: session.assets.image(for:), add: { session.assets.add($0) })))
         #expect(session.document.imageSize == PixelSize(width: 100, height: 60))
         let rendered = try DocumentRenderer().renderImage(session.document, assets: session.assets)
         let rep = NSBitmapImageRep(cgImage: rendered)
@@ -155,13 +174,13 @@ struct PasteImageTests {
         canvas.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
         canvas.pasteKeepingCanvas(nil)
         let session = canvas.model.session
-        let pasted = try #require(session.document.annotations.first)
+        let pasted = try #require(session.document.annotations.last)
         guard case .image(let data) = pasted.kind else { Issue.record("no image"); return }
         #expect(data.rect == CGRect(x: 180, y: 140, width: 40, height: 20))
         #expect(session.assets.addedData[data.asset] != nil)
         #expect(session.selection == [pasted.id])
         session.undoManager.undo()
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
     }
 
     @Test func annotationsWinOverImagesOnThePasteboard() throws {
@@ -171,7 +190,7 @@ struct PasteImageTests {
         canvas.pasteboard.setData(try AnnotationClipboard.encode([shape]), forType: CanvasView.annotationsType)
         canvas.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
         canvas.paste(nil)
-        guard case .shape = canvas.model.session.document.annotations.first?.kind else { Issue.record("no shape"); return }
+        guard case .shape = canvas.model.session.document.annotations.last?.kind else { Issue.record("no shape"); return }
     }
 
     @Test func readOnlyCanvasDoesNotPasteImages() {
@@ -179,7 +198,7 @@ struct PasteImageTests {
         canvas.pasteboard.clearContents()
         canvas.pasteboard.setData(pngData(width: 40, height: 20), forType: .png)
         canvas.paste(nil)
-        #expect(canvas.model.session.document.annotations.isEmpty)
+        #expect(canvas.model.session.document.userAnnotations.isEmpty)
         #expect(canvas.model.session.assets.addedData.isEmpty)
     }
 }

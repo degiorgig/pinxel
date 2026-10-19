@@ -11,11 +11,13 @@ struct CaptureDocumentTests {
         let contents = try CaptureDocumentBuilder.make(image: TestImages.quadrants(), scale: 2, metadata: metadata)
         #expect(contents.document.canvasSize == PixelSize(width: 400, height: 300))
         #expect(contents.document.scale == 2)
-        #expect(contents.document.annotations.isEmpty)
+        #expect(contents.document.annotations.count == 1)
         #expect(contents.document.metadata == metadata)
-        #expect(contents.document.background == ImageAssetRef(name: "background.png"))
+        guard case .image(let capture) = contents.document.annotations.first?.kind else { Issue.record("no capture"); return }
+        #expect(capture.asset == ImageAssetRef(name: "background.png"))
+        #expect(capture.rect == CGRect(x: 0, y: 0, width: 400, height: 300))
         #expect(contents.document.validationError() == nil)
-        let decoded = try #require(contents.assetProvider().image(for: contents.document.background))
+        let decoded = try #require(contents.assetProvider().image(for: capture.asset))
         #expect(decoded.width == 400)
 
         let reread = try PinxelArchive.read(PinxelArchive.write(document: contents.document, images: contents.images, thumbnail: Data(), appVersion: "0.1.0"))
@@ -24,16 +26,13 @@ struct CaptureDocumentTests {
 }
 
 struct BlankDocumentTests {
-    @Test func blankDocumentIsTransparentAtTheScreenScale() throws {
-        let contents = try CaptureDocumentBuilder.blank(pointSize: CGSize(width: 800, height: 500), scale: 2)
-        #expect(contents.document.canvasSize == PixelSize(width: 1600, height: 1000))
+    @Test func blankDocumentHasNothingAndAnEmptyCanvas() throws {
+        let contents = try CaptureDocumentBuilder.blank(scale: 2)
+        #expect(contents.document.canvasSize == PixelSize(width: 0, height: 0))
         #expect(contents.document.scale == 2)
         #expect(contents.document.annotations.isEmpty)
+        #expect(contents.images.isEmpty)
         #expect(contents.document.validationError() == nil)
-        let background = try #require(contents.assetProvider().image(for: contents.document.background))
-        let pixels = PixelBuffer(background)
-        #expect(pixels.pixel(x: 0, y: 0).a == 0)
-        #expect(pixels.pixel(x: 800, y: 500).a == 0)
     }
 }
 

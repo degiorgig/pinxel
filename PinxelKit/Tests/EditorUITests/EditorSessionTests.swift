@@ -31,17 +31,17 @@ struct EditorSessionTests {
     }
 
     private func minX(_ n: Int, _ session: EditorSession) -> Double? {
-        session.document.annotations.first { $0.id == TestDocuments.id(n) }.map { Double($0.bounds.minX) }
+        session.document.userAnnotations.first { $0.id == TestDocuments.id(n) }.map { Double($0.bounds.minX) }
     }
 
     @Test func performAppliesAndUndoRedoRestore() {
         let session = makeSession()
         session.perform(AddAnnotations([shape(1)]))
-        #expect(session.document.annotations == [shape(1)])
+        #expect(session.document.userAnnotations == [shape(1)])
         session.undoManager.undo()
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
         session.undoManager.redo()
-        #expect(session.document.annotations == [shape(1)])
+        #expect(session.document.userAnnotations == [shape(1)])
     }
 
     @Test func undoMenuUsesTheCommandName() {
@@ -55,7 +55,7 @@ struct EditorSessionTests {
         session.selection = [TestDocuments.id(1)]
         session.perform(DeleteAnnotations(ids: [TestDocuments.id(1)], in: session.document))
         session.nudge(by: CGSize(width: 5, height: 0))
-        #expect(session.document.annotations == [shape(1)])
+        #expect(session.document.userAnnotations == [shape(1)])
         #expect(!session.undoManager.canUndo)
     }
 
@@ -98,7 +98,7 @@ struct EditorSessionTests {
         session.undoManager.undo()
         #expect(minX(1, session) == 11)
         session.undoManager.undo()
-        #expect(session.document.annotations.count == 1)
+        #expect(session.document.userAnnotations.count == 1)
         session.undoManager.undo()
         #expect(minX(1, session) == 10)
     }
@@ -146,10 +146,10 @@ struct EditorSessionTests {
     @Test func performClearsThePreview() {
         let session = makeSession()
         session.preview = [shape(9)]
-        #expect(session.displayedAnnotations == [shape(9)])
+        #expect(session.displayedAnnotations.filter { $0.id != TestDocuments.captureID } == [shape(9)])
         session.perform(AddAnnotations([shape(1)]))
         #expect(session.preview == nil)
-        #expect(session.displayedAnnotations == [shape(1)])
+        #expect(session.displayedAnnotations.filter { $0.id != TestDocuments.captureID } == [shape(1)])
     }
 
     @Test func undoingEverythingRestoresTheOriginalDocument() {

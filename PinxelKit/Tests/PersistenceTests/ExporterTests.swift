@@ -56,9 +56,14 @@ struct ExporterTests {
         #expect(box.size == CGSize(width: 200, height: 150))
     }
 
-    @Test func missingBackgroundPropagates() {
-        #expect(throws: RenderError.missingBackground) {
-            try Exporter.export(TestDocuments.document(), assets: DictionaryAssetProvider([:]), format: .png, scale: .oneX)
+    @Test func emptyCanvasCannotBeExported() {
+        var empty = TestDocuments.document(annotations: [])
+        empty.annotations = []
+        empty.canvasSize = PixelSize(width: 0, height: 0)
+        for format in [ExportFormat.png, .pdf] {
+            #expect(throws: RenderError.invalidSize) {
+                try Exporter.export(empty, assets: DictionaryAssetProvider([:]), format: format, scale: .oneX)
+            }
         }
     }
 }

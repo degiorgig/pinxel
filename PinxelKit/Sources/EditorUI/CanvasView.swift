@@ -54,7 +54,6 @@ public final class CanvasView: NSView, EditorActions {
     static let annotationImagesType = NSPasteboard.PasteboardType(AnnotationClipboard.imagesTypeIdentifier)
 
     private var session: EditorSession { model.session }
-    private var blankBackground: (ref: ImageAssetRef, transparent: Bool)?
 
     public init(model: EditorModel) {
         self.model = model
@@ -68,6 +67,12 @@ public final class CanvasView: NSView, EditorActions {
         setAccessibilityIdentifier("pinxel.editor.canvas")
         updateAccessibilityValue()
         observeModel()
+        model.session.onCanvasShift = { [weak self] offset in
+            guard let self else { return }
+            // Da qui la tela non segue più la finestra: ricentrarla farebbe saltare gli oggetti.
+            self.followsWindow = false
+            self.viewport.shift(byCanvas: offset)
+        }
         // Immagini trascinate dal Finder, da altre app o dal carosello della libreria.
         registerForDraggedTypes([.fileURL, .png, .tiff])
     }
@@ -118,7 +123,7 @@ public final class CanvasView: NSView, EditorActions {
             if followsWindow {
                 viewport.fit(canvasSize: canvasSize, in: bounds.size)
             } else {
-                viewport.constrain(canvasSize: canvasSize, in: bounds.size)
+                viewport.keepInView(canvasSize: canvasSize, in: bounds.size)
             }
         }
         layoutTextEditor()
@@ -137,12 +142,13 @@ public final class CanvasView: NSView, EditorActions {
                 guard let self else { return }
                 // Un altro strumento chiude la modifica del testo.
                 if self.textEditor != nil, self.model.tool != self.textEditingTool { self.finishTextEditing() }
-                // Ritaglio, taglio, ridimensiona e margini cambiano la tela: se segue la finestra, la riadatta.
+                // Ogni modifica può cambiare la tela: se segue la finestra la si riadatta, altrimenti resta dov'è
+                // finché se ne vede abbastanza (gli oggetti non saltano).
                 if self.bounds.width > 0, self.bounds.height > 0 {
                     if self.followsWindow {
                         self.viewport.fit(canvasSize: self.canvasSize, in: self.bounds.size)
                     } else {
-                        self.viewport.constrain(canvasSize: self.canvasSize, in: self.bounds.size)
+                        self.viewport.keepInView(canvasSize: self.canvasSize, in: self.bounds.size)
                     }
                     self.layoutTextEditor()
                 }
@@ -176,7 +182,8 @@ public final class CanvasView: NSView, EditorActions {
         var document = displayedDocument
         document.annotations = annotationsForDrawing()
         ctx.saveGState()
-        ctx.clip(to: canvasRect)
+        // Durante un gesto l'oggetto trascinato oltre il bordo resta visibile: la tela si adatta al rilascio.
+        if session.preview == nil { ctx.clip(to: canvasRect) }
         ctx.interpolationQuality = viewport.zoom >= 2 ? .none : .high
         ctx.translateBy(x: viewport.origin.x, y: viewport.origin.y)
         ctx.scaleBy(x: viewport.pointsPerPixel, y: viewport.pointsPerPixel)
@@ -233,30 +240,9 @@ public final class CanvasView: NSView, EditorActions {
         ctx.restoreGState()
     }
 
-    /// Documento di Nuovo ancora intatto: nessuna annotazione o modifica e sfondo tutto trasparente.
+    /// Documento di Nuovo ancora intatto: nessun oggetto e stile della tela di base.
     public var isBlank: Bool {
-        let document = session.document
-        guard document.annotations.isEmpty, document.imageOperations.isEmpty, document.canvasStyle == CanvasStyle() else { return false }
-        let ref = document.background
-        if let cached = blankBackground, cached.ref == ref { return cached.transparent }
-        let transparent = session.assets.image(for: ref).map(Self.isFullyTransparent) ?? false
-        blankBackground = (ref, transparent)
-        return transparent
-    }
-
-    /// Vero se nessun pixel ha opacità: si legge solo il canale alfa, una volta per sfondo.
-    static func isFullyTransparent(_ image: CGImage) -> Bool {
-        let width = image.width, height = image.height
-        guard width > 0, height > 0, width * height <= 64_000_000 else { return false }
-        if image.alphaInfo == .none || image.alphaInfo == .noneSkipFirst || image.alphaInfo == .noneSkipLast { return false }
-        var alpha = [UInt8](repeating: 0, count: width * height)
-        let drawn = alpha.withUnsafeMutableBytes { buffer -> Bool in
-            guard let ctx = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width,
-                                      space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { return false }
-            ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-            return true
-        }
-        return drawn && !alpha.contains { $0 != 0 }
+        session.document.annotations.isEmpty && session.document.canvasStyle == CanvasStyle()
     }
 
     private func drawEmptyHint() {
@@ -620,10 +606,25 @@ public final class CanvasView: NSView, EditorActions {
             recordQuickStyles(command)
             session.perform(command)
         }
+        if let rect = result.crop {
+            applyContentEdit("Ritaglia") { ContentEditing.cropped($0, to: rect, images: session.assets.image(for:), add: { session.assets.add($0) }) }
+        }
+        if let cut = result.cut {
+            let canvas = session.document.imageSize
+            applyContentEdit("Taglia e ricuci") { ContentEditing.cut($0, cut, canvas: canvas, images: session.assets.image(for:), add: { session.assets.add($0) }) }
+        }
         if let selection = result.selection { session.selection = selection }
         if let delta = result.nudge { session.nudge(by: delta) }
         if let request = result.editText { beginTextEditing(request) }
         if let tool = result.tool { model.tool = tool }
+    }
+
+    /// Un ritaglio o un taglio su tutto il contenuto: un solo passo di annulla (la sessione adatta la tela).
+    private func applyContentEdit(_ name: String, _ edit: ([Annotation]) -> [Annotation]) {
+        let before = session.document.annotations
+        let after = edit(before)
+        guard after != before else { return NSSound.beep() }
+        session.perform(SetAnnotations(name: name, before: before, after: after))
     }
 
     /// Gli oggetti creati con uno strumento entrano negli stili rapidi di quello strumento.
@@ -833,6 +834,49 @@ public final class CanvasView: NSView, EditorActions {
         session.perform(command)
     }
 
+    // MARK: Menu del tasto destro
+
+    /// Clic destro: come nel Finder, l'oggetto sotto il puntatore diventa la selezione se non ne fa già parte,
+    /// poi i comandi di Disponi, Duplica, Blocca ed Elimina su quella selezione.
+    public override func menu(for event: NSEvent) -> NSMenu? {
+        guard !session.isReadOnly else { return nil }
+        if textEditor != nil { finishTextEditing() }
+        let point = documentPoint(fromView: convert(event.locationInWindow, from: nil))
+        if let hit = HitTesting.annotation(at: point, in: session.document.annotations, tolerance: controller.hitTolerance) {
+            if !session.selection.contains(hit.id) { session.selection = [hit.id] }
+        } else {
+            session.selection = []
+        }
+        return contextMenu()
+    }
+
+    private func contextMenu() -> NSMenu {
+        let state = EditorMenuState(model: model)
+        let menu = NSMenu(title: "Disponi")
+        menu.autoenablesItems = false
+        func add(_ title: String, _ action: Selector, enabled: Bool) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            item.isEnabled = enabled
+            menu.addItem(item)
+        }
+        let editable = state.hasEditableSelection
+        add("Porta in primo piano", #selector(bringToFront(_:)), enabled: editable)
+        add("Porta avanti", #selector(bringForward(_:)), enabled: editable)
+        add("Porta indietro", #selector(sendBackward(_:)), enabled: editable)
+        add("Porta in fondo", #selector(sendToBack(_:)), enabled: editable)
+        menu.addItem(.separator())
+        add("Duplica", #selector(duplicateSelection(_:)), enabled: editable)
+        if state.hasLockedSelection && !state.hasUnlockedSelection {
+            add("Sblocca", #selector(unlockSelection(_:)), enabled: true)
+        } else {
+            add("Blocca", #selector(lockSelection(_:)), enabled: state.hasUnlockedSelection)
+        }
+        menu.addItem(.separator())
+        add("Elimina", #selector(delete(_:)), enabled: editable)
+        return menu
+    }
+
     @objc public func copy(_ sender: Any?) {
         write(session.selectedAnnotations)
     }
@@ -911,8 +955,8 @@ public final class CanvasView: NSView, EditorActions {
         if !pasteImage(adaptCanvas: adaptCanvas) { NSSound.beep() }
     }
 
-    /// Con `adaptCanvas` lo screenshot negli appunti diventa l'immagine della cattura, così forbici, ritaglio ed effetti
-    /// lavorano sui suoi pixel; altrimenti diventa un'annotazione immagine sopra la cattura (spec §6.3).
+    /// Con `adaptCanvas` lo screenshot negli appunti prende il posto dell'immagine in fondo, tenendo le annotazioni;
+    /// altrimenti diventa un'immagine in più sopra il resto (spec §5.4).
     private func pasteImage(adaptCanvas: Bool) -> Bool {
         guard adaptCanvas else {
             guard let image = NSImage(pasteboard: pasteboard) else { return false }
@@ -931,46 +975,33 @@ public final class CanvasView: NSView, EditorActions {
             imageSize: document.imageSize,
             adaptCanvas: adaptCanvas
         )
-        guard let background = ImagePlacement.resized(cgImage, to: placement.imageSize),
-              let asset = session.assets.add(background) else { return false }
-        // Un'immagine nuova al posto della tela: la si mostra intera, come appena aperta.
+        guard let replacement = ImagePlacement.resized(cgImage, to: placement.imageSize),
+              let asset = session.assets.add(replacement) else { return false }
+        session.perform(ContentEditing.replacingBottomImage(in: document.annotations, asset: asset,
+                                                            size: placement.imageSize.cgSize, newID: UUID()))
+        // Un'immagine nuova al posto della cattura: la si mostra intera, come appena aperta (anche se l'adattamento
+        // della tela ha appena spostato la vista).
         followsWindow = true
-        session.perform(ReplaceBackground(asset, size: placement.imageSize, in: document, name: "Incolla immagine"))
         session.selection = []
         return true
     }
 
-    /// Un'immagine trascinata o incollata sopra la cattura; `viewPoint` è il centro (in coordinate della vista),
-    /// `nil` = centro della parte visibile. Con `growsCanvas` la tela si allarga a destra e in basso per contenere
-    /// l'oggetto, che non esce mai in alto o a sinistra; altrimenti le dimensioni restano.
+    /// Un'immagine trascinata o incollata sopra il resto; `viewPoint` è il centro (in coordinate della vista),
+    /// `nil` = centro della parte visibile. La tela si adatta all'oggetto, ovunque cada.
     @discardableResult
-    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, growsCanvas: Bool = false,
-                            name: String = "Inserisci immagine") -> Bool {
+    public func insertImage(_ image: NSImage, centeredAt viewPoint: CGPoint?, name: String = "Inserisci immagine") -> Bool {
         guard !session.isReadOnly,
               let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               let cgImage = ImagePlacement.fitting(original, maxSide: PinxelDocument.maxImageSide) else { return false }
-        let document = session.document
-        let placement = ImagePlacement.place(
+        let rect = ImagePlacement.centered(
             pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
             imageScale: PixelDensity.scale(pixelWidth: original.width, pointWidth: image.size.width),
-            documentScale: document.scale,
-            center: viewPoint.map { documentPoint(fromView: $0) } ?? visibleDocumentCenter(),
-            // Se la tela può crescere l'oggetto non va rimpicciolito né spinto dentro: lo limita solo il lato massimo.
-            imageSize: growsCanvas ? PixelSize(width: PinxelDocument.maxImageSide, height: PinxelDocument.maxImageSide) : document.imageSize,
-            adaptCanvas: false
+            documentScale: session.document.scale,
+            center: viewPoint.map { documentPoint(fromView: $0) } ?? visibleDocumentCenter()
         )
         guard let asset = session.assets.add(cgImage) else { return false }
-        let rect = placement.rect
-        var commands: [any EditCommand] = []
-        if growsCanvas {
-            let limit = PinxelDocument.maxImageSide
-            let size = PixelSize(width: min(limit, max(document.imageSize.width, Int(rect.maxX.rounded(.up)))),
-                                 height: min(limit, max(document.imageSize.height, Int(rect.maxY.rounded(.up)))))
-            if size != document.imageSize { commands.append(ApplyImageOperation(.extend(size), in: document)) }
-        }
         let annotation = Annotation(kind: .image(PlacedImageData(rect: rect, asset: asset)), style: Style(stroke: nil, lineWidth: 0))
-        commands.append(AddAnnotations([annotation], name: name))
-        session.perform(commands.count == 1 ? commands[0] : CommandGroup(name: name, commands: commands))
+        session.perform(AddAnnotations([annotation], name: name))
         session.selection = [annotation.id]
         return true
     }
@@ -993,12 +1024,14 @@ public final class CanvasView: NSView, EditorActions {
     public override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let image = droppedImage(sender) else { return false }
         window?.makeFirstResponder(self)
-        return insertImage(image, centeredAt: convert(sender.draggingLocation, from: nil), growsCanvas: true)
+        return insertImage(image, centeredAt: convert(sender.draggingLocation, from: nil))
     }
 
-    /// Centro della parte di immagine visibile nella finestra, o dell'immagine se non se ne vede niente.
+    /// Centro della parte di immagine visibile nella finestra, o dell'immagine se non se ne vede niente;
+    /// con la tela vuota, il punto sotto il centro della vista.
     private func visibleDocumentCenter() -> CGPoint {
         let image = CGRect(origin: .zero, size: session.document.imageSize.cgSize)
+        if image.isEmpty { return documentPoint(fromView: CGPoint(x: bounds.midX, y: bounds.midY)) }
         let visible = CGRect.bounding([documentPoint(fromView: bounds.origin), documentPoint(fromView: CGPoint(x: bounds.maxX, y: bounds.maxY))])
             .intersection(image)
         return visible.isNull || visible.isEmpty ? image.center : visible.center

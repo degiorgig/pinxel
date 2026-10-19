@@ -64,10 +64,37 @@ struct CanvasViewTests {
         let canvas = makeCanvas([blue])
         dragDocument(canvas, from: CGPoint(x: 125, y: 125), to: CGPoint(x: 165, y: 125))
         let session = canvas.model.session
-        #expect(session.document.annotations.first?.bounds.minX == 140)
+        #expect(session.document.userAnnotations.first?.bounds.minX == 140)
         #expect(session.preview == nil)
         session.undoManager.undo()
-        #expect(session.document.annotations.first?.bounds.minX == 100)
+        #expect(session.document.userAnnotations.first?.bounds.minX == 100)
+    }
+
+    @Test func cropToolCropsEverythingInOneUndoStep() throws {
+        let canvas = makeCanvas([blue])
+        canvas.model.tool = .crop
+        dragDocument(canvas, from: CGPoint(x: 90, y: 90), to: CGPoint(x: 200, y: 200))
+        canvas.send(.key(.enter, []))
+        let session = canvas.model.session
+        #expect(session.document.imageSize == PixelSize(width: 110, height: 110))
+        guard case .image(let capture) = session.document.annotations.first?.kind else { Issue.record("no capture"); return }
+        #expect(capture.rect == CGRect(x: 0, y: 0, width: 110, height: 110))
+        #expect(session.document.userAnnotations.first?.bounds.origin == CGPoint(x: 10, y: 10))
+        #expect(session.undoManager.undoActionName == "Ritaglia")
+        session.undoManager.undo()
+        #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
+        #expect(session.document.userAnnotations.first?.bounds.origin == CGPoint(x: 100, y: 100))
+    }
+
+    @Test func cutToolCutsEverythingInOneUndoStep() throws {
+        let canvas = makeCanvas([blue])
+        canvas.model.tool = .cutOut
+        dragDocument(canvas, from: CGPoint(x: 20, y: 20), to: CGPoint(x: 20, y: 70))
+        let session = canvas.model.session
+        #expect(session.document.imageSize == PixelSize(width: 400, height: 250))
+        #expect(session.document.userAnnotations.first?.bounds.minY == 50)
+        session.undoManager.undo()
+        #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
     }
 
     @Test func shapeToolCreatesAndSelectsTheNewShape() {
@@ -75,8 +102,8 @@ struct CanvasViewTests {
         canvas.model.tool = .shape
         dragDocument(canvas, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 90, y: 60))
         let session = canvas.model.session
-        #expect(session.document.annotations.count == 1)
-        #expect(session.selection == Set(session.document.annotations.map(\.id)))
+        #expect(session.document.userAnnotations.count == 1)
+        #expect(session.selection == Set(session.document.userAnnotations.map(\.id)))
     }
 
     @Test func readOnlyCanvasOnlySelects() {
@@ -84,7 +111,7 @@ struct CanvasViewTests {
         dragDocument(canvas, from: CGPoint(x: 125, y: 125), to: CGPoint(x: 165, y: 125))
         canvas.send(.key(.delete, []))
         let session = canvas.model.session
-        #expect(session.document.annotations == [blue])
+        #expect(session.document.userAnnotations == [blue])
         #expect(session.selection == [blue.id])
         #expect(session.preview == nil)
     }
@@ -107,7 +134,7 @@ struct CanvasViewTests {
         let crop = try #require(canvas.pasteboard.data(forType: .png).flatMap(NSBitmapImageRep.init(data:)))
         #expect(crop.pixelsWide == 66)
         canvas.paste(nil)
-        #expect(session.document.annotations.count == 2)
+        #expect(session.document.userAnnotations.count == 2)
         let pasted = try #require(session.selectedAnnotations.first)
         #expect(pasted.id != blue.id)
         #expect(pasted.bounds.origin == CGPoint(x: 110, y: 110))
@@ -146,7 +173,7 @@ struct CanvasViewTests {
         let session = canvas.model.session
         session.selection = [blue.id]
         canvas.duplicateSelection(nil)
-        #expect(session.document.annotations.count == 2)
+        #expect(session.document.userAnnotations.count == 2)
         #expect(session.selectedAnnotations.first?.bounds.origin == CGPoint(x: 110, y: 110))
         canvas.lockSelection(nil)
         #expect(session.selectedAnnotations.first?.isLocked == true)

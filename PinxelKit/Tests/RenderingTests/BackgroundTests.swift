@@ -89,18 +89,20 @@ struct BackgroundTests {
         #expect(image.width == 200 && image.height == 150)
     }
 
-    @Test func missingBackgroundThrows() {
-        #expect(throws: RenderError.missingBackground) {
-            try DocumentRenderer().renderImage(emptyDocument(), assets: DictionaryAssetProvider([:]))
-        }
+    @Test func missingCaptureImageStillRenders() throws {
+        // Senza i pixel della cattura si disegna il segnaposto grigio, non un errore.
+        let image = try DocumentRenderer().renderImage(emptyDocument(), assets: DictionaryAssetProvider([:]))
+        #expect(image.width == 400 && image.height == 300)
     }
 
-    @Test func operationsAreAppliedWhenRendering() throws {
-        var document = emptyDocument()
-        document.imageOperations = [.crop(PixelRect(x: 0, y: 150, width: 200, height: 150))]
+    @Test func theCaptureIsDrawnWhereItIs() throws {
+        // La cattura spostata in alto a sinistra: sulla tela di 200×150 si vede solo il quadrante giallo.
+        var document = emptyDocument(size: PixelSize(width: 200, height: 150))
+        document.annotations = [Annotation(id: TestDocuments.captureID, kind: .image(PlacedImageData(
+            rect: CGRect(x: -200, y: -150, width: 400, height: 300), asset: TestDocuments.background)), style: Style(stroke: nil, lineWidth: 0))]
         let image = try DocumentRenderer().renderImage(document, assets: assets())
         #expect(image.width == 200 && image.height == 150)
-        #expect(PixelBuffer(image).pixel(x: 100, y: 75) == blue)
+        #expect(PixelBuffer(image).pixel(x: 100, y: 75) == yellow)
     }
 
     @Test func extendKeepsTheImageTopLeftAndLeavesTheRestTransparent() throws {

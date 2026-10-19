@@ -38,7 +38,7 @@ struct CutToolTests {
         _ = tool.handle(.drag(CGPoint(x: 55, y: 150), []), document: document, selection: [])
         #expect(tool.cutPreview == CutOut(axis: .horizontal, start: 100, length: 50, edge: .zigzag))
         let result = tool.handle(.up(CGPoint(x: 55, y: 150), []), document: document, selection: [])
-        #expect(try #require(result.command).name == "Taglia e ricuci")
+        #expect(result.cut == CutOut(axis: .horizontal, start: 100, length: 50, edge: .zigzag))
         #expect(tool.cutPreview == nil)
     }
 
@@ -47,12 +47,8 @@ struct CutToolTests {
         let original = TestDocuments.document(annotations: [shape])
         _ = tool.handle(.down(CGPoint(x: 50, y: 100), [], clickCount: 1), document: original, selection: [])
         let result = tool.handle(.up(CGPoint(x: 50, y: 150), []), document: original, selection: [])
-        var document = original
-        try #require(result.command).apply(to: &document)
-        #expect(document.imageSize == PixelSize(width: 400, height: 250))
-        #expect(document.annotations[0].bounds.minY == 150)
-        result.command?.revert(on: &document)
-        #expect(document == original)
+        #expect(result.cut == CutOut(axis: .horizontal, start: 100, length: 50, edge: .zigzag))
+        #expect(result.command == nil)
     }
 
     @Test func escapeCancelsTheCut() {
@@ -62,6 +58,6 @@ struct CutToolTests {
         _ = tool.handle(.drag(CGPoint(x: 50, y: 150), []), document: document, selection: [])
         _ = tool.handle(.key(.escape, []), document: document, selection: [])
         #expect(tool.cutPreview == nil)
-        #expect(tool.handle(.up(CGPoint(x: 50, y: 150), []), document: document, selection: []).command == nil)
+        #expect(tool.handle(.up(CGPoint(x: 50, y: 150), []), document: document, selection: []).cut == nil)
     }
 }

@@ -60,15 +60,10 @@ struct CropToolTests {
         let original = TestDocuments.document(annotations: [shape])
         drag(tool, from: CGPoint(x: 50, y: 50), to: CGPoint(x: 150, y: 150), document: original)
         let result = tool.handle(.key(.enter, []), document: original, selection: [])
-        let command = try #require(result.command)
-        #expect(command.name == "Ritaglia")
+        // Il ritaglio serve i pixel: lo strumento lo chiede, la vista lo applica a tutto il contenuto.
+        #expect(result.crop == PixelRect(x: 50, y: 50, width: 100, height: 100))
+        #expect(result.command == nil)
         #expect(result.tool == .select && result.selection == [])
-        var document = original
-        command.apply(to: &document)
-        #expect(document.imageSize == PixelSize(width: 100, height: 100))
-        #expect(document.annotations[0].bounds.origin == CGPoint(x: 50, y: 50))
-        command.revert(on: &document)
-        #expect(document == original)
     }
 
     @Test func enterWithTheWholeImageOnlyLeavesTheTool() {

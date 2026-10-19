@@ -29,21 +29,26 @@ struct ImageEditingTests {
         #expect(draft.width == 132 && draft.height == 99)
     }
 
-    @Test func resizeDraftProducesAnUndoableOperation() throws {
+    @MainActor
+    @Test func resizeScalesEverythingInOneUndoStep() throws {
         var draft = ResizeDraft(original: original)
-        #expect(draft.operation == nil)
+        #expect(draft.targetSize == nil)
         draft.setPercent(50)
-        let operation = try #require(draft.operation)
-        #expect(operation == .resize(PixelSize(width: 200, height: 150)))
-        let shape = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 100, y: 100, width: 50, height: 50), shape: .rectangle)))
-        let before = TestDocuments.document(annotations: [shape])
-        var document = before
-        let command = ApplyImageOperation(operation, in: document)
-        command.apply(to: &document)
-        #expect(document.imageSize == PixelSize(width: 200, height: 150))
-        #expect(document.annotations[0].bounds == CGRect(x: 50, y: 50, width: 25, height: 25))
-        command.revert(on: &document)
-        #expect(document == before)
+        let size = try #require(draft.targetSize)
+        #expect(size == PixelSize(width: 200, height: 150))
+        let shape = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 100, y: 100, width: 50, height: 50), shape: .rectangle)),
+                               style: Style(stroke: nil, fill: .black))
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        let session = EditorSession(document: TestDocuments.document(annotations: [shape]),
+                                    assets: DictionaryAssetProvider([TestDocuments.background: TestImages.quadrants()]), undoManager: undo)
+        let before = session.document
+        session.perform(SetAnnotations(name: "Ridimensiona", before: before.annotations,
+                                       after: ContentEditing.scaled(before.annotations, from: draft.original, to: size)))
+        #expect(session.document.imageSize == PixelSize(width: 200, height: 150))
+        #expect(session.document.annotations[1].bounds == CGRect(x: 50, y: 50, width: 25, height: 25))
+        session.undoManager.undo()
+        #expect(session.document == before)
     }
 
     @Test func shadowGetsEnoughPaddingToShow() {

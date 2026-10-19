@@ -67,11 +67,11 @@ struct CanvasTextTests {
         canvas.finishTextEditing()
         #expect(canvas.textEditor == nil)
         let session = canvas.model.session
-        #expect(session.document.annotations.count == 1)
-        #expect(session.document.annotations[0].richText?.plainText == "Ciao Pinxel")
-        #expect(session.selection == [session.document.annotations[0].id])
+        #expect(session.document.userAnnotations.count == 1)
+        #expect(session.document.userAnnotations[0].richText?.plainText == "Ciao Pinxel")
+        #expect(session.selection == [session.document.userAnnotations[0].id])
         session.undoManager.undo()
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
         #expect(!session.undoManager.canUndo)
     }
 
@@ -81,7 +81,7 @@ struct CanvasTextTests {
         canvas.send(.down(CGPoint(x: 50, y: 50), [], clickCount: 1))
         canvas.send(.up(CGPoint(x: 50, y: 50), []))
         canvas.finishTextEditing()
-        #expect(canvas.model.session.document.annotations.isEmpty)
+        #expect(canvas.model.session.document.userAnnotations.isEmpty)
         #expect(!canvas.model.session.undoManager.canUndo)
     }
 
@@ -94,7 +94,7 @@ struct CanvasTextTests {
                                        windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
         canvas.mouseDown(with: event)
         #expect(canvas.textEditor == nil)
-        #expect(canvas.model.session.document.annotations[0].richText?.plainText == "Altro")
+        #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Altro")
         #expect(canvas.model.session.selection == [text.id])
     }
 
@@ -105,7 +105,7 @@ struct CanvasTextTests {
         canvas.model.tool = .arrow
         try await Task.sleep(for: .milliseconds(50))
         #expect(canvas.textEditor == nil)
-        #expect(canvas.model.session.document.annotations[0].richText?.plainText == "Cambiato")
+        #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Cambiato")
     }
 
     @Test func inspectorChangesWhileTypingGoToTheEditor() throws {
@@ -117,7 +117,7 @@ struct CanvasTextTests {
         #expect(canvas.model.editingText?.fontSize == 40)
         #expect(!canvas.model.session.undoManager.canUndo)
         canvas.finishTextEditing()
-        #expect(canvas.model.session.document.annotations[0].richText?.fontSize == 40)
+        #expect(canvas.model.session.document.userAnnotations[0].richText?.fontSize == 40)
     }
 
     @Test func readOnlyDoubleClickDoesNotEdit() {
@@ -133,6 +133,6 @@ struct CanvasTextTests {
         let editor = try #require(canvas.textEditor)
         #expect(editor.frame.height > 40)
         canvas.finishTextEditing()
-        #expect((canvas.model.session.document.annotations[0].textRect?.height ?? 0) > 40)
+        #expect((canvas.model.session.document.userAnnotations[0].textRect?.height ?? 0) > 40)
     }
 }

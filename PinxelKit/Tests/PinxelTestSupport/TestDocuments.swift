@@ -53,16 +53,23 @@ public enum TestDocuments {
         ]
     }
 
+    /// La cattura di ogni documento di prova: un'immagine in fondo alla pila, grande quanto la tela.
+    public static let captureID = id(999)
+
+    public static func capture(size: PixelSize) -> Annotation {
+        Annotation(id: captureID, kind: .image(PlacedImageData(rect: CGRect(origin: .zero, size: size.cgSize), asset: background)),
+                   style: Style(stroke: nil, lineWidth: 0))
+    }
+
     public static func document(
         annotations: [Annotation] = allKindsAnnotations(),
         size: PixelSize = PixelSize(width: 400, height: 300),
         scale: Double = 2
     ) -> PinxelDocument {
         PinxelDocument(
-            background: background,
             canvasSize: size,
             scale: scale,
-            annotations: annotations,
+            annotations: [capture(size: size)] + annotations,
             metadata: CaptureMetadata(
                 captureDate: Date(timeIntervalSinceReferenceDate: 800_000_000),
                 appName: "Finder",

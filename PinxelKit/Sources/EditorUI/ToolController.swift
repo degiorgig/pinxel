@@ -37,10 +37,14 @@ public struct ToolResult {
     public var tool: EditorTool?
     /// Guide magnetiche da disegnare durante lo spostamento.
     public var guides: [GuideLine]
+    /// Ritaglio da applicare a tutto il contenuto (servono i pixel: lo fa la vista).
+    public var crop: PixelRect?
+    /// Fascia da togliere con Taglia e ricuci.
+    public var cut: CutOut?
 
     public init(preview: [Annotation]? = nil, command: (any EditCommand)? = nil, selection: Set<UUID>? = nil,
                 marquee: CGRect? = nil, nudge: CGSize? = nil, editText: TextEditRequest? = nil, tool: EditorTool? = nil,
-                guides: [GuideLine] = []) {
+                guides: [GuideLine] = [], crop: PixelRect? = nil, cut: CutOut? = nil) {
         self.preview = preview
         self.command = command
         self.selection = selection
@@ -49,6 +53,8 @@ public struct ToolResult {
         self.editText = editText
         self.tool = tool
         self.guides = guides
+        self.crop = crop
+        self.cut = cut
     }
 }
 
@@ -86,6 +92,8 @@ public final class ToolController {
     private enum Gesture {
         case idle
         case marquee(start: CGPoint, base: Set<UUID>)
+        /// Premuto su un'immagine non selezionata: un clic la seleziona, un trascinamento disegna il riquadro.
+        case pressImage(start: CGPoint, id: UUID, base: Set<UUID>, shift: Bool)
         case move(start: CGPoint, originals: [Annotation], copyIDs: [UUID]?, started: Bool)
         /// `grab`: distanza fra la maniglia e il punto premuto, mantenuta per tutto il gesto.
         case resize(Handle, original: Annotation, start: CGPoint, grab: CGSize, started: Bool)
@@ -222,6 +230,10 @@ public final class ToolController {
                     gesture = .idle
                     return ToolResult(selection: [hit.id], editText: TextEditRequest(annotation: hit, isNew: false))
                 }
+                if case .image = hit.kind, !selection.contains(hit.id) {
+                    gesture = .pressImage(start: point, id: hit.id, base: modifiers.contains(.shift) ? selection : [], shift: modifiers.contains(.shift))
+                    return ToolResult()
+                }
                 var newSelection = selection
                 if modifiers.contains(.shift) {
                     if newSelection.contains(hit.id) { newSelection.remove(hit.id) } else { newSelection.insert(hit.id) }
@@ -250,6 +262,11 @@ public final class ToolController {
         case .drag(let point, let modifiers):
             switch gesture {
             case .marquee(let start, let base):
+                let rect = CGRect.bounding([start, point])
+                return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
+            case .pressImage(let start, _, let base, _):
+                guard start.distance(to: point) >= dragThreshold else { return ToolResult() }
+                gesture = .marquee(start: start, base: base)
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)), marquee: rect)
             case .move(let start, let originals, let copyIDs, let started):
@@ -284,6 +301,8 @@ public final class ToolController {
             case .marquee(let start, let base):
                 let rect = CGRect.bounding([start, point])
                 return ToolResult(selection: base.union(HitTesting.ids(intersecting: rect, in: annotations)))
+            case .pressImage(_, let id, _, let shift):
+                return ToolResult(selection: shift ? selection.union([id]) : [id])
             case .move(let start, let originals, let copyIDs, let started):
                 guard started else { return ToolResult() }
                 let delta = snappedDelta(constrainedDelta(from: start, to: point, modifiers), moving: originals,
@@ -360,7 +379,7 @@ public final class ToolController {
               pixel != PixelRect(x: 0, y: 0, width: size.width, height: size.height) else {
             return ToolResult(tool: .select)
         }
-        return ToolResult(command: ApplyImageOperation(.crop(pixel), in: document), selection: [], tool: .select)
+        return ToolResult(selection: [], tool: .select, crop: pixel)
     }
 
     // MARK: Taglia e ricuci
@@ -384,7 +403,7 @@ public final class ToolController {
                   let cut = CutGeometry.cut(from: start, to: point, imageSize: document.imageSize, edge: styles.cutEdge) else {
                 return ToolResult()
             }
-            return ToolResult(command: ApplyImageOperation(.cutOut(cut), in: document), selection: [])
+            return ToolResult(selection: [], cut: cut)
         case .key:
             return ToolResult()
         }

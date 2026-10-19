@@ -42,9 +42,9 @@ public struct ResizeDraft: Equatable, Sendable {
     }
 
     /// `nil` se le dimensioni non cambiano.
-    public var operation: ImageOperation? {
+    public var targetSize: PixelSize? {
         let size = PixelSize(width: width, height: height)
-        return size == original ? nil : .resize(size)
+        return size == original ? nil : size
     }
 
     private static func scaled(_ value: Int, by factor: Double) -> Int {

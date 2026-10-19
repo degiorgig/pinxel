@@ -36,7 +36,7 @@ struct DropImageTests {
         let canvas = makeCanvas(readOnly: true)
         let image = NSImage(cgImage: TestImages.solid(width: 4, height: 4, red: 1, green: 0, blue: 0), size: NSSize(width: 4, height: 4))
         #expect(!canvas.insertImage(image, centeredAt: nil))
-        #expect(canvas.model.session.document.annotations.isEmpty)
+        #expect(canvas.model.session.document.userAnnotations.isEmpty)
     }
 
     @Test func canvasAcceptsImageDrags() {
@@ -60,12 +60,12 @@ struct DropGrowsCanvasTests {
         return canvas
     }
 
-    @Test func droppedImagePastTheEdgeGrowsTheCanvas() throws {
+    @Test func droppedImagePastTheRightEdgeGrowsTheCanvas() throws {
         let canvas = makeCanvas()
         let image = NSImage(cgImage: TestImages.solid(width: 200, height: 100, red: 1, green: 0, blue: 0), size: NSSize(width: 200, height: 100))
-        // Centro sull'angolo in basso a destra dell'immagine: metà oggetto è fuori.
+        // Centro sull'angolo in basso a destra della cattura: metà oggetto è fuori.
         let corner = canvas.viewPoint(fromDocument: CGPoint(x: 400, y: 300))
-        #expect(canvas.insertImage(image, centeredAt: corner, growsCanvas: true))
+        #expect(canvas.insertImage(image, centeredAt: corner))
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 500, height: 350))
         let annotation = try #require(session.document.annotations.last)
@@ -74,17 +74,24 @@ struct DropGrowsCanvasTests {
         // Un solo passo da annullare.
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
-        #expect(session.document.annotations.isEmpty)
+        #expect(session.document.userAnnotations.isEmpty)
     }
 
-    @Test func droppedImagePastTheTopLeftIsMovedInside() throws {
+    @Test func droppedImagePastTheTopLeftGrowsTheCanvasThatWay() throws {
         let canvas = makeCanvas()
         let image = NSImage(cgImage: TestImages.solid(width: 100, height: 80, red: 1, green: 0, blue: 0), size: NSSize(width: 100, height: 80))
-        #expect(canvas.insertImage(image, centeredAt: canvas.viewPoint(fromDocument: .zero), growsCanvas: true))
+        #expect(canvas.insertImage(image, centeredAt: canvas.viewPoint(fromDocument: .zero)))
         let session = canvas.model.session
-        #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
+        // L'oggetto sporge di 50×40 in alto a sinistra: la tela cresce da quella parte e la cattura scende a destra.
+        #expect(session.document.imageSize == PixelSize(width: 450, height: 340))
         let annotation = try #require(session.document.annotations.last)
         guard case .image(let data) = annotation.kind else { Issue.record("not an image"); return }
         #expect(data.rect == CGRect(x: 0, y: 0, width: 100, height: 80))
+        guard case .image(let capture) = session.document.annotations[0].kind else { Issue.record("no capture"); return }
+        #expect(capture.rect == CGRect(x: 50, y: 40, width: 400, height: 300))
+        session.undoManager.undo()
+        #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
+        guard case .image(let back) = session.document.annotations[0].kind else { Issue.record("no capture"); return }
+        #expect(back.rect == CGRect(x: 0, y: 0, width: 400, height: 300))
     }
 }
