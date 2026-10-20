@@ -43,6 +43,7 @@ grep -q "^Authority=Apple Development" <<<"$SIGNATURE" \
 
 mkdir -p "$OUT"
 STAGE=$(mktemp -d)
+trap 'rm -rf "$STAGE"' EXIT
 ditto -c -k --keepParent "$APP" "$OUT/Pinxel-$VERSION.zip"
 
 cp -R "$APP" "$STAGE/"

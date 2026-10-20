@@ -43,6 +43,8 @@ jobs:
       - name: Package tests
         # xcodebuild, not swift test: it compiles the String Catalogs on every Xcode.
         working-directory: PinxelKit
+        env:
+          TEST_RUNNER_CI: 'true'   # xcodebuild passes it to the tests as CI
         run: xcodebuild test -scheme PinxelKit-Package -destination 'platform=macOS' -derivedDataPath ../build/ci-package
 
       - name: Import the signing certificate
