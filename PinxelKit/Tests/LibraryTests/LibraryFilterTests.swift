@@ -74,6 +74,8 @@ struct LibraryFilterTests {
             _ = filter.apply(to: index, timeZone: utc)
             _ = index.allTags
         }
-        #expect(Date().timeIntervalSince(start) / 5 < 0.05)
+        // Shared CI runners are a few times slower than a Mac and their timing varies.
+        let limit = ProcessInfo.processInfo.environment["CI"] == nil ? 0.05 : 0.2
+        #expect(Date().timeIntervalSince(start) / 5 < limit)
     }
 }

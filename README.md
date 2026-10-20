@@ -58,6 +58,31 @@ DEVELOPMENT_TEAM = <your team ID>
 
 Package tests: `cd PinxelKit && swift test`.
 
+## Releasing
+
+Every pull request runs the package tests, builds the app and the UI tests, and checks that every string has a translation (`.github/workflows/ci.yml`).
+
+To publish version X.Y.Z:
+
+1. In a pull request, set `MARKETING_VERSION` to `X.Y.Z` (and bump `CURRENT_PROJECT_VERSION`) in `project.yml`, and add the release notes as `docs/releases/X.Y.Z.md`.
+2. After merging, tag `main` and push the tag:
+
+   ```sh
+   git tag -a vX.Y.Z -m "Pinxel X.Y.Z" && git push origin vX.Y.Z
+   ```
+
+The `Release` workflow then runs the tests, builds and signs the app, creates `Pinxel-X.Y.Z.dmg` and `Pinxel-X.Y.Z.zip`, and publishes the GitHub release with the notes and the SHA-256 checksums. `scripts/release/package.sh X.Y.Z` does the same packaging locally.
+
+Running the `Release` workflow by hand (Actions ▸ Release ▸ Run workflow, or `gh workflow run Release`) is a dry run: it builds and signs the version in `project.yml` and keeps the dmg and zip as a workflow artifact for 7 days, without publishing anything.
+
+The workflow signs with an Apple Development certificate, so the Screen Recording permission survives updates. It needs these repository settings:
+
+| Name | Kind | Value |
+|------|------|-------|
+| `MACOS_CERTIFICATE_P12` | secret | the certificate with its private key, exported as `.p12` and base64-encoded |
+| `MACOS_CERTIFICATE_PASSWORD` | secret | the `.p12` password |
+| `DEVELOPMENT_TEAM` | variable | the team ID of the certificate |
+
 ## License
 
 Pinxel is free for personal, non-commercial use: you may download, use and build it at no cost for private purposes.
