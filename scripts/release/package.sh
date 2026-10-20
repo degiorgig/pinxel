@@ -46,10 +46,12 @@ fi
 notarize() {
     [ "$NOTARIZE" = 1 ] || return 0
     echo "Notarizing $(basename "$1")…"
-    xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait --timeout 30m \
+    xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait --timeout 50m \
         --output-format json > "$STAGE/notary.json" || true
     if ! grep -q '"status" *: *"Accepted"' "$STAGE/notary.json"; then
         cat "$STAGE/notary.json" >&2
+        grep -q "Timeout" "$STAGE/notary.json" && fail "Apple has not finished notarizing $(basename "$1") yet; \
+the first submissions of a new app can take hours. Check with \`xcrun notarytool history\` and run again later"
         ID=$(sed -nE 's/.*"id" *: *"([^"]+)".*/\1/p' "$STAGE/notary.json" | head -1)
         [ -n "$ID" ] && xcrun notarytool log "$ID" "${NOTARY_ARGS[@]}" >&2 || true
         fail "notarization of $(basename "$1") was not accepted"
