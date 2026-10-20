@@ -20,7 +20,7 @@ menu col tasto destro nei moduli di PinxelKit). L'utente vuole l'app in
    destro, suggerimenti, valori di accessibilità, tipi di documento nel Finder.
 2. Con il Mac in un'altra lingua l'app è in inglese.
 3. Aggiungere una lingua in futuro significa solo tradurre i cataloghi.
-4. La libreria esistente dell'utente si ritrova intatta dopo l'aggiornamento.
+4. La vecchia cartella `Libreria` resta intatta: la nuova versione non la tocca.
 5. Nessun testo mostrato resta scritto come letterale fuori dai cataloghi
    (un test lo impedisce per le traduzioni mancanti).
 
@@ -33,7 +33,7 @@ menu col tasto destro nei moduli di PinxelKit). L'utente vuole l'app in
 | Lingua di riserva | Inglese |
 | Lingua dei testi nel codice | Inglese; le altre sono traduzioni |
 | Strumento | String Catalog (`.xcstrings`) di Xcode, uno per l'app e uno per ogni modulo che mostra testi |
-| Cartella della libreria | `~/Pictures/Pinxel/Library` in tutte le lingue, con migrazione da `Libreria` |
+| Cartella della libreria | `~/Pictures/Pinxel/Library` in tutte le lingue, senza migrazione da `Libreria` |
 | Nome predefinito dei file | Tradotto (`at` / `alle` / `um` / `à`); un modello personalizzato non cambia |
 | Formato `.pinxel` e indice della libreria | Invariati (versione 2): niente testi tradotti dentro i file |
 | Documenti del progetto | Spec, piani e prove a mano restano in italiano; README in inglese (PR #12) |
@@ -88,18 +88,9 @@ catalogo; l'impostazione resta la stessa.
 
 ## 4. Cartella della libreria
 
-- Il nome diventa `Library` (`LibraryStore`), uguale in tutte le lingue.
-- All'avvio, prima di leggere la libreria:
-  - esiste `Libreria` e non `Library` → la si rinomina con uno spostamento
-    (`FileManager.moveItem`), senza copiare: catture e `library.json` restano;
-  - esistono tutte e due (es. la versione precedente, riaperta dopo la migrazione, ha ricreato `Libreria`) →
-    si usa `Library` e ci si spostano le catture `.pinxel` di `Libreria` che non ci sono ancora (l'indice le
-    ritrova dai file); un nome già presente in `Library` resta in `Libreria`, niente si sovrascrive;
-  - non esiste nessuna → si crea `Library` come oggi;
-  - lo spostamento fallisce → in quella sessione si usa `Libreria` e lo si
-    scrive nel log (livello `.notice`).
-- La libreria degli UI test (`-PinxelUITestLibraryName`) non passa dalla
-  migrazione.
+- Il nome diventa `Library` (`LibraryStore`), uguale in tutte le lingue: è la cartella ufficiale.
+- Nessuna migrazione (scelta dell'utente): la vecchia `Libreria` non si sposta, non si legge e non si tocca;
+  la libreria della nuova versione parte da `Library`. Le catture vecchie si possono trascinare nel carosello.
 
 ## 5. Nome predefinito dei file
 
@@ -124,7 +115,6 @@ catalogo; l'impostazione resta la stessa.
 |------------|---------------|
 | Lingua del Mac non supportata | Inglese |
 | Testo senza traduzione in una lingua (non dovrebbe succedere: test §8) | Si vede l'inglese |
-| Migrazione della libreria impossibile | Si usa `Libreria`, log `.notice` |
 | Modello del nome file personalizzato | Invariato |
 | File `.pinxel` creati in un'altra lingua | Si aprono uguali: dentro non ci sono testi tradotti |
 
@@ -134,7 +124,6 @@ catalogo; l'impostazione resta la stessa.
 |------|------------------|
 | Cataloghi | Per ogni `.xcstrings` (app e moduli): ogni chiave ha `it`, `de`, `fr`, nessuna traduzione vuota o "da rivedere", stessi segnaposto (`%lld`, `%@`) in tutte le lingue |
 | Test esistenti | Dove confrontano testi mostrati (nomi in "Annulla", voci di menu, accessibilità) li confrontano con le costanti tradotte, non con parole italiane: passano su un Mac in qualunque lingua |
-| Migrazione | Solo `Libreria`, tutte e due, nessuna, spostamento impossibile |
 | Nome file | Predefinito nelle quattro lingue; modello personalizzato invariato; vecchio predefinito trattato come non personalizzato |
 | UI test | Avviati con `-AppleLanguages (it)`: quelli esistenti restano validi; uno nuovo in inglese controlla menu e barra; uno rapido in tedesco e in francese |
 | Prove a mano | `docs/manual-tests/localization.md`: le quattro lingue da Impostazioni di Sistema; libreria spostata con tutte le catture |
