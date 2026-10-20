@@ -92,7 +92,9 @@ catalogo; l'impostazione resta la stessa.
 - All'avvio, prima di leggere la libreria:
   - esiste `Libreria` e non `Library` → la si rinomina con uno spostamento
     (`FileManager.moveItem`), senza copiare: catture e `library.json` restano;
-  - esistono tutte e due → si usa `Library`, `Libreria` resta com'è;
+  - esistono tutte e due (es. la versione precedente, riaperta dopo la migrazione, ha ricreato `Libreria`) →
+    si usa `Library` e ci si spostano le catture `.pinxel` di `Libreria` che non ci sono ancora (l'indice le
+    ritrova dai file); un nome già presente in `Library` resta in `Libreria`, niente si sovrascrive;
   - non esiste nessuna → si crea `Library` come oggi;
   - lo spostamento fallisce → in quella sessione si usa `Libreria` e lo si
     scrive nel log (livello `.notice`).

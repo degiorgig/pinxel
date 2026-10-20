@@ -48,4 +48,23 @@ struct LibraryMigrationTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: root.path)
         #expect(LibraryStore.prepareFolder(in: root).lastPathComponent == "Libreria")
     }
+
+    @Test func capturesLeftInLibreriaJoinLibrary() throws {
+        // L'app vecchia, riaperta dopo la migrazione, ricrea Libreria e ci salva catture nuove: non devono sparire.
+        let root = try parent()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let legacy = root.appendingPathComponent("Libreria"), library = root.appendingPathComponent("Library")
+        for folder in [legacy, library] { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) }
+        try Data("new".utf8).write(to: legacy.appendingPathComponent("Nuova.pinxel"))
+        try Data("old".utf8).write(to: legacy.appendingPathComponent("Doppia.pinxel"))
+        try Data("kept".utf8).write(to: library.appendingPathComponent("Doppia.pinxel"))
+        try Data("index".utf8).write(to: legacy.appendingPathComponent("library.json"))
+        #expect(LibraryStore.prepareFolder(in: root).lastPathComponent == "Library")
+        #expect(FileManager.default.fileExists(atPath: library.appendingPathComponent("Nuova.pinxel").path))
+        #expect(!FileManager.default.fileExists(atPath: legacy.appendingPathComponent("Nuova.pinxel").path))
+        // Lo stesso nome in tutte e due: niente sovrascritture, la copia di Libreria resta dov'è.
+        #expect(try Data(contentsOf: library.appendingPathComponent("Doppia.pinxel")) == Data("kept".utf8))
+        #expect(FileManager.default.fileExists(atPath: legacy.appendingPathComponent("Doppia.pinxel").path))
+        #expect(!FileManager.default.fileExists(atPath: library.appendingPathComponent("library.json").path))
+    }
 }

@@ -40,12 +40,33 @@ public final class LibraryStore {
             .appendingPathComponent("Pinxel", isDirectory: true))
     }
 
+    /// Esistono tutte e due (es. una versione precedente riaperta dopo la migrazione ha ricreato `Libreria`):
+    /// le catture che `Library` non ha ancora la raggiungono, così non spariscono dal carosello (l'indice si
+    /// ricostruisce dai file). Un nome già presente in `Library` resta in `Libreria`: niente si sovrascrive.
+    private static func mergeCaptures(from legacy: URL, into folder: URL, fileManager: FileManager) {
+        guard let names = try? fileManager.contentsOfDirectory(atPath: legacy.path) else { return }
+        var moved = 0
+        for name in names where name.hasSuffix(".pinxel") && !fileManager.fileExists(atPath: folder.appendingPathComponent(name).path) {
+            do {
+                try fileManager.moveItem(at: legacy.appendingPathComponent(name), to: folder.appendingPathComponent(name))
+                moved += 1
+            } catch {
+                logger.notice("Cattura non spostata da Libreria: \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        if moved > 0 { logger.notice("\(moved) catture spostate da Libreria a Library") }
+    }
+
     /// La cartella dell'archivio dentro `parent`: `Library`, ricavata spostando `Libreria` la prima volta.
     /// Se lo spostamento non riesce si continua con `Libreria` (niente si perde, si riprova al prossimo avvio).
     public static func prepareFolder(in parent: URL, fileManager: FileManager = .default) -> URL {
         let folder = parent.appendingPathComponent(defaultFolderName, isDirectory: true)
         let legacy = parent.appendingPathComponent(legacyFolderName, isDirectory: true)
-        guard fileManager.fileExists(atPath: legacy.path), !fileManager.fileExists(atPath: folder.path) else { return folder }
+        guard fileManager.fileExists(atPath: legacy.path) else { return folder }
+        if fileManager.fileExists(atPath: folder.path) {
+            mergeCaptures(from: legacy, into: folder, fileManager: fileManager)
+            return folder
+        }
         do {
             try fileManager.moveItem(at: legacy, to: folder)
             return folder
