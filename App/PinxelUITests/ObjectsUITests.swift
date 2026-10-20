@@ -10,7 +10,7 @@ final class ObjectsUITests: XCTestCase {
         pasteboardGuard = PasteboardGuard()
         app = XCUIApplication()
         // Le coppie chiave-valore prima dei flag senza valore (vedi LibraryUITests); la libreria dei test non è quella vera.
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestLibraryName", UUID().uuidString, "-PinxelUITestOpenSample"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestLibraryName", UUID().uuidString, "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
         app.launch()
         app.activate()
     }

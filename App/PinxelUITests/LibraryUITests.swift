@@ -21,7 +21,7 @@ final class LibraryUITests: XCTestCase {
         let app = XCUIApplication()
         // Le coppie chiave-valore prima dei flag senza valore: AppKit legge gli argomenti a coppie, e un valore rimasto
         // spaiato verrebbe aperto come file (avviso modale che blocca l'app).
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestLibraryName", libraryName] + extra + ["-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestLibraryName", libraryName] + extra + ["-PinxelUITestFakeCapture"]
         app.launch()
         return app
     }

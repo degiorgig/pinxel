@@ -26,7 +26,7 @@ final class CaptureFlowUITests: XCTestCase {
 
     func testAreaCaptureOpensDocumentWindow() {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
         app.launch()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
         app.terminate()
@@ -35,7 +35,7 @@ final class CaptureFlowUITests: XCTestCase {
     func testClipboardOnlyPutsCaptureOnPasteboard() {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
         app.launch()
         let deadline = Date().addingTimeInterval(15)
         var png = NSPasteboard.general.data(forType: .png)
@@ -54,7 +54,7 @@ final class CaptureFlowUITests: XCTestCase {
     func testMenuBarIconOpensLastCaptureInEditor() throws {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
         // La cattura è finita quando arriva negli appunti.
@@ -77,7 +77,7 @@ final class CaptureFlowUITests: XCTestCase {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setData(rep.representation(using: .png, properties: [:]), forType: .png)
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
         statusItem.click()
@@ -88,7 +88,7 @@ final class CaptureFlowUITests: XCTestCase {
 
     func testMenuBarNewOpensAnEmptyEditor() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
         statusItem.click()

@@ -11,9 +11,10 @@ Native screen capture and annotation editor for macOS (SwiftUI + AppKit).
   - **Image:** crop, cut out a band, resize, border, shadow and padding.
   - **Objects:** the capture and any dropped image are ordinary objects. Move them, rotate them, bring them forward or send them back; the canvas always fits the content.
   - **Conveniences:** quick styles, smart guides, locked objects, undo and redo.
-- **Library:** every capture in `~/Pictures/Pinxel/Libreria`, with a strip under the editor (⌃⌘L), folders, tags and search.
+- **Library:** every capture in `~/Pictures/Pinxel/Library`, with a strip under the editor (⌃⌘L), folders, tags and search.
 - **Export:** PNG, JPEG, HEIC and PDF. You can also share the capture or drag it into another app.
 - **Format:** `.pinxel` documents keep editable annotations and the original images.
+- **Languages:** English, Italian, German and French (follows the Mac's language).
 
 ## Default shortcuts
 

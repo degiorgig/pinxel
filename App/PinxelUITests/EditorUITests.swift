@@ -15,7 +15,7 @@ final class EditorUITests: XCTestCase {
 
     private func launchWithSample() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
         app.launch()
         return app
     }
@@ -134,7 +134,7 @@ final class EditorUITests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         app.open(url)
         let canvas = app.images["pinxel.editor.canvas"]
@@ -152,7 +152,7 @@ final class EditorUITests: XCTestCase {
         let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
         let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
         app.launch()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
@@ -194,7 +194,7 @@ final class EditorUITests: XCTestCase {
         let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
         let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
         app.launch()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))

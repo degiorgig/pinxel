@@ -1,7 +1,7 @@
 # Pinxel — Localizzazione in quattro lingue — Design
 
 - **Data:** 2026-10-20
-- **Stato:** proposta, in revisione
+- **Stato:** approvata, implementata
 - **Ramo:** `feat/pinxel-localization` (parte da `main`, dopo la release 0.1.0)
 
 ## 1. Obiettivo
