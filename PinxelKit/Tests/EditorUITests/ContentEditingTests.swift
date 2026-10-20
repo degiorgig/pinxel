@@ -36,14 +36,14 @@ struct ContentEditingTests {
         images.stored[capture] = TestImages.quadrants(width: 400, height: 300)
         let result = ContentEditing.cropped([placed(CGRect(x: 0, y: 0, width: 400, height: 300), capture), step(CGPoint(x: 350, y: 250)), step(CGPoint(x: 100, y: 100))],
                                             to: PixelRect(x: 0, y: 0, width: 200, height: 150), images: images.image, add: images.add)
-        #expect(result.count == 2)                       // lo step a (350,250) era tutto fuori
+        #expect(result.count == 2)                       // the step at (350,250) was entirely outside
         #expect(rect(result[0]) == CGRect(x: 0, y: 0, width: 200, height: 150))
         guard case .image(let data) = result[0].kind, let pixels = images.stored[data.asset] else { Issue.record("no cropped image"); return }
         #expect(pixels.width == 200 && pixels.height == 150)
     }
 
     @Test func anImageWhoseOnlyShadowReachesTheCropIsDropped() {
-        // L'ombra (12 px in basso) entra nel riquadro, i pixel no: niente immagine con un riquadro nullo (non si salverebbe).
+        // The shadow (12 px below) enters the box, the pixels do not: no image with a null box (it would not be saved).
         let images = Images()
         var shadowed = placed(CGRect(x: 0, y: 0, width: 100, height: 100), ImageAssetRef(name: "s.png"))
         shadowed.style.shadow = Shadow()
@@ -61,7 +61,7 @@ struct ContentEditingTests {
     @Test func cropRespectsTheImageDensity() throws {
         let images = Images()
         let ref = ImageAssetRef(name: "retina.png")
-        images.stored[ref] = TestImages.quadrants(width: 800, height: 600)   // 2 pixel dell'immagine per pixel del documento
+        images.stored[ref] = TestImages.quadrants(width: 800, height: 600)   // 2 image pixels per document pixel
         let result = ContentEditing.cropped([placed(CGRect(x: 0, y: 0, width: 400, height: 300), ref)], to: PixelRect(x: 100, y: 0, width: 100, height: 300),
                                             images: images.image, add: images.add)
         guard case .image(let data) = result[0].kind, let pixels = images.stored[data.asset] else { Issue.record("no cropped image"); return }
@@ -103,7 +103,7 @@ struct ContentEditingTests {
         images.stored[ref] = TestImages.quadrants(width: 100, height: 100)
         let result = ContentEditing.cut([placed(CGRect(x: 0, y: 120, width: 100, height: 100), ref)], CutOut(axis: .horizontal, start: 100, length: 50),
                                         canvas: PixelSize(width: 100, height: 220), images: images.image, add: images.add)
-        // La fascia 100..<150 toglie 30 righe dall'immagine (120..<150); l'immagine sale a 100.
+        // The band 100..<150 removes 30 rows from the image (120..<150); the image rises to 100.
         #expect(rect(result[0]) == CGRect(x: 0, y: 100, width: 100, height: 70))
     }
 

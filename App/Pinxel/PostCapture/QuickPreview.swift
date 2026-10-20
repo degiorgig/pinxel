@@ -2,7 +2,7 @@ import AppCore
 import AppKit
 import UniformTypeIdentifiers
 
-/// Miniatura in basso a destra per 5 s: clic apre l'editor, trascinamento esporta un PNG.
+/// Thumbnail at bottom right for 5 s: click opens the editor, dragging exports a PNG.
 @MainActor
 final class QuickPreviewController {
     private let panel: NSPanel
@@ -31,7 +31,7 @@ final class QuickPreviewController {
         panel.contentView = view
     }
 
-    /// `stackIndex` impila le anteprime una sopra l'altra. Entra dal bordo destro, come esce.
+    /// `stackIndex` stacks the previews one above the other. It enters from the right edge, as it leaves.
     func show(stackIndex: Int = 0) {
         let target = frame(forStackIndex: stackIndex)
         if Self.reduceMotion {
@@ -48,7 +48,7 @@ final class QuickPreviewController {
         resume()
     }
 
-    /// Riposiziona l'anteprima quando quelle sotto di lei spariscono.
+    /// Repositions the preview when those below it disappear.
     func move(toStackIndex index: Int) {
         guard !finished else { return }
         let target = frame(forStackIndex: index)
@@ -90,7 +90,7 @@ final class QuickPreviewController {
         finished = true
         pause()
         open ? onOpen() : onExpire()
-        // Alla scadenza torna da dove è venuta; aprendola si dissolve sul posto.
+        // On expiry it returns where it came from; when opened it dissolves in place.
         let exit = open || Self.reduceMotion ? panel.frame : panel.frame.offsetBy(dx: panel.frame.width + Self.margin, dy: 0)
         animate(duration: open ? 0.15 : 0.3, {
             self.panel.animator().setFrame(exit, display: true)
@@ -130,7 +130,7 @@ final class QuickPreviewView: NSView, NSDraggingSource {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        // Un piccolo movimento durante il clic non avvia il trascinamento.
+        // A small movement during the click does not start the drag.
         guard !dragged, let start = mouseDownLocation,
               hypot(event.locationInWindow.x - start.x, event.locationInWindow.y - start.y) >= 4,
               let url = writeTemporaryPNG() else { return }
@@ -149,7 +149,7 @@ final class QuickPreviewView: NSView, NSDraggingSource {
     }
 
     private func writeTemporaryPNG() -> URL? {
-        // Cartella unica per ogni trascinamento: due catture nello stesso secondo non si sovrascrivono.
+        // Unique folder for each drag: two captures in the same second do not overwrite each other.
         let name = FileNamer.baseName(template: FileNamer.defaultTemplate, date: Date())
         guard let url = try? TemporaryFiles.uniqueURL(fileName: "\(name).png"),
               let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]),

@@ -2,7 +2,7 @@ import DocumentModel
 import Foundation
 import Observation
 
-/// Ultimi 8 stili usati per strumento, salvati nelle preferenze (spec §6.1). Condiviso da tutte le finestre.
+/// Last 8 styles used per tool, saved in the preferences (spec §6.1). Shared by all windows.
 @MainActor
 @Observable
 public final class QuickStyleStore {
@@ -27,7 +27,7 @@ public final class QuickStyleStore {
         styles[tool] ?? []
     }
 
-    /// Mette `style` in cima alla lista dello strumento, senza doppioni.
+    /// Puts `style` at the top of the tool's list, without duplicates.
     public func record(_ style: Style, for tool: EditorTool) {
         var list = styles(for: tool)
         list.removeAll { $0 == style }

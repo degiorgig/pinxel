@@ -3,7 +3,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Pannello proprietà: stile e opzioni dello strumento attivo o della selezione (spec §6.1).
+/// Properties panel: style and options of the active tool or of the selection (spec §6.1).
 struct InspectorView: View {
     @Bindable var model: EditorModel
 

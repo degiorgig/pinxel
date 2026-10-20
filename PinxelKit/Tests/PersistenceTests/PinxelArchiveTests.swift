@@ -37,7 +37,7 @@ struct PinxelArchiveTests {
         let contents = try PinxelArchive.read(PinxelArchive.write(document: document, images: files, thumbnail: Data(), appVersion: "0.1.0"))
         #expect(contents.document == document)
         #expect(contents.images[pasted] != nil)
-        // L'immagine di prima non serve più e non viene salvata.
+        // The previous image is no longer needed and is not saved.
         #expect(contents.images[TestDocuments.background] == nil)
     }
 
@@ -91,7 +91,7 @@ struct PinxelArchiveTests {
             _ = try PinxelArchive.read(data)
             Issue.record("expected invalidDocument")
         } catch PinxelArchiveError.invalidDocument {
-            // atteso
+            // expected
         }
         #expect(PinxelArchive.recoverBackground(data) == background)
         #expect(PinxelArchive.recoverBackground(Data("not a zip".utf8)) == nil)

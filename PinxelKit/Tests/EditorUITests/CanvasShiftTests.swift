@@ -54,7 +54,7 @@ struct CanvasShiftTests {
     }
 
     @Test func panningASmallOffCentreCanvasDoesNotRecenterIt() {
-        // Dopo un adattamento la tela piccola resta dov'era: il primo scorrimento non deve farla saltare al centro.
+        // After a fit the small canvas stays where it was: the first scroll must not make it jump to the center.
         var viewport = Viewport(documentScale: 1, zoom: 1, origin: CGPoint(x: 30, y: 40))
         viewport.pan(by: CGSize(width: 5, height: 5), canvasSize: CGSize(width: 100, height: 100), in: CGSize(width: 1000, height: 800))
         #expect(viewport.origin == CGPoint(x: 30, y: 40))
@@ -66,7 +66,7 @@ struct CanvasShiftTests {
         #expect(viewport.origin == CGPoint(x: -150, y: 20))
     }
 
-    /// Sposta la cattura a sinistra: la tela si adatta e resta piccola, fuori centro.
+    /// Moves the capture to the left: the canvas fits and stays small, off-center.
     private func moveCaptureLeft(_ canvas: CanvasView) throws {
         let session = canvas.model.session
         let capture = try #require(session.document.annotations.first { $0.id == TestDocuments.captureID })
@@ -80,7 +80,7 @@ struct CanvasShiftTests {
         let before = canvas.documentPoint(fromView: center)
         canvas.zoomOut(nil)
         let after = canvas.documentPoint(fromView: center)
-        // La tela rimpicciolita entra ancora nella vista: niente salto al centro.
+        // The shrunken canvas still fits in the view: no jump to the center.
         #expect(abs(after.x - before.x) < 0.5 && abs(after.y - before.y) < 0.5)
     }
 
@@ -90,7 +90,7 @@ struct CanvasShiftTests {
         canvas.model.session.perform(AddAnnotations([text]))
         canvas.beginTextEditing(TextEditRequest(annotation: text, isNew: false))
         try moveCaptureLeft(canvas)
-        // Il riquadro si ridispone a ogni layout (finestra ridimensionata, zoom): lì si vedeva lo scarto.
+        // The box is laid out again on every layout (window resized, zoom): that is where the offset showed.
         canvas.needsLayout = true
         canvas.layoutSubtreeIfNeeded()
         let editor = try #require(canvas.textEditor)
@@ -101,7 +101,7 @@ struct CanvasShiftTests {
     }
 
     @Test func aNewTextIsAddedWhereItWasStartedAfterTheCanvasAdapts() throws {
-        // Lo step sta 250×150 pixel a destra e in basso del testo: dopo l'adattamento la distanza resta quella.
+        // The step sits 250×150 pixels to the right and below the text: after the fit the distance stays the same.
         let canvas = makeCanvas()
         let text = Annotation(id: TestDocuments.id(3), kind: .text(TextData(rect: CGRect(x: 50, y: 50, width: 120, height: 40), text: RichText(""))))
         canvas.beginTextEditing(TextEditRequest(annotation: text, isNew: true))

@@ -2,7 +2,7 @@ import AppKit
 import DocumentModel
 
 extension RGBA {
-    /// Componenti sRGB del colore (i selettori di sistema possono restituire altri spazi colore).
+    /// The color's sRGB components (system pickers may return other color spaces).
     public init(nsColor: NSColor) {
         let color = nsColor.usingColorSpace(.sRGB) ?? .black
         self.init(red: Double(color.redComponent), green: Double(color.greenComponent),

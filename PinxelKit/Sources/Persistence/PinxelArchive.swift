@@ -16,10 +16,10 @@ public struct PinxelManifest: Codable, Equatable, Sendable {
 
 public struct PinxelFileContents: Sendable {
     public var document: PinxelDocument
-    /// Byte codificati (PNG/HEIC) di ogni immagine referenziata.
+    /// Encoded bytes (PNG/HEIC) of every referenced image.
     public var images: [ImageAssetRef: Data]
     public var thumbnail: Data?
-    /// Il file è di una versione più recente: va aperto in sola lettura.
+    /// The file is from a newer version: it must be opened read-only.
     public var isReadOnly: Bool
 
     public init(document: PinxelDocument, images: [ImageAssetRef: Data], thumbnail: Data? = nil, isReadOnly: Bool = false) {
@@ -69,17 +69,17 @@ public enum PinxelArchive {
         return try zip.finish()
     }
 
-    /// Solo il documento, per l'indice della libreria: non legge le immagini.
+    /// Only the document, for the library index: does not read the images.
     public static func readDocument(_ data: Data, limits: ZipLimits = .default) throws -> PinxelDocument {
         try manifestAndDocument(ZipReader(data, limits: limits)).1
     }
 
-    /// La miniatura salvata nel file, se c'è.
+    /// The thumbnail saved in the file, if any.
     public static func readThumbnail(_ data: Data) -> Data? {
         try? ZipReader(data).data(for: "thumbnail.png")
     }
 
-    /// Manifest e documento validati, senza leggere le immagini. Un file della versione 1 torna anche come `legacy`.
+    /// Manifest and document validated, without reading the images. A version 1 file also comes back as `legacy`.
     private static func manifestAndDocument(_ zip: ZipReader) throws -> (PinxelManifest, PinxelDocument, LegacyDocumentV1?) {
         let decoder = JSONDecoder()
 
@@ -135,7 +135,7 @@ public enum PinxelArchive {
             } catch ZipError.missingEntry(_) {
                 throw PinxelArchiveError.missingAsset(ref.name)
             }
-            // Controllo sull'intestazione: niente decodifica di immagini enormi o incoerenti.
+            // Header check: no decoding of huge or inconsistent images.
             guard let size = ImageCodec.pixelSize(of: data),
                   (1...limit).contains(size.width), (1...limit).contains(size.height) else {
                 throw PinxelArchiveError.invalidDocument("invalid or too large image: \(ref.name)")
@@ -147,7 +147,7 @@ public enum PinxelArchive {
                   let size = ImageCodec.pixelSize(of: backgroundData), size == legacy.canvasSize else {
                 throw PinxelArchiveError.invalidDocument("the background does not match the document size")
             }
-            // Senza operazioni lo sfondo resta il file che è; altrimenti lo si elabora una volta e lo si salva come PNG.
+            // With no operations the background stays the file it is; otherwise it is processed once and saved as PNG.
             if !legacy.imageOperations.isEmpty {
                 guard let processed = BackgroundProcessor.process(try ImageCodec.decode(backgroundData), operations: legacy.imageOperations) else {
                     throw PinxelArchiveError.invalidDocument("the background cannot be processed")
@@ -162,7 +162,7 @@ public enum PinxelArchive {
         return PinxelFileContents(document: document, images: images, thumbnail: thumbnail, isReadOnly: manifest.version > currentVersion)
     }
 
-    /// Prova a estrarre solo lo sfondo da un file danneggiato.
+    /// Tries to extract just the background from a damaged file.
     public static func recoverBackground(_ data: Data) -> Data? {
         guard let zip = try? ZipReader(data) else { return nil }
         for name in ["background.png", "background.heic"] {

@@ -4,12 +4,12 @@ import Foundation
 import ImageIO
 import Rendering
 
-/// Immagini del documento più quelle incollate in questa sessione; le incollate si salvano con il documento
-/// (`PinxelArchive.write` scrive solo quelle ancora usate).
+/// Document images plus those pasted in this session; pasted ones are saved with the document
+/// (`PinxelArchive.write` writes only those still in use).
 public final class AssetStore: AssetProvider {
     private let base: any AssetProvider
     private var addedImages: [ImageAssetRef: CGImage] = [:]
-    /// PNG delle immagini incollate, da aggiungere all'archivio al salvataggio.
+    /// PNGs of the pasted images, to add to the archive on save.
     public private(set) var addedData: [ImageAssetRef: Data] = [:]
 
     public init(base: any AssetProvider) {
@@ -20,7 +20,7 @@ public final class AssetStore: AssetProvider {
         addedImages[ref] ?? base.image(for: ref)
     }
 
-    /// Aggiunge un'immagine come `assets/<uuid>.png`; `nil` se non si riesce a codificarla.
+    /// Adds an image as `assets/<uuid>.png`; `nil` if it cannot be encoded.
     public func add(_ image: CGImage, id: UUID = UUID()) -> ImageAssetRef? {
         guard let data = Self.png(image) else { return nil }
         let ref = ImageAssetRef(name: "assets/\(id.uuidString).png")
@@ -29,13 +29,13 @@ public final class AssetStore: AssetProvider {
         return ref
     }
 
-    /// PNG di un'immagine disponibile qui, per portarla negli appunti.
+    /// PNG of an image available here, to put it on the pasteboard.
     public func pngData(for ref: ImageAssetRef) -> Data? {
         if let data = addedData[ref] { return data }
         return image(for: ref).flatMap(Self.png)
     }
 
-    /// Aggiunge con lo stesso nome un'immagine arrivata dagli appunti da un altro documento.
+    /// Adds under the same name an image that came from the pasteboard from another document.
     @discardableResult
     public func add(pngData data: Data, as ref: ImageAssetRef) -> Bool {
         guard image(for: ref) == nil else { return true }

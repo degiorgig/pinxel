@@ -1,7 +1,7 @@
 import Foundation
 
-/// Nomi dei comandi mostrati in "Annulla …"/"Ripeti …", tradotti. Ogni comando del codice prende il nome da qui,
-/// così un nome è scritto (e tradotto) in un punto solo.
+/// Names of the commands shown in "Undo …"/"Redo …", translated. Every command in the code takes its name from here,
+/// so a name is written (and translated) in one place only.
 public enum CommandName {
     private static func text(_ key: String.LocalizationValue, _ comment: StaticString) -> String {
         String(localized: key, bundle: .module, comment: comment)

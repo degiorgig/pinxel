@@ -22,7 +22,7 @@ struct HardeningTests {
     }
 
     @Test func magnifierWithSourcePartlyOutsideIsNotStretched() throws {
-        // Sorgente 20×10 a cavallo del bordo destro: solo la metà sinistra (verde) esiste.
+        // 20×10 source straddling the right edge: only the left half (green) exists.
         let magnifier = Annotation(kind: .magnifier(MagnifierData(
             source: CGRect(x: 390, y: 10, width: 20, height: 10),
             target: CGRect(x: 40, y: 200, width: 40, height: 20),

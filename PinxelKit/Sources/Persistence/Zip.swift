@@ -41,7 +41,7 @@ private extension Data {
     }
 }
 
-/// Scrittore ZIP minimale (niente ZIP64, niente cifratura). Nomi in UTF-8.
+/// Minimal ZIP writer (no ZIP64, no encryption). Names in UTF-8.
 public struct ZipWriter {
     public enum Method: UInt16 {
         case store = 0
@@ -66,13 +66,13 @@ public struct ZipWriter {
         guard data.count < Int(UInt32.max), payload.count < Int(UInt32.max), output.count < Int(UInt32.max),
               nameBytes.count < Int(UInt16.max) else { throw ZipError.archiveTooLarge }
         let offset = UInt32(output.count)
-        let dosDate: UInt16 = 0x21 // 1 gennaio 1980
+        let dosDate: UInt16 = 0x21 // 1 January 1980
 
         output.appendUInt32(Signature.localHeader)
-        output.appendUInt16(20)            // versione necessaria
-        output.appendUInt16(0x0800)        // flag: nomi UTF-8
+        output.appendUInt16(20)            // version needed
+        output.appendUInt16(0x0800)        // flag: UTF-8 names
         output.appendUInt16(actualMethod.rawValue)
-        output.appendUInt16(0)             // ora
+        output.appendUInt16(0)             // time
         output.appendUInt16(dosDate)
         output.appendUInt32(crc)
         output.appendUInt32(UInt32(payload.count))
@@ -83,8 +83,8 @@ public struct ZipWriter {
         output.append(payload)
 
         central.appendUInt32(Signature.centralHeader)
-        central.appendUInt16(20)           // versione creatrice
-        central.appendUInt16(20)           // versione necessaria
+        central.appendUInt16(20)           // creator version
+        central.appendUInt16(20)           // version needed
         central.appendUInt16(0x0800)
         central.appendUInt16(actualMethod.rawValue)
         central.appendUInt16(0)
@@ -94,10 +94,10 @@ public struct ZipWriter {
         central.appendUInt32(UInt32(data.count))
         central.appendUInt16(UInt16(nameBytes.count))
         central.appendUInt16(0)            // extra
-        central.appendUInt16(0)            // commento
-        central.appendUInt16(0)            // disco
-        central.appendUInt16(0)            // attributi interni
-        central.appendUInt32(0)            // attributi esterni
+        central.appendUInt16(0)            // comment
+        central.appendUInt16(0)            // disk
+        central.appendUInt16(0)            // internal attributes
+        central.appendUInt32(0)            // external attributes
         central.appendUInt32(offset)
         central.append(nameBytes)
         count += 1
@@ -130,7 +130,7 @@ public struct ZipEntry: Equatable, Sendable {
     let localHeaderOffset: Int
 }
 
-/// Lettore ZIP difensivo: valida nomi, numero di voci, dimensioni dichiarate e checksum.
+/// Defensive ZIP reader: validates names, entry count, declared sizes and checksum.
 public struct ZipReader {
     public let entries: [ZipEntry]
     private let reader: ByteReader

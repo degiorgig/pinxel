@@ -2,9 +2,9 @@ import AppKit
 import EditorUI
 import SwiftUI
 
-/// Menu dell'editor. Le voci inviano azioni alla catena dei responder (tela, finestra o documento in primo
-/// piano); lo stato di `EditorFocus` disattiva quelle che non possono fare nulla e dà il nome ad Annulla.
-/// Senza editor in primo piano, o mentre si scrive un testo, le voci di modifica restano attive per i campi di testo.
+/// Editor menu. The items send actions to the responder chain (canvas, window or foreground
+/// document); the state of `EditorFocus` disables those that can do nothing and supplies the name for Undo.
+/// With no editor in the foreground, or while text is being typed, the edit items stay enabled for text fields.
 struct EditorCommands: Commands {
     @ObservedObject private var focus = EditorFocus.shared
     @AppStorage("libraryStripVisible") private var stripVisible = true
@@ -43,7 +43,7 @@ struct EditorCommands: Commands {
             Button("Cut") { send(#selector(NSText.cut(_:))) }
                 .keyboardShortcut("x")
                 .disabled(!state.allows(state.hasEditableSelection))
-            // Senza selezione Copia copia l'immagine intera: sempre attiva.
+            // With no selection Copy copies the whole image: always enabled.
             Button("Copy") { send(#selector(NSText.copy(_:))) }
                 .keyboardShortcut("c")
             Button("Paste") { send(#selector(NSText.paste(_:))) }
@@ -73,8 +73,8 @@ struct EditorCommands: Commands {
             }
             .disabled(!state.hasEditor)
         }
-        // Grassetto, corsivo e sottolineato sulle parole selezionate mentre si scrive sulla tela. Al posto del
-        // menu Formato di sistema, i cui Più grande/Più piccolo (⌘+/⌘−) si scontrerebbero con lo zoom.
+        // Bold, italic and underline on the selected words while typing on the canvas. In place of the
+        // system Format menu, whose Bigger/Smaller (⌘+/⌘−) would clash with zoom.
         CommandMenu("Format") {
             Group {
                 Button("Bold") { send(#selector(PinxelTextView.toggleBoldface(_:))) }

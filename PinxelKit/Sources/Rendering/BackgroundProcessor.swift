@@ -2,7 +2,7 @@ import CoreGraphics
 import DocumentModel
 
 public enum BackgroundProcessor {
-    /// Applica le operazioni in sequenza; `nil` se un'operazione produce un'immagine vuota.
+    /// Applies the operations in sequence; `nil` if an operation produces an empty image.
     public static func process(_ image: CGImage, operations: [ImageOperation]) -> CGImage? {
         var current = image
         for operation in operations {
@@ -29,7 +29,7 @@ public enum BackgroundProcessor {
         case .extend:
             let result = operation.resultSize(from: size)
             guard let ctx = ImageDrawing.makeContext(width: result.width, height: result.height) else { return nil }
-            // Il contesto ha origine in basso a sinistra: l'immagine va in alto.
+            // The context has its origin at the bottom left: the image goes at the top.
             ctx.draw(image, in: CGRect(x: 0, y: result.height - size.height, width: size.width, height: size.height))
             return ctx.makeImage()
         }

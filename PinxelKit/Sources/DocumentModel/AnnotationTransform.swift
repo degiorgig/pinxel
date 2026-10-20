@@ -1,8 +1,8 @@
 import Foundation
 
 extension Annotation {
-    /// Copia dell'annotazione con tutta la geometria trasformata da `mapping`.
-    /// Stile e rotazione restano invariati.
+    /// Copy of the annotation with all the geometry transformed by `mapping`.
+    /// Style and rotation stay unchanged.
     public func transformed(by mapping: PointMapping) -> Annotation {
         func rect(_ r: CGRect) -> CGRect {
             let r = r.standardized

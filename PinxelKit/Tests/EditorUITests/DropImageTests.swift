@@ -63,7 +63,7 @@ struct DropGrowsCanvasTests {
     @Test func droppedImagePastTheRightEdgeGrowsTheCanvas() throws {
         let canvas = makeCanvas()
         let image = NSImage(cgImage: TestImages.solid(width: 200, height: 100, red: 1, green: 0, blue: 0), size: NSSize(width: 200, height: 100))
-        // Centro sull'angolo in basso a destra della cattura: metà oggetto è fuori.
+        // Center on the bottom-right corner of the capture: half the object is outside.
         let corner = canvas.viewPoint(fromDocument: CGPoint(x: 400, y: 300))
         #expect(canvas.insertImage(image, centeredAt: corner))
         let session = canvas.model.session
@@ -71,7 +71,7 @@ struct DropGrowsCanvasTests {
         let annotation = try #require(session.document.annotations.last)
         guard case .image(let data) = annotation.kind else { Issue.record("not an image"); return }
         #expect(data.rect == CGRect(x: 300, y: 250, width: 200, height: 100))
-        // Un solo passo da annullare.
+        // A single step to undo.
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
         #expect(session.document.userAnnotations.isEmpty)
@@ -82,7 +82,7 @@ struct DropGrowsCanvasTests {
         let image = NSImage(cgImage: TestImages.solid(width: 100, height: 80, red: 1, green: 0, blue: 0), size: NSSize(width: 100, height: 80))
         #expect(canvas.insertImage(image, centeredAt: canvas.viewPoint(fromDocument: .zero)))
         let session = canvas.model.session
-        // L'oggetto sporge di 50×40 in alto a sinistra: la tela cresce da quella parte e la cattura scende a destra.
+        // The object sticks out 50×40 at the top left: the canvas grows that way and the capture moves down and to the right.
         #expect(session.document.imageSize == PixelSize(width: 450, height: 340))
         let annotation = try #require(session.document.annotations.last)
         guard case .image(let data) = annotation.kind else { Issue.record("not an image"); return }

@@ -128,7 +128,7 @@ struct ViewportTests {
         var viewport = Viewport(documentScale: 1)
         let canvas = CGSize(width: 800, height: 5000), view = CGSize(width: 1000, height: 800)
         viewport.actualSize(canvasSize: canvas, in: view)
-        // In larghezza entra: resta centrata.
+        // In width it fits: it stays centered.
         viewport.pan(by: CGSize(width: 300, height: 100_000), canvasSize: canvas, in: view)
         #expect(viewport.origin == CGPoint(x: 100, y: 20))
         viewport.pan(by: CGSize(width: 0, height: -100_000), canvasSize: canvas, in: view)

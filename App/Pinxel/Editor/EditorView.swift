@@ -2,20 +2,20 @@ import EditorUI
 import Library
 import SwiftUI
 
-/// Contenuto della finestra: tela al centro, strumenti nella toolbar nativa, proprietà a destra.
+/// Window content: canvas in the center, tools in the native toolbar, properties on the right.
 struct EditorView: View {
     @Bindable var model: EditorModel
     let stripState: LibraryStripState
-    /// File della finestra, letto a ogni disegno: un documento senza titolo può diventare un file.
+    /// The window's file, read at every draw: an untitled document can become a file.
     let currentURL: () -> URL?
-    /// La finestra che ospita questa vista: il clic sul carosello decide su di lei, non sulla finestra in primo piano.
+    /// The window hosting this view: a click on the carousel decides about it, not about the frontmost window.
     let window: () -> NSWindow?
     @AppStorage("libraryStripVisible") private var stripVisible = true
 
     var body: some View {
         VStack(spacing: 0) {
             CanvasRepresentable(model: model)
-                // Cattura cambiata nella stessa finestra: una tela nuova, non quella vecchia con un altro modello.
+                // Capture changed in the same window: a new canvas, not the old one with another model.
                 .id(ObjectIdentifier(model))
                 .frame(minWidth: 320, minHeight: 240)
                 .overlay(alignment: .bottomTrailing) {
@@ -60,8 +60,8 @@ struct EditorView: View {
                     .disabled(model.session.isReadOnly)
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
-                    // Gli stessi comandi di Disponi, a portata di mano: le scorciatoie con [ e ] sono scomode
-                    // sulle tastiere che li fanno con ⌥.
+                    // The same commands as Arrange, at hand: the shortcuts with [ and ] are awkward
+                    // on keyboards that produce them with ⌥.
                     let canArrange = EditorMenuState(model: model).hasEditableSelection
                     Button {
                         model.canvas?.bringToFront(nil)
@@ -113,7 +113,7 @@ struct CanvasRepresentable: NSViewRepresentable {
 }
 
 
-/// Avviso sopra la tela per i documenti di una versione più recente (spec §8, §10).
+/// Banner above the canvas for documents from a newer version (spec §8, §10).
 private struct ReadOnlyBanner: View {
     var body: some View {
         Label("Created with a newer version of Pinxel: you can view and export it, but not edit it.", systemImage: "lock.fill")

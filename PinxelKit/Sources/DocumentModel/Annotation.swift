@@ -4,7 +4,7 @@ public struct Annotation: Identifiable, Equatable, Sendable {
     public let id: UUID
     public var kind: Kind
     public var style: Style
-    /// Radianti, in senso orario sullo schermo, attorno al centro di `bounds`.
+    /// Radians, clockwise on screen, around the center of `bounds`.
     public var rotation: Double
     public var isLocked: Bool
 
@@ -31,7 +31,7 @@ extension Annotation {
         case highlight(HighlightData)
         case pen(PenData)
         case image(PlacedImageData)
-        /// Tipo non riconosciuto (file di una versione futura): conservato e risalvato identico.
+        /// Unrecognized type (file from a future version): preserved and saved back unchanged.
         case unknown(type: String, raw: JSONValue)
 
         public var typeName: String {
@@ -53,7 +53,7 @@ extension Annotation {
         }
     }
 
-    /// Rettangolo normalizzato che contiene la geometria (senza rotazione né spessore del tratto).
+    /// Normalized rectangle containing the geometry (without rotation or stroke thickness).
     public var bounds: CGRect {
         switch kind {
         case .arrow(let data): .bounding([data.line.start, data.line.end])

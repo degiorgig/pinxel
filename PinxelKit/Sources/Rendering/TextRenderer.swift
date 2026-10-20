@@ -38,7 +38,7 @@ enum TextRenderer {
         }
     }
 
-    /// Disegna il testo dall'alto verso il basso dentro `rect` (contesto capovolto del documento).
+    /// Draws the text top to bottom inside `rect` (the document's flipped context).
     static func draw(_ text: RichText, in rect: CGRect, inset: CGFloat, ctx: CGContext) {
         let frameRect = rect.standardized.insetBy(dx: inset, dy: inset)
         guard frameRect.width > 0, frameRect.height > 0 else { return }

@@ -98,7 +98,7 @@ enum ShapeRenderer {
         }
     }
 
-    /// Con `smoothing > 0` i punti sono uniti da curve quadratiche passanti per i punti medi.
+    /// With `smoothing > 0` the points are joined by quadratic curves passing through the midpoints.
     static func smoothedPath(_ points: [CGPoint], smoothing: Double) -> CGPath {
         let path = CGMutablePath()
         guard let first = points.first else { return path }

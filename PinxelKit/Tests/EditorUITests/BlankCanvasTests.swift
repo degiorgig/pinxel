@@ -17,7 +17,7 @@ struct BlankCanvasTests {
         return canvas
     }
 
-    /// Il documento di Nuovo: nessun oggetto, tela vuota.
+    /// The New document: no objects, empty canvas.
     private var blank: PinxelDocument {
         PinxelDocument(canvasSize: PixelSize(width: 0, height: 0), scale: 1, metadata: CaptureMetadata())
     }
@@ -35,7 +35,7 @@ struct BlankCanvasTests {
         let shape = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 10, y: 10, width: 40, height: 30), shape: .rectangle)))
         canvas.model.session.perform(AddAnnotations([shape]))
         #expect(!canvas.isBlank)
-        // La tela si è adattata al rettangolo, tratto compreso.
+        // The canvas fitted to the rectangle, stroke included.
         #expect(canvas.model.session.document.canvasSize == PixelSize(width: 44, height: 34))
     }
 

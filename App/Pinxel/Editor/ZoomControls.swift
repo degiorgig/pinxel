@@ -1,8 +1,8 @@
 import EditorUI
 import SwiftUI
 
-/// Comandi sopra la tela, separati dagli strumenti: riduci, percentuale (clic adatta, doppio clic 100%), ingrandisci
-/// e la manina per spostare la vista trascinando.
+/// Controls above the canvas, separate from the tools: zoom out, percentage (click fits, double-click 100%), zoom in
+/// and the hand to move the view by dragging.
 struct ZoomControls: View {
     @Bindable var model: EditorModel
 

@@ -44,7 +44,7 @@ private struct ExportOptionsView: View {
     }
 }
 
-/// Esporta… (spec §9): pannello di salvataggio con formato, qualità e scala; passa da `Exporter`.
+/// Export… (spec §9): save panel with format, quality and scale; goes through `Exporter`.
 @MainActor
 enum ExportPanel {
     static func run(document: PinxelDocument, assets: any AssetProvider, suggestedName: String, window: NSWindow) async {

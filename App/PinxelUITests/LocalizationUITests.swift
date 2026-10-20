@@ -1,6 +1,6 @@
 import XCTest
 
-/// L'app nelle quattro lingue: i menu e la barra seguono la lingua scelta all'avvio; una lingua non tradotta dà l'inglese.
+/// The app in four languages: menus and bar follow the language chosen at launch; an untranslated language gives English.
 final class LocalizationUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
@@ -17,7 +17,7 @@ final class LocalizationUITests: XCTestCase {
     private func assertMenus(_ language: String, arrange: String, tool: String, file: StaticString = #filePath, line: UInt = #line) {
         let app = launch(language)
         defer { app.terminate() }
-        // La finestra in ogni lingua, per controllare a occhio etichette tagliate (tedesco e francese sono più lunghi).
+        // The window in every language, to check by eye for truncated labels (German and French are longer).
         let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
         shot.name = "editor-\(language)"
         shot.lifetime = .keepAlways

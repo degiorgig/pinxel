@@ -1,6 +1,6 @@
 import Foundation
 
-/// Combinazione di tasti per le scorciatoie globali (codice tasto + modificatori Carbon).
+/// Key combination for global shortcuts (key code + Carbon modifiers).
 public struct KeyCombo: Codable, Hashable, Sendable {
     public static let control: UInt32 = 0x1000
     public static let option: UInt32 = 0x0800
@@ -15,8 +15,8 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         self.modifiers = modifiers
     }
 
-    /// Una scorciatoia globale senza ⌃, ⌥ o ⌘ ruberebbe il tasto a tutte le app (anche ⇧1 = "!").
-    /// Fanno eccezione i tasti funzione, che non scrivono testo.
+    /// A global shortcut without ⌃, ⌥ or ⌘ would steal the key from all apps (even ⇧1 = "!").
+    /// Function keys are the exception, as they do not type text.
     public var hasModifier: Bool {
         if Self.functionKeys.contains(keyCode) { return true }
         return modifiers & (Self.control | Self.option | Self.command) != 0
@@ -34,7 +34,7 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         return text + (Self.keyNames[keyCode] ?? String(localized: "Key \(Int(keyCode))", bundle: .module, comment: "Unnamed key code in a shortcut"))
     }
 
-    /// Da `NSEvent.ModifierFlags.rawValue` ai modificatori Carbon.
+    /// From `NSEvent.ModifierFlags.rawValue` to Carbon modifiers.
     public static func carbonModifiers(fromCocoa flags: UInt) -> UInt32 {
         var result: UInt32 = 0
         if flags & (1 << 18) != 0 { result |= control }
@@ -44,11 +44,11 @@ public struct KeyCombo: Codable, Hashable, Sendable {
         return result
     }
 
-    /// Carattere per la colonna nativa delle scorciatoie nei menu; `nil` se il tasto non ne ha uno.
+    /// Character for the native shortcut column in menus; `nil` if the key has none.
     public var menuKeyEquivalent: String? {
         let functionKeyOrder: [UInt32] = [0x7A, 0x78, 0x63, 0x76, 0x60, 0x61, 0x62, 0x64, 0x65, 0x6D, 0x67, 0x6F]
         if let index = functionKeyOrder.firstIndex(of: keyCode) {
-            // NSF1FunctionKey = 0xF704, poi consecutivi fino a F12.
+            // NSF1FunctionKey = 0xF704, then consecutive up to F12.
             return String(UnicodeScalar(0xF704 + UInt32(index))!)
         }
         if keyCode == 0x31 { return " " }

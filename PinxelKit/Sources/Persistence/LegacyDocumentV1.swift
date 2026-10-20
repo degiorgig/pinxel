@@ -1,8 +1,8 @@
 import DocumentModel
 import Foundation
 
-/// Il documento della versione 1 del formato: cattura come sfondo fisso più operazioni sull'immagine.
-/// Si legge solo per convertirlo; Pinxel salva sempre la versione 2.
+/// The version 1 document of the format: capture as a fixed background plus image operations.
+/// It is only read to convert it; Pinxel always saves version 2.
 struct LegacyDocumentV1: Codable, Equatable {
     var background: ImageAssetRef
     var canvasSize: PixelSize
@@ -13,12 +13,12 @@ struct LegacyDocumentV1: Codable, Equatable {
     var annotations: [Annotation]
     var metadata: CaptureMetadata
 
-    /// Dimensioni dello sfondo dopo le operazioni.
+    /// Size of the background after the operations.
     var imageSize: PixelSize {
         imageOperations.reduce(canvasSize) { size, operation in operation.resultSize(from: size) }
     }
 
-    /// Le regole della versione 1: sfondo e ogni risultato intermedio dentro i limiti.
+    /// The version 1 rules: background and every intermediate result within the limits.
     func validationError() -> String? {
         let limit = PinxelDocument.maxImageSide
         func sizeError(_ size: PixelSize, _ what: String) -> String? {
@@ -36,8 +36,8 @@ struct LegacyDocumentV1: Codable, Equatable {
         return nil
     }
 
-    /// Documento della versione 2: lo sfondo elaborato (`capture`) diventa l'immagine in fondo, le annotazioni restano
-    /// dove sono (erano già nello spazio dopo le operazioni), poi la tela si adatta al contenuto.
+    /// Version 2 document: the processed background (`capture`) becomes the bottom image, the annotations stay
+    /// where they are (they were already in the post-operation space), then the canvas fits the content.
     func converted(capture: ImageAssetRef) -> PinxelDocument {
         let size = imageSize
         let image = Annotation(kind: .image(PlacedImageData(rect: CGRect(origin: .zero, size: size.cgSize), asset: capture)),

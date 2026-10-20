@@ -3,7 +3,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Immagine → Ridimensiona immagine…: nuove dimensioni in pixel, proporzioni bloccate di base.
+/// Image → Resize Image…: new size in pixels, aspect ratio locked by default.
 struct ResizeImageSheet: View {
     let model: EditorModel
     @State private var draft: ResizeDraft
@@ -72,7 +72,7 @@ struct ResizeImageSheet: View {
     }
 }
 
-/// Immagine → Bordo, ombra e margini…: anteprima dal vivo sulla tela, un solo comando alla conferma.
+/// Image → Border, Shadow and Margins…: live preview on the canvas, a single command on confirm.
 struct CanvasStyleSheet: View {
     let model: EditorModel
     @State private var style: CanvasStyle

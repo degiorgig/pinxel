@@ -9,8 +9,8 @@ public enum ImageImportError: Error, Equatable {
 }
 
 public enum ImageImport {
-    /// Documento nuovo da un file immagine (PNG, JPEG, HEIC, TIFF…): l'immagine diventa lo sfondo, il file resta intatto.
-    /// La scala viene dai DPI (144 dpi = 2x); l'orientamento EXIF è applicato; oltre `maxImageSide` l'immagine si riduce.
+    /// New document from an image file (PNG, JPEG, HEIC, TIFF…): the image becomes the background, the file stays untouched.
+    /// The scale comes from the DPI (144 dpi = 2x); the EXIF orientation is applied; beyond `maxImageSide` the image is shrunk.
     public static func contents(fromImageData data: Data) throws -> PinxelFileContents {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) > 0,
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],

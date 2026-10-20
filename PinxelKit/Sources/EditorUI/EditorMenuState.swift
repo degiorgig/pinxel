@@ -1,12 +1,12 @@
 import Foundation
 
-/// Cosa possono fare i menu con l'editor in primo piano: quali voci sono attive e come si chiama Annulla.
+/// What the menus can do with the editor in front: which items are enabled and what Undo is called.
 public struct EditorMenuState: Equatable, Sendable {
     public var hasEditor = false
     public var canEdit = false
     public var isEditingText = false
     public var hasSelection = false
-    /// Selezione con almeno un oggetto non bloccato, in un documento modificabile.
+    /// Selection with at least one unlocked object, in an editable document.
     public var hasEditableSelection = false
     public var hasLockedSelection = false
     public var hasUnlockedSelection = false
@@ -14,11 +14,11 @@ public struct EditorMenuState: Equatable, Sendable {
     public var canRedo = false
     public var undoActionName = ""
     public var redoActionName = ""
-    /// `false` quando un'altra finestra (un foglio come Salva o Esporta) ha la tastiera: le voci di modifica
-    /// devono raggiungere i suoi campi.
+    /// `false` when another window (a sheet like Save or Export) has the keyboard: the edit items
+    /// must reach its fields.
     public var editorIsKey = true
 
-    /// Nessun editor in primo piano.
+    /// No editor in front.
     public init() {}
 
     @MainActor
@@ -38,13 +38,13 @@ public struct EditorMenuState: Equatable, Sendable {
         redoActionName = session.undoManager.redoActionName
     }
 
-    /// Le voci di modifica senza un editor in primo piano (Preferenze, pannello Salva) o durante la scrittura
-    /// di un testo vanno ai campi di testo: restano attive. Altrimenti decide `condition`.
+    /// Edit items with no editor in front (Preferences, Save panel) or while typing
+    /// text go to the text fields: they stay enabled. Otherwise `condition` decides.
     public func allows(_ condition: Bool) -> Bool {
         !hasEditor || !editorIsKey || isEditingText || condition
     }
 
-    /// "Annulla Sposta" nella forma di macOS per la lingua dell'app; senza nome, solo "Annulla".
+    /// "Undo Move" in the macOS form for the app's language; with no name, just "Undo".
     @MainActor public var undoTitle: String {
         showsActionName(undoActionName)
             ? UndoManager().undoMenuTitle(forUndoActionName: undoActionName)

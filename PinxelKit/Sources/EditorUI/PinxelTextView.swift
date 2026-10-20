@@ -1,7 +1,7 @@
 import AppKit
 
-/// Text view della modifica sulla tela: grassetto e corsivo per il menu Formato, sulle parole selezionate
-/// (o sul testo che si scriverà, senza selezione). Il sottolineato usa `underline(_:)` di `NSText`.
+/// Text view for on-canvas editing: bold and italic for the Format menu, on the selected words
+/// (or on the text that will be typed, with no selection). Underline uses `underline(_:)` of `NSText`.
 public final class PinxelTextView: NSTextView {
     @objc public func toggleBoldface(_ sender: Any?) {
         toggle(.boldFontMask)
@@ -20,7 +20,7 @@ public final class PinxelTextView: NSTextView {
             }
             return
         }
-        // Se tutto il tratto ha già lo stile lo toglie, altrimenti lo mette a tutto.
+        // If the whole run already has the style it removes it, otherwise it applies it to all.
         var allHave = true
         storage.enumerateAttribute(.font, in: range) { value, _, _ in
             if let font = value as? NSFont, !manager.traits(of: font).contains(trait) { allHave = false }

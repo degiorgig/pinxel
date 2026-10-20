@@ -1,9 +1,9 @@
 import Foundation
 
 public enum Axis: String, Codable, Sendable {
-    /// Rimuove una fascia orizzontale (righe), l'altezza diminuisce.
+    /// Removes a horizontal band (rows), the height decreases.
     case horizontal
-    /// Rimuove una fascia verticale (colonne), la larghezza diminuisce.
+    /// Removes a vertical band (columns), the width decreases.
     case vertical
 }
 
@@ -37,10 +37,10 @@ public struct CutOut: Codable, Equatable, Sendable {
     }
 }
 
-/// Trasformazione dei punti del documento prodotta da un'operazione immagine.
+/// Transformation of document points produced by an image operation.
 public struct PointMapping: Sendable {
     public let map: @Sendable (CGPoint) -> CGPoint
-    /// Fattore per le lunghezze isotrope (es. diametro degli step).
+    /// Factor for isotropic lengths (e.g. step diameter).
     public let lengthScale: Double
 
     public init(lengthScale: Double = 1, map: @escaping @Sendable (CGPoint) -> CGPoint) {
@@ -53,7 +53,7 @@ public enum ImageOperation: Codable, Equatable, Sendable {
     case crop(PixelRect)
     case resize(PixelSize)
     case cutOut(CutOut)
-    /// Solo nei file della versione 1: allargava la tela.
+    /// Only in version 1 files: it used to enlarge the canvas.
     case extend(PixelSize)
 
     public var name: String {
@@ -108,7 +108,7 @@ public enum ImageOperation: Codable, Equatable, Sendable {
     }
 }
 
-/// Coordinate oltre la fascia rimossa scorrono indietro; quelle dentro la fascia finiscono sul bordo.
+/// Coordinates beyond the removed band slide back; those inside the band end up on the edge.
 private func collapse(_ value: Double, start: Double, length: Double) -> Double {
     if value >= start + length { return value - length }
     if value > start { return start }

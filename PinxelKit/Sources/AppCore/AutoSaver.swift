@@ -18,7 +18,7 @@ public struct AutoSaver {
         self.appVersion = appVersion
     }
 
-    /// Scrive la cattura nella cartella delle impostazioni senza mai sovrascrivere file esistenti.
+    /// Writes the capture into the settings folder without ever overwriting existing files.
     public func save(_ contents: PinxelFileContents, settings: CaptureSettings, date: Date) throws -> URL {
         let folder = settings.saveFolderURL
         do {
@@ -41,8 +41,8 @@ public struct AutoSaver {
                 let image = try DocumentRenderer().renderImage(contents.document, assets: assets)
                 data = try ImageCodec.encode(image, type: .png)
             }
-            // Scrittura atomica in un file nascosto, poi spostamento: un disco pieno non lascia un file a metà,
-            // e `moveItem` fallisce se nel frattempo il file è comparso, quindi non sovrascrive mai.
+            // Atomic write to a hidden file, then move: a full disk does not leave a half-written file,
+            // and `moveItem` fails if the file appeared in the meantime, so it never overwrites.
             let temporary = folder.appendingPathComponent(".\(UUID().uuidString).tmp")
             try data.write(to: temporary, options: .atomic)
             do {

@@ -76,7 +76,7 @@ struct SettingsTests {
 
     @Test func effectiveShortcutsStayUniqueWhenAFallbackCollides() {
         var settings = CaptureSettings()
-        // L'area ha una combinazione non valida e torna alla predefinita, che la finestra ha preso per sé.
+        // The area has an invalid combination and reverts to the default, which the window took for itself.
         settings.hotKeys[.area] = KeyCombo(keyCode: 0x00, modifiers: KeyCombo.shift)
         settings.hotKeys[.window] = HotKeyAction.area.defaultCombo
         settings.sanitizeHotKeys()
@@ -90,7 +90,7 @@ struct SettingsTests {
         var old = CaptureSettings()
         old.hotKeys = [.area: KeyCombo(keyCode: 0x15, modifiers: KeyCombo.command | KeyCombo.shift)]
         var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as! [String: Any]
-        // Una versione precedente non conosceva `scrolling`: la si toglie dal JSON, in qualunque forma sia codificata.
+        // An earlier version did not know `scrolling`: remove it from the JSON, whatever form it is encoded in.
         if var keys = json["hotKeys"] as? [String: Any] { keys["scrolling"] = nil; json["hotKeys"] = keys }
         if var pairs = json["hotKeys"] as? [Any], let index = pairs.firstIndex(where: { ($0 as? String) == "scrolling" }) {
             pairs.removeSubrange(index...index + 1); json["hotKeys"] = pairs

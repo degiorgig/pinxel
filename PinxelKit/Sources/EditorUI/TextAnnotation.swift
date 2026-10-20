@@ -18,7 +18,7 @@ extension RichText {
         for index in runs.indices { runs[index].underline = on }
     }
 
-    /// Colore di tutto il testo: i colori dei singoli run vengono tolti.
+    /// Color of all the text: the colors of the individual runs are removed.
     public mutating func setColor(_ color: RGBA) {
         self.color = color
         for index in runs.indices { runs[index].color = nil }
@@ -26,7 +26,7 @@ extension RichText {
 }
 
 extension Annotation {
-    /// Testo di un testo o di un callout; `nil` per gli altri tipi (e assegnarlo non fa nulla).
+    /// Text of a text or callout; `nil` for the other types (and assigning it does nothing).
     public var richText: RichText? {
         get {
             switch kind {
@@ -58,13 +58,13 @@ extension Annotation {
         }
     }
 
-    /// Margine fra il riquadro e il testo, uguale a quello usato da `TextRenderer`.
+    /// Margin between the frame and the text, same as the one used by `TextRenderer`.
     public var textInset: Double {
         if case .callout = kind { return 10 }
         return 4
     }
 
-    /// Alza il riquadro del testo fino a `height`; non lo abbassa mai.
+    /// Raises the text frame up to `height`; never lowers it.
     public mutating func growTextHeight(to height: Double) {
         switch kind {
         case .text(var data):

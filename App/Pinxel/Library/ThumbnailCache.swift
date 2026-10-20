@@ -1,7 +1,7 @@
 import AppKit
 import Library
 
-/// Miniature lette dai `.pinxel`, una per file e data di modifica; letture fuori dal thread principale.
+/// Thumbnails read from the `.pinxel` files, one per file and modification date; reads off the main thread.
 @MainActor
 final class ThumbnailCache {
     static let shared = ThumbnailCache()

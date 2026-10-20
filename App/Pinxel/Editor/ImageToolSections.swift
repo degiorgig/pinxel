@@ -3,7 +3,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Strumento Ritaglio: istruzioni e pulsanti (le azioni arrivano alla tela tramite la catena dei responder).
+/// Crop tool: instructions and buttons (the actions reach the canvas through the responder chain).
 struct CropSection: View {
     var body: some View {
         Section("Crop") {
@@ -20,7 +20,7 @@ struct CropSection: View {
 }
 
 
-/// Strumento Taglia e ricuci: bordo della cucitura e istruzioni.
+/// Cut and stitch tool: seam border and instructions.
 struct CutSection: View {
     @Bindable var model: EditorModel
 

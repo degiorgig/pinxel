@@ -1,10 +1,10 @@
 import DocumentModel
 import Foundation
 
-/// Fine di una modifica di testo sulla tela: un solo comando per tutta la sessione (spec §6.3).
+/// End of a text edit on the canvas: a single command for the whole session (spec §6.3).
 public enum TextEditing {
-    /// Annotazione da disegnare sotto l'`NSTextView`: senza testo (lo mostra la vista), con lo stile
-    /// attuale del documento e l'altezza raggiunta dal testo digitato.
+    /// Annotation to draw under the `NSTextView`: without text (the view shows it), with the current
+    /// document style and the height reached by the typed text.
     public static func placeholder(for request: TextEditRequest, current: Annotation?, height: Double) -> Annotation {
         var annotation = request.isNew ? request.annotation : (current ?? request.annotation)
         if var text = annotation.richText {
@@ -15,8 +15,8 @@ public enum TextEditing {
         return annotation
     }
 
-    /// Nuovo testo non vuoto → aggiunta; testo esistente svuotato → eliminazione; modificato → aggiornamento
-    /// della versione attuale nel documento. `nil` se non cambia nulla o l'oggetto è bloccato o sparito.
+    /// New non-empty text → addition; existing text emptied → deletion; modified → update
+    /// of the current version in the document. `nil` if nothing changes or the object is locked or gone.
     public static func commit(_ request: TextEditRequest, text: RichText, minimumHeight: Double,
                               document: PinxelDocument) -> (any EditCommand)? {
         let isEmpty = text.plainText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -40,13 +40,13 @@ public enum TextEditing {
     }
 }
 
-/// Ciò che il pannello proprietà può chiedere al testo in modifica.
+/// What the properties panel can ask of the text being edited.
 @MainActor
 public protocol TextEditingControl: AnyObject {
-    /// Applica una modifica a tutto il testo (dimensione, colore, allineamento, grassetto…).
+    /// Applies a change to all the text (size, color, alignment, bold…).
     func applyToAll(_ change: (inout RichText) -> Void)
-    /// Conferma il testo e chiude la modifica.
+    /// Confirms the text and ends the edit.
     func finish()
-    /// Modifica di stile per l'oggetto nuovo in scrittura (nessun effetto su un oggetto già nel documento).
+    /// Style change for the new object being written (no effect on an object already in the document).
     func applyToNewAnnotation(_ change: (inout Annotation) -> Void)
 }

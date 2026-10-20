@@ -48,8 +48,8 @@ struct BackgroundTests {
         let result = try #require(BackgroundProcessor.process(quadrants, operations: [.cutOut(cut)]))
         #expect(result.width == 400 && result.height == 200)
         let pixels = PixelBuffer(result)
-        #expect(pixels.pixel(x: 10, y: 99) == red)   // riga 99 originale
-        #expect(pixels.pixel(x: 10, y: 100) == blue) // riga 200 originale
+        #expect(pixels.pixel(x: 10, y: 99) == red)   // original row 99
+        #expect(pixels.pixel(x: 10, y: 100) == blue) // original row 200
     }
 
     @Test func verticalCutOutJoinsBands() throws {
@@ -58,7 +58,7 @@ struct BackgroundTests {
         #expect(result.width == 300 && result.height == 300)
         let pixels = PixelBuffer(result)
         #expect(pixels.pixel(x: 149, y: 10) == red)
-        #expect(pixels.pixel(x: 150, y: 10) == green) // colonna 250 originale
+        #expect(pixels.pixel(x: 150, y: 10) == green) // original column 250
     }
 
     @Test func zigzagCutOutDrawsSeam() throws {
@@ -90,13 +90,13 @@ struct BackgroundTests {
     }
 
     @Test func missingCaptureImageStillRenders() throws {
-        // Senza i pixel della cattura si disegna il segnaposto grigio, non un errore.
+        // Without the capture pixels the gray placeholder is drawn, not an error.
         let image = try DocumentRenderer().renderImage(emptyDocument(), assets: DictionaryAssetProvider([:]))
         #expect(image.width == 400 && image.height == 300)
     }
 
     @Test func theCaptureIsDrawnWhereItIs() throws {
-        // La cattura spostata in alto a sinistra: sulla tela di 200×150 si vede solo il quadrante giallo.
+        // The capture moved to the top left: on the 200×150 canvas only the yellow quadrant is visible.
         var document = emptyDocument(size: PixelSize(width: 200, height: 150))
         document.annotations = [Annotation(id: TestDocuments.captureID, kind: .image(PlacedImageData(
             rect: CGRect(x: -200, y: -150, width: 400, height: 300), asset: TestDocuments.background)), style: Style(stroke: nil, lineWidth: 0))]

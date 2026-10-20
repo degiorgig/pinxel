@@ -8,7 +8,7 @@ struct LibraryOpenDecisionTests {
         }
     }
 
-    /// Il clic resta sempre nella stessa finestra; un documento senza titolo con qualcosa dentro entra prima nella libreria.
+    /// The click always stays in the same window; an untitled document with something in it first enters the library.
     @Test func otherwiseTheSameWindowIsUsed() {
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .libraryItem) == .replaceInWindow)
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .otherFile) == .replaceInWindow)

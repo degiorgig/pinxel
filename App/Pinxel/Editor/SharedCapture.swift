@@ -3,7 +3,7 @@ import CoreTransferable
 import EditorUI
 import Rendering
 
-/// Immagine composita per `ShareLink`, calcolata solo quando si condivide.
+/// Composite image for `ShareLink`, computed only when sharing.
 struct SharedCapture: Transferable {
     let model: EditorModel
 

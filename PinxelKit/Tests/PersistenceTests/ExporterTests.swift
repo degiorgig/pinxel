@@ -13,7 +13,7 @@ struct ExporterTests {
     ])
 
     @Test func pngAtNativeScaleMatchesCanvasRenderExactly() throws {
-        // Documento a scala 2: 2x = pixel nativi, cioè quello che il canvas mostra al 100%.
+        // Document at scale 2: 2x = native pixels, i.e. what the canvas shows at 100%.
         let document = TestDocuments.document()
         let exported = try ImageCodec.decode(Exporter.export(document, assets: provider, format: .png, scale: .twoX))
         let canvas = try DocumentRenderer().renderImage(document, assets: provider, options: RenderOptions(outputScale: 1))

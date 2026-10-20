@@ -5,7 +5,7 @@ public enum DashPattern: String, Codable, Sendable {
 }
 
 public struct Shadow: Codable, Equatable, Sendable {
-    /// Spostamento in pixel del documento (y positivo = verso il basso).
+    /// Offset in document pixels (positive y = downwards).
     public var offset: CGSize
     public var blur: Double
     public var color: RGBA
@@ -22,7 +22,7 @@ public struct Style: Codable, Equatable, Sendable {
     public var fill: RGBA?
     public var lineWidth: Double
     public var dash: DashPattern
-    /// 0...1, applicata all'annotazione come gruppo.
+    /// 0...1, applied to the annotation as a group.
     public var opacity: Double
     public var shadow: Shadow?
 

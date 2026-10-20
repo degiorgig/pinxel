@@ -60,7 +60,7 @@ struct CropToolTests {
         let original = TestDocuments.document(annotations: [shape])
         drag(tool, from: CGPoint(x: 50, y: 50), to: CGPoint(x: 150, y: 150), document: original)
         let result = tool.handle(.key(.enter, []), document: original, selection: [])
-        // Il ritaglio serve i pixel: lo strumento lo chiede, la vista lo applica a tutto il contenuto.
+        // Crop needs the pixels: the tool asks for it, the view applies it to all the content.
         #expect(result.crop == PixelRect(x: 50, y: 50, width: 100, height: 100))
         #expect(result.command == nil)
         #expect(result.tool == .select && result.selection == [])
@@ -97,8 +97,8 @@ struct CropToolTests {
         canvas.needsLayout = true
         canvas.layoutSubtreeIfNeeded()
         canvas.model.tool = .crop
-        // Coordinate del documento: la conversione vista → documento con padding e scala è già coperta
-        // da `mapsViewPointsWithPaddingAndRetinaScale`; qui conta che il ritaglio usi pixel del documento.
+        // Document coordinates: the view → document conversion with padding and scale is already covered
+        // by `mapsViewPointsWithPaddingAndRetinaScale`; here what matters is that the crop uses document pixels.
         canvas.send(.down(CGPoint(x: 100, y: 100), [], clickCount: 1))
         canvas.send(.drag(CGPoint(x: 150, y: 140), []))
         canvas.send(.up(CGPoint(x: 200, y: 180), []))

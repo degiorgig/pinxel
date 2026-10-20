@@ -4,9 +4,9 @@ import EditorUI
 import Rendering
 import SwiftUI
 
-/// Riquadro nell'angolo della tela: trascina l'immagine composita come file PNG nel Finder o in un'altra app (spec §9).
-/// Non sta nella toolbar perché lì il trascinamento sposta la finestra. È AppKit perché il Finder vuole un file vero:
-/// il PNG si scrive all'inizio del trascinamento, con il testo in corso già confermato.
+/// Box in the corner of the canvas: drags the composite image as a PNG file into the Finder or another app (spec §9).
+/// It is not in the toolbar because dragging there moves the window. It is AppKit because the Finder wants a real file:
+/// the PNG is written at the start of the drag, with the text being edited already confirmed.
 struct CaptureDragHandle: View {
     let model: EditorModel
 
@@ -59,7 +59,7 @@ final class CaptureDragSourceView: NSView, NSDraggingSource {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     override var mouseDownCanMoveWindow: Bool { false }
-    // Come nel Finder: da una finestra in secondo piano si trascina subito, senza portarla davanti.
+    // As in the Finder: a window in the background can be dragged right away, without bringing it to the front.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func shouldDelayWindowOrdering(for event: NSEvent) -> Bool { true }
 
@@ -73,7 +73,7 @@ final class CaptureDragSourceView: NSView, NSDraggingSource {
 
     override func mouseUp(with event: NSEvent) {
         mouseDownEvent = nil
-        // Un clic senza trascinamento porta comunque la finestra davanti.
+        // A click without a drag still brings the window to the front.
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
     }

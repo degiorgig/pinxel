@@ -55,7 +55,7 @@ struct CaptureComposerTests {
     }
 
     @Test func fractionalSelectionStaysOnPixelGrid() throws {
-        // Colonne alternate nere/bianche da 1 px su uno schermo a 2x: una selezione non allineata non deve sfocarle.
+        // Alternating black/white 1 px columns on a 2x screen: a misaligned selection must not blur them.
         let ctx = TestImages.makeContext(width: 200, height: 200)
         ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: 200, height: 200))

@@ -2,7 +2,7 @@ import CoreGraphics
 import DocumentModel
 import Foundation
 
-/// Contenuto degli appunti per copiare annotazioni tra documenti (tipo privato, spec §6.3).
+/// Clipboard content for copying annotations between documents (private type, spec §6.3).
 public enum AnnotationClipboard {
     public static let typeIdentifier = "com.degiorgi.pinxel.annotations"
     public static let pasteOffset = CGSize(width: 10, height: 10)
@@ -15,7 +15,7 @@ public enum AnnotationClipboard {
         try JSONDecoder().decode([Annotation].self, from: data)
     }
 
-    /// File delle immagini incollate che accompagnano le annotazioni, per incollarle in un altro documento.
+    /// Files of the pasted images that accompany the annotations, to paste them into another document.
     public static let imagesTypeIdentifier = "com.degiorgi.pinxel.annotation-images"
 
     public static func imageAssets(of annotations: [Annotation]) -> [ImageAssetRef] {
@@ -34,10 +34,10 @@ public enum AnnotationClipboard {
         return Dictionary(uniqueKeysWithValues: names.map { (ImageAssetRef(name: $0.key), $0.value) })
     }
 
-    /// Copie da incollare: ID nuovi, spostate di `pasteOffset`, sbloccate. Le immagini il cui file non è
-    /// disponibile restano fuori.
-    /// `times`: quante volte si è incollato lo stesso contenuto; ogni copia si sposta di un passo in più.
-    /// `keepImage`: le immagini il cui file è disponibile qui (stesso documento, o arrivato con gli appunti) restano.
+    /// Copies to paste: new IDs, moved by `pasteOffset`, unlocked. Images whose file is not
+    /// available are left out.
+    /// `times`: how many times the same content has been pasted; each copy moves one more step.
+    /// `keepImage`: images whose file is available here (same document, or arrived with the clipboard) are kept.
     public static func prepareForPaste(_ annotations: [Annotation], times: Int = 1, keepImage: (ImageAssetRef) -> Bool = { _ in false },
                                        makeID: () -> UUID = { UUID() }) -> [Annotation] {
         let offset = CGSize(width: pasteOffset.width * Double(max(times, 1)), height: pasteOffset.height * Double(max(times, 1)))
@@ -48,7 +48,7 @@ public enum AnnotationClipboard {
         }
     }
 
-    /// Riquadro della tela (pixel, padding incluso) da ritagliare per il PNG che accompagna le annotazioni.
+    /// Canvas rectangle (pixels, padding included) to crop for the PNG that accompanies the annotations.
     public static func cropRect(for annotations: [Annotation], padding: Double, canvasSize: CGSize, margin: Double = 8) -> CGRect? {
         let union = annotations.map(HitTesting.worldBounds).filter { !$0.isNull }.reduce(CGRect.null) { $0.union($1) }
         guard !union.isNull else { return nil }

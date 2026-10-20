@@ -20,8 +20,8 @@ struct CanvasTextTests {
                                     assets: DictionaryAssetProvider([TestDocuments.background: TestImages.solid(width: 400, height: 300, red: 1, green: 1, blue: 1)]),
                                     undoManager: undo, isReadOnly: readOnly)
         let canvas = CanvasView(model: EditorModel(session: session))
-        // In una finestra, come nell'app: la text view diventa first responder e la digitazione resta una
-        // sessione di modifica aperta (fuori da una finestra `didChangeText` la chiuderebbe subito).
+        // In a window, as in the app: the text view becomes first responder and typing remains an open
+        // edit session (outside a window `didChangeText` would close it immediately).
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 600), styleMask: [.titled], backing: .buffered, defer: true)
         window.contentView = canvas
         Self.windows.append(window)
@@ -89,7 +89,7 @@ struct CanvasTextTests {
         let canvas = makeCanvas([text])
         canvas.beginTextEditing(TextEditRequest(annotation: text, isNew: false))
         type("Altro", in: canvas)
-        // La posizione non conta: con un testo in modifica qualsiasi clic sulla tela chiude la modifica.
+        // The position does not matter: with a text being edited any click on the canvas ends the edit.
         let event = NSEvent.mouseEvent(with: .leftMouseDown, location: NSPoint(x: 10, y: 10), modifierFlags: [], timestamp: 0,
                                        windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
         canvas.mouseDown(with: event)

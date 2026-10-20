@@ -18,8 +18,8 @@ let package = Package(
         .target(name: "DocumentModel", resources: [.process("Localizable.xcstrings")]),
         .target(name: "Rendering", dependencies: ["DocumentModel"]),
         .target(name: "Persistence", dependencies: ["DocumentModel", "Rendering"]),
-        // La cucitura della cattura a scorrimento confronta milioni di pixel a fotogramma: senza ottimizzazioni è
-        // dieci volte più lenta e, scorrendo a mano, perde i passaggi.
+        // Scroll-capture stitching compares millions of pixels per frame: without optimizations it is
+        // ten times slower and, when scrolling by hand, it misses steps.
         .target(name: "CaptureKit", swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .target(name: "AppCore", dependencies: ["DocumentModel", "Rendering", "Persistence"], resources: [.process("Localizable.xcstrings")]),
         .target(name: "EditorUI", dependencies: ["DocumentModel", "Rendering"], resources: [.process("Localizable.xcstrings")]),

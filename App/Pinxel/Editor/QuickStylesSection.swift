@@ -2,7 +2,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Gli ultimi stili usati con lo strumento: un clic li applica (spec §6.1).
+/// The last styles used with the tool: one click applies them (spec §6.1).
 struct QuickStylesSection: View {
     let model: EditorModel
 
@@ -29,7 +29,7 @@ struct QuickStylesSection: View {
     }
 }
 
-/// Anteprima di uno stile: un tratto per linee e penne, un cerchio per gli step, un riquadro per il resto.
+/// Preview of a style: a stroke for lines and pens, a circle for steps, a box for the rest.
 struct QuickStyleSwatch: View {
     let style: Style
     let tool: EditorTool

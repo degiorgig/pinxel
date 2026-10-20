@@ -2,7 +2,7 @@ import AppKit
 import Library
 import SwiftUI
 
-/// Una miniatura: immagine letta quando entra in vista, bordo di accento se è quella aperta, contorno se selezionata.
+/// A thumbnail: the image is read when it scrolls into view; accent border if it is the open one, outline if selected.
 struct LibraryThumbnailView: View {
     let item: Library.LibraryItem
     let url: URL

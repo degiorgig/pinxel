@@ -1,7 +1,7 @@
 import Foundation
 
-/// Controlli sui String Catalog (`.xcstrings`): ogni testo tradotto in tutte le lingue, niente valori vuoti,
-/// stessi segnaposto della lingua di base (l'ordine può cambiare con i segnaposto posizionali `%2$lld`).
+/// Checks on the String Catalogs (`.xcstrings`): every text translated into all languages, no empty values,
+/// same placeholders as the base language (the order may change with positional placeholders `%2$lld`).
 public enum CatalogValidation {
     public static func problems(inCatalogAt url: URL, languages: [String] = ["it", "de", "fr"]) throws -> [String] {
         try problems(inCatalog: Data(contentsOf: url), languages: languages)
@@ -37,7 +37,7 @@ public enum CatalogValidation {
         return problems
     }
 
-    /// Le `stringUnit` di una localizzazione, anche dentro le varianti (plurali, dispositivi).
+    /// The `stringUnit`s of a localization, also inside variations (plurals, devices).
     private static func units(in node: [String: Any]) -> [[String: Any]] {
         var found: [[String: Any]] = []
         if let unit = node["stringUnit"] as? [String: Any] { found.append(unit) }
@@ -51,7 +51,7 @@ public enum CatalogValidation {
 
     private static func list(_ items: [String]) -> String { "[" + items.joined(separator: ", ") + "]" }
 
-    /// Segnaposto in ordine canonico: `%2$lld` conta come `%lld`; `%%` non è un segnaposto.
+    /// Placeholders in canonical order: `%2$lld` counts as `%lld`; `%%` is not a placeholder.
     static func placeholders(in text: String) -> [String] {
         let pattern = #"%(?:\d+\$)?(lld|ld|d|@|f|\.\d+f|s)"#
         let regex = try! NSRegularExpression(pattern: pattern)
@@ -62,7 +62,7 @@ public enum CatalogValidation {
     }
 }
 
-/// Percorso dei cataloghi dei moduli a partire dal file del test (i test non leggono il bundle: controllano il sorgente).
+/// Path of the modules' catalogs starting from the test file (tests do not read the bundle: they check the source).
 public enum Catalogs {
     public static func url(module: String, file: String = #filePath) -> URL {
         var url = URL(fileURLWithPath: file)
@@ -72,10 +72,10 @@ public enum Catalogs {
 }
 
 extension Bundle {
-    /// Il bundle delle risorse di un modulo di PinxelKit (`PinxelKit_<Modulo>.bundle`), cercato accanto ai test.
+    /// The resource bundle of a PinxelKit module (`PinxelKit_<Module>.bundle`), looked up next to the tests.
     public static func module(for module: String) -> Bundle? {
         let name = "PinxelKit_\(module).bundle"
-        // Sotto `swift test` i bundle delle risorse stanno accanto al `.xctest` che contiene questo codice.
+        // Under `swift test` the resource bundles sit next to the `.xctest` that contains this code.
         let candidates = [Bundle(for: BundleMarker.self).bundleURL.deletingLastPathComponent(),
                           Bundle.main.bundleURL, Bundle.main.bundleURL.deletingLastPathComponent()]
             + Bundle.allBundles.map { $0.bundleURL.deletingLastPathComponent() }

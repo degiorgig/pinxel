@@ -36,7 +36,7 @@ private struct PermissionView: View {
         .frame(width: 460)
     }
 
-    /// Riavvia dopo l'uscita di questo processo, così la nuova istanza trova libere le scorciatoie globali.
+    /// Relaunches after this process exits, so the new instance finds the global shortcuts free.
     private func relaunch() {
         let pid = ProcessInfo.processInfo.processIdentifier
         let process = Process()

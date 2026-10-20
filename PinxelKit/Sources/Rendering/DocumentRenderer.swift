@@ -17,11 +17,11 @@ public struct DictionaryAssetProvider: AssetProvider {
 }
 
 public struct RenderOptions: Sendable {
-    /// Pixel di output per pixel del documento.
+    /// Output pixels per document pixel.
     public var outputScale: Double
-    /// Annotazioni da non disegnare (es. il testo in modifica nell'editor).
+    /// Annotations not to draw (e.g. the text being edited in the editor).
     public var excludedAnnotationIDs: Set<UUID>
-    /// Colore pieno sotto tutto (es. bianco per JPEG).
+    /// Solid color under everything (e.g. white for JPEG).
     public var matte: RGBA?
 
     public init(outputScale: Double = 1, excludedAnnotationIDs: Set<UUID> = [], matte: RGBA? = nil) {
@@ -36,20 +36,20 @@ public enum RenderError: Error, Equatable {
     case contextCreationFailed
 }
 
-/// Unico percorso di disegno per canvas, miniature ed export.
+/// Single drawing path for canvas, thumbnails and export.
 public final class DocumentRenderer {
     private let effects = EffectCache()
 
     public init() {}
 
-    /// Dimensioni della tela (immagine + padding) in pixel del documento.
+    /// Size of the canvas (image + padding) in document pixels.
     public func canvasSize(for document: PinxelDocument) -> CGSize {
         let image = document.imageSize
         let padding = document.canvasStyle.padding
         return CGSize(width: Double(image.width) + 2 * padding, height: Double(image.height) + 2 * padding)
     }
 
-    /// Disegna il documento in `ctx`, il cui spazio utente è l'output in pixel con origine in basso a sinistra.
+    /// Draws the document into `ctx`, whose user space is the output in pixels with origin at bottom left.
     public func render(_ document: PinxelDocument, assets: any AssetProvider, in ctx: CGContext, options: RenderOptions = RenderOptions()) throws {
         let canvas = canvasSize(for: document)
         let style = document.canvasStyle
@@ -83,7 +83,7 @@ public final class DocumentRenderer {
                 self.layers(below: index, region: region, document: document, excluded: excluded, context: context)
             }
         )
-        // Il contenuto in un livello unico: l'ombra della tela segue la sua sagoma.
+        // The content in a single layer: the canvas shadow follows its silhouette.
         ctx.saveGState()
         if let shadow = style.shadow {
             ShadowStyle.apply(shadow, to: ctx, outputScale: options.outputScale)
@@ -104,19 +104,19 @@ public final class DocumentRenderer {
         }
     }
 
-    /// Dimensioni dell'ultima immagine di livelli calcolata (per i test).
+    /// Size of the last layers image computed (for tests).
     private(set) var lastLayerSize: PixelSize?
     var effectCacheMisses: Int { effects.misses }
 
-    /// La regione con le annotazioni sotto `index`, a 1 pixel per pixel del documento.
-    /// La chiave dipende solo da ciò che tocca la regione: spostare un oggetto lontano non la invalida.
+    /// The region with the annotations below `index`, at 1 pixel per document pixel.
+    /// The key depends only on what touches the region: moving a distant object does not invalidate it.
     private func layers(below index: Int, region: PixelRect, document: PinxelDocument,
                         excluded: Set<UUID>, context: RenderContext) -> (key: String, image: CGImage)? {
         let area = region.cgRect
         let below = document.annotations.prefix(index).enumerated().filter { _, annotation in
             !excluded.contains(annotation.id) && annotation.visualBounds.intersects(area)
         }
-        // Il numero di uno step dipende dagli altri step: entra nella chiave.
+        // A step's number depends on the other steps: it goes into the key.
         let key = "layers|\(region)|\(below.map { "\($0.offset):\(context.stepLabels[$0.element.id] ?? ""):\($0.element)" })"
         let image = effects.image(for: key) {
             guard let ctx = ImageDrawing.makeContext(width: region.width, height: region.height) else { return nil }
@@ -143,7 +143,7 @@ public final class DocumentRenderer {
               scaledWidth.isFinite, scaledHeight.isFinite,
               scaledWidth > 0, scaledHeight > 0,
               scaledWidth <= maxPixels, scaledHeight <= maxPixels else { throw RenderError.invalidSize }
-        // Un lato molto sottile ridotto (es. miniatura di una striscia) resta almeno di 1 pixel.
+        // A very thin side after scaling down (e.g. a strip thumbnail) stays at least 1 pixel.
         let width = max(1, Int(scaledWidth.rounded()))
         let height = max(1, Int(scaledHeight.rounded()))
         guard let ctx = ImageDrawing.makeContext(width: width, height: height) else { throw RenderError.contextCreationFailed }

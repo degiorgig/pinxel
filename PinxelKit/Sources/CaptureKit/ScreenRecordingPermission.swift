@@ -25,7 +25,7 @@ public struct SystemScreenRecordingPermission: ScreenRecordingPermission {
     }
 }
 
-/// Per test e UI test.
+/// For tests and UI tests.
 @MainActor
 public struct GrantedScreenRecordingPermission: ScreenRecordingPermission {
     public init() {}

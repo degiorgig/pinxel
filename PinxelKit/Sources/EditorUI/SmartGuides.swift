@@ -1,13 +1,13 @@
 import CoreGraphics
 
-/// Linea guida da disegnare durante uno spostamento, in coordinate del documento.
+/// Guide line to draw during a move, in document coordinates.
 public struct GuideLine: Equatable, Sendable {
     public enum Orientation: Sendable {
         case vertical, horizontal
     }
 
     public var orientation: Orientation
-    /// x per le verticali, y per le orizzontali.
+    /// x for verticals, y for horizontals.
     public var position: Double
     public var from: Double
     public var to: Double
@@ -20,10 +20,10 @@ public struct GuideLine: Equatable, Sendable {
     }
 }
 
-/// Guide magnetiche (spec §6.3): bordi e centri di chi si sposta si agganciano a bordi e centri degli altri.
+/// Smart guides (spec §6.3): edges and centers of the moving item snap to edges and centers of the others.
 public enum SmartGuides {
-    /// Correzione da aggiungere allo spostamento perché `moving` si allinei alla linea più vicina entro
-    /// `tolerance`, per ciascun asse, e le guide che mostrano l'allineamento.
+    /// Correction to add to the move so that `moving` aligns to the nearest line within
+    /// `tolerance`, for each axis, and the guides that show the alignment.
     public static func snap(_ moving: CGRect, to targets: [CGRect], tolerance: Double) -> (offset: CGSize, guides: [GuideLine]) {
         let dx = bestOffset(lines(moving, .vertical), targets.flatMap { lines($0, .vertical) }, tolerance)
         let dy = bestOffset(lines(moving, .horizontal), targets.flatMap { lines($0, .horizontal) }, tolerance)
@@ -49,8 +49,8 @@ public enum SmartGuides {
         return best
     }
 
-    /// Una guida per ogni linea di `rect` che coincide con una linea di qualche bersaglio, lunga quanto basta
-    /// a toccarli tutti.
+    /// One guide for each line of `rect` that coincides with a line of some target, long enough
+    /// to touch them all.
     private static func guides(_ rect: CGRect, _ targets: [CGRect], _ orientation: GuideLine.Orientation) -> [GuideLine] {
         var result: [GuideLine] = []
         for position in lines(rect, orientation) where !result.contains(where: { abs($0.position - position) < 0.5 }) {

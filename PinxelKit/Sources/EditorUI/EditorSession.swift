@@ -4,8 +4,8 @@ import Foundation
 import Observation
 import Rendering
 
-/// Un passo della cronologia, trattenuto dalle azioni registrate nell'`UndoManager`; la fusione dei comandi
-/// ravvicinati sostituisce il comando nella scatola senza registrare un nuovo passo.
+/// A history step, held by the actions registered in the `UndoManager`; merging of close-together commands
+/// replaces the command in the box without registering a new step.
 @MainActor
 final class CommandBox {
     var command: any EditCommand
@@ -15,7 +15,7 @@ final class CommandBox {
     }
 }
 
-/// Stato di un editor: documento, selezione, anteprima del gesto in corso, annulla/ripeti.
+/// State of an editor: document, selection, preview of the current gesture, undo/redo.
 @MainActor
 @Observable
 public final class EditorSession {
@@ -23,20 +23,20 @@ public final class EditorSession {
 
     public private(set) var document: PinxelDocument
     public var selection: Set<UUID> = []
-    /// Annotazioni mostrate al posto di quelle del documento durante un gesto (non registrate).
+    /// Annotations shown in place of the document's during a gesture (not registered).
     public var preview: [Annotation]?
-    /// Stile della tela mostrato al posto di quello del documento mentre lo si regola (non registrato).
+    /// Canvas style shown in place of the document's while it is being adjusted (not registered).
     public var canvasStylePreview: CanvasStyle?
     public let isReadOnly: Bool
 
-    /// Immagini del documento più quelle incollate.
+    /// Document images plus the pasted ones.
     @ObservationIgnored public let assets: AssetStore
     @ObservationIgnored public let undoManager: UndoManager
     @ObservationIgnored var now: () -> Date = { Date() }
     @ObservationIgnored private var lastBox: CommandBox?
     @ObservationIgnored private var coalescing: (key: String, date: Date)?
-    /// Chiamata quando un comando, annulla o ripeti trasla tutti gli oggetti per adattare la tela:
-    /// la vista sposta lo scorrimento della stessa quantità, così sullo schermo non salta niente.
+    /// Called when a command, undo or redo translates all objects to fit the canvas:
+    /// the view shifts the scroll by the same amount, so nothing jumps on screen.
     @ObservationIgnored public var onCanvasShift: ((CGVector) -> Void)?
 
     public init(document: PinxelDocument, assets: any AssetProvider, undoManager: UndoManager = UndoManager(), isReadOnly: Bool = false) {
@@ -52,10 +52,10 @@ public final class EditorSession {
         document.annotations.filter { selection.contains($0.id) }
     }
 
-    /// Esegue e registra un comando, poi adatta la tela al contenuto nello stesso passo di annulla.
-    /// Con `coalescingKey`, un `UpdateAnnotations` che segue entro 1 s un altro con la stessa chiave sugli stessi oggetti
-    /// si annulla insieme a lui, ma solo se nessuno dei due ha spostato la tela: dopo un adattamento le coordinate
-    /// di `before` non sono più quelle del passo precedente.
+    /// Runs and registers a command, then fits the canvas to the content in the same undo step.
+    /// With `coalescingKey`, an `UpdateAnnotations` that follows within 1 s another with the same key on the same objects
+    /// is undone together with it, but only if neither moved the canvas: after a fit the coordinates
+    /// of `before` are no longer those of the previous step.
     public func perform(_ command: any EditCommand, coalescingKey: String? = nil) {
         guard !isReadOnly else { return }
         preview = nil
@@ -94,7 +94,7 @@ public final class EditorSession {
         notifyShift(of: recorded, sign: 1)
     }
 
-    /// Sposta le annotazioni selezionate e non bloccate; spostamenti ravvicinati si annullano insieme.
+    /// Moves the selected, unlocked annotations; close-together moves are undone together.
     public func nudge(by delta: CGSize) {
         let movable = selectedAnnotations.filter { !$0.isLocked }
         guard !movable.isEmpty else { return }
@@ -102,14 +102,14 @@ public final class EditorSession {
         perform(UpdateAnnotations(name: CommandName.move, before: movable, after: moved), coalescingKey: "nudge")
     }
 
-    /// Da chiamare a ogni salvataggio: la modifica successiva diventa un passo nuovo, così il documento
-    /// risulta di nuovo modificato invece di confluire in un passo già salvato.
+    /// To call on every save: the next edit becomes a new step, so the document
+    /// shows as modified again instead of merging into an already saved step.
     public func breakCoalescing() {
         lastBox = nil
         coalescing = nil
     }
 
-    /// Sostituisce il documento (Ripristina, Versioni, file cambiato su disco): la cronologia si azzera.
+    /// Replaces the document (Revert, Versions, file changed on disk): the history is reset.
     public func replaceDocument(_ newDocument: PinxelDocument) {
         undoManager.removeAllActions(withTarget: self)
         document = newDocument
@@ -119,7 +119,7 @@ public final class EditorSession {
     }
 
     private func registerUndo(_ box: CommandBox) {
-        // L'UndoManager non trattiene il bersaglio: è la sessione; la scatola la trattiene la closure.
+        // The UndoManager does not retain the target: it is the session; the box is retained by the closure.
         undoManager.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated { session.undo(box) }
         }

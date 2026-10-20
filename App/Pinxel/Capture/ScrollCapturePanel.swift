@@ -1,7 +1,7 @@
 import CaptureKit
 import SwiftUI
 
-/// Pannello flottante della cattura a scorrimento: miniatura che cresce, altezza, Fine e Annulla.
+/// Floating scrolling-capture panel: growing thumbnail, height, Done and Cancel.
 struct ScrollCapturePanel: View {
     let session: ScrollCaptureSession
     let narrowed: Bool

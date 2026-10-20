@@ -5,7 +5,7 @@ import Testing
 @testable import EditorUI
 
 struct CreationToolTests {
-    /// Documenti senza la cattura in fondo: qui si provano gli strumenti sugli oggetti.
+    /// Documents without the capture at the bottom: here the tools are tried on objects.
     private let empty = TestDocuments.document(annotations: []).withoutCapture
 
     private func controller(_ tool: EditorTool) -> ToolController {

@@ -3,11 +3,11 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Finestra dell'editor: vista SwiftUI con toolbar nativa (via `sceneBridgingOptions`) e pannello proprietà.
+/// Editor window: SwiftUI view with a native toolbar (via `sceneBridgingOptions`) and properties panel.
 @MainActor
 final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private(set) var model: EditorModel
-    /// Filtro e selezione del carosello di questa finestra: restano quando cambia la cattura mostrata.
+    /// Filter and selection of this window's carousel: they persist when the shown capture changes.
     let stripState = LibraryStripState()
     private let hosting: NSHostingController<EditorView>
     private let reference = WeakReference()
@@ -25,7 +25,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         if model.session.isReadOnly { window.subtitle = String(localized: "Read Only") }
         super.init(window: window)
         reference.controller = self
-        // Il documento entra nella catena dei responder (Salva, Esporta…) tramite il delegato della finestra.
+        // The document enters the responder chain (Save, Export…) through the window delegate.
         window.delegate = self
         shouldCascadeWindows = true
     }
@@ -39,7 +39,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
                    window: { reference.controller?.window })
     }
 
-    /// Un'altra cattura nella stessa finestra (clic sul carosello): stessa cornice, stesso carosello, tela nuova.
+    /// Another capture in the same window (click on the carousel): same frame, same carousel, new canvas.
     func show(_ model: EditorModel) {
         EditorFocus.shared.resign(self.model)
         self.model = model
@@ -53,7 +53,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         weak var controller: EditorWindowController?
     }
 
-    // I menu seguono l'editor della finestra principale (un foglio come Esporta lascia la finestra principale).
+    // Menus follow the editor of the main window (a sheet like Export leaves the main window).
     func windowDidBecomeMain(_ notification: Notification) {
         EditorFocus.shared.focus(model, isKey: window?.isKeyWindow ?? true)
     }
@@ -74,8 +74,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         EditorFocus.shared.resign(model)
     }
 
-    /// Immagine al 100% più il pannello, entro il 90% dello schermo; almeno 1100 punti, perché sotto
-    /// quella larghezza la toolbar finisce tutta nel menu di overflow e gli strumenti spariscono.
+    /// Image at 100% plus the panel, within 90% of the screen; at least 1100 points, because below
+    /// that width the toolbar ends up entirely in the overflow menu and the tools disappear.
     static func initialContentSize(for document: PinxelDocument) -> NSSize {
         let visible = NSScreen.main?.visibleFrame.size ?? NSSize(width: 1440, height: 900)
         let imageWidth = Double(document.imageSize.width) / document.scale

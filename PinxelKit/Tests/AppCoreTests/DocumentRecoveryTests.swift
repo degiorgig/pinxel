@@ -11,7 +11,7 @@ struct DocumentRecoveryTests {
         return try PinxelArchive.write(document: contents.document, images: contents.images, thumbnail: Data(), appVersion: "0.1.0")
     }
 
-    /// Rovina i byte compressi di `document.json` (subito dopo il nome nell'intestazione locale), lasciando intatto lo sfondo.
+    /// Corrupts the compressed bytes of `document.json` (right after the name in the local header), leaving the background intact.
     private func damaged(_ data: Data) -> Data {
         var bytes = data
         guard let range = bytes.range(of: Data("document.json".utf8)) else { return bytes }
@@ -25,7 +25,7 @@ struct DocumentRecoveryTests {
         let contents = try #require(DocumentRecovery.contents(fromDamaged: data, scale: 2))
         #expect(contents.document.canvasSize == PixelSize(width: 400, height: 300))
         #expect(contents.document.scale == 2)
-        // Solo la cattura recuperata, come immagine in fondo.
+        // Only the recovered capture, as the image at the bottom.
         #expect(contents.document.annotations.count == 1)
         guard case .image(let capture) = contents.document.annotations.first?.kind else { Issue.record("no capture"); return }
         #expect(capture.rect == CGRect(x: 0, y: 0, width: 400, height: 300))

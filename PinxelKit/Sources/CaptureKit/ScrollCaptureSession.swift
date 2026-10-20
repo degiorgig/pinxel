@@ -3,8 +3,8 @@ import Foundation
 import Observation
 import os
 
-/// Il ciclo della cattura a scorrimento (spec §2, §4): l'utente scorre, Pinxel cattura ogni `manualInterval` e cuce,
-/// finché si preme Fine. La cucitura gira fuori dal main thread, così pannello e tasti restano reattivi.
+/// The scrolling capture loop (spec §2, §4): the user scrolls, Pinxel captures every `manualInterval` and stitches,
+/// until Done is pressed. Stitching runs off the main thread, so the panel and keys stay responsive.
 @MainActor
 @Observable
 public final class ScrollCaptureSession {
@@ -12,23 +12,23 @@ public final class ScrollCaptureSession {
         case finishedByUser, reachedLimit, contentChanging, cancelled
     }
 
-    /// Perché la cucitura è ferma, da mostrare nel pannello.
+    /// Why stitching is stalled, to show in the panel.
     public enum Pause: Equatable, Sendable {
         case none
-        /// Si è andati oltre l'ultimo punto riconosciuto: bisogna tornare un po' su.
+        /// Went past the last recognized point: the user needs to scroll back up a little.
         case scrollBack
-        /// Righe tutte simili (tabelle, liste): più spostamenti combaciano allo stesso modo. Si torna su e si scorre piano.
+        /// All rows look alike (tables, lists): several shifts match equally well. Scroll back up and scroll slowly.
         case similarRows
     }
 
-    /// 30 al secondo: in un'area piccola uno scorrimento normale supera in un decimo di secondo lo spostamento misurabile.
+    /// 30 per second: in a small area a normal scroll exceeds the measurable shift within a tenth of a second.
     public static let manualInterval: Duration = .seconds(1.0 / 30)
-    /// Mancate di fila prima di chiedere di tornare su.
+    /// Consecutive misses before asking to scroll back up.
     public static let missLimit = 3
-    /// Spostamento minimo, in pixel, perché tari le unità di scorrimento.
+    /// Minimum shift, in pixels, to calibrate the scroll units.
     static let calibrationMinimumShift = 16
 
-    /// Altezza in pixel dell'immagine cucita finora.
+    /// Height in pixels of the image stitched so far.
     public private(set) var height = 0
     public private(set) var preview: CGImage?
     public private(set) var outcome: Outcome?
@@ -41,10 +41,10 @@ public final class ScrollCaptureSession {
     @ObservationIgnored private let sleep: @MainActor (Duration) async -> Void
     @ObservationIgnored private let now: @MainActor () -> Double
     @ObservationIgnored private var stopRequest: Outcome?
-    /// Scorrimento dell'utente dall'ultimo fotogramma riconosciuto: trackpad (punti) e rotella a scatti, separati.
+    /// User scrolling since the last recognized frame: trackpad (points) and notched wheel, kept separate.
     @ObservationIgnored private var pendingPrecise = 0.0
     @ObservationIgnored private var pendingNotches = 0.0
-    /// Pixel per unità di scorrimento, imparati dagli spostamenti riconosciuti con certezza; il segno lo decidono loro.
+    /// Pixels per scroll unit, learned from shifts recognized with certainty; their sign decides the direction.
     @ObservationIgnored private var pixelsPerPoint: Double
     @ObservationIgnored private var pixelsPerNotch: Double?
     @ObservationIgnored private let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "scrolling")
@@ -61,14 +61,14 @@ public final class ScrollCaptureSession {
         pixelsPerPoint = display.scale
     }
 
-    /// L'utente ha scorso sopra l'area; positivo verso il fondo del documento. `precise`: trackpad o mouse a scorrimento
-    /// continuo, in punti; altrimenti scatti di rotella, il cui valore in pixel dipende dall'app.
+    /// The user scrolled over the area; positive toward the bottom of the document. `precise`: trackpad or continuous-scroll mouse
+    /// in points; otherwise wheel notches, whose pixel value depends on the app.
     public func userScrolled(by amount: Double, precise: Bool) {
         if precise { pendingPrecise += amount } else { pendingNotches += amount }
     }
 
-    /// Quanto ci si aspetta che il contenuto si sia spostato, in pixel; `nil` se l'utente non ha scorso o se il valore
-    /// degli scatti non è ancora noto.
+    /// How far the content is expected to have moved, in pixels; `nil` if the user did not scroll or if the notch value
+    /// is not known yet.
     private var expectedShift: Int? {
         guard pendingPrecise != 0 || pendingNotches != 0 else { return nil }
         var pixels = pendingPrecise * pixelsPerPoint
@@ -79,7 +79,7 @@ public final class ScrollCaptureSession {
         return Int(pixels.rounded())
     }
 
-    /// Dopo un fotogramma riconosciuto: lo spostamento misurato tara le unità di scorrimento, poi si riparte da zero.
+    /// After a recognized frame: the measured shift calibrates the scroll units, then it starts again from zero.
     private func calibrate(measured shift: Int) {
         defer { pendingPrecise = 0; pendingNotches = 0 }
         guard abs(shift) >= Self.calibrationMinimumShift else { return }
@@ -100,11 +100,11 @@ public final class ScrollCaptureSession {
         stopRequest = .cancelled
     }
 
-    /// Cattura fino a Fine; `nil` se annullata.
+    /// Captures until Done; `nil` if cancelled.
     public func run() async -> CGImage? {
         do {
             try await source.prepare(display: display)
-            // Si campiona ogni `manualInterval`, contando anche il tempo di cattura e cucitura.
+            // Sample every `manualInterval`, counting capture and stitching time too.
             var lastSample = now()
             var report = await worker.add(try await source.frame(of: rect, on: display))
             publish(report)
@@ -122,7 +122,7 @@ public final class ScrollCaptureSession {
                 if stopRequest != nil { continue }
                 lastSample = now()
                 let frame = try await source.frame(of: rect, on: display)
-                // Dopo la cattura: conta anche lo scorrimento arrivato mentre si catturava.
+                // After the capture: also count the scrolling that arrived while capturing.
                 let expected = expectedShift
                 report = await worker.add(frame, expectedShift: expected)
                 publish(report)
@@ -164,25 +164,25 @@ public final class ScrollCaptureSession {
 extension ScrollCaptureSession {
     private static let clockStart = ContinuousClock.now
 
-    /// Orologio monotono in secondi: la sessione usa solo differenze.
+    /// Monotonic clock in seconds: the session only uses differences.
     public static func secondsSinceLaunch() -> Double {
         let components = clockStart.duration(to: .now).components
         return Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 }
 
-/// Ciò che la sessione legge dopo ogni fotogramma.
+/// What the session reads after each frame.
 struct StitchReport: @unchecked Sendable {
     let step: StitchStep
     let height: Int
     let width: Int
     let frameHeight: Int
-    /// Spostamento dell'ultimo fotogramma riconosciuto.
+    /// Shift of the last recognized frame.
     let shift: Int?
     let thumbnail: CGImage?
 }
 
-/// Cuce fuori dal main thread: il confronto dei fotogrammi costa decine di millisecondi (secondi in Debug).
+/// Stitches off the main thread: comparing frames takes tens of milliseconds (seconds in Debug).
 actor StitchWorker {
     private let stitcher: ScrollStitcher
 

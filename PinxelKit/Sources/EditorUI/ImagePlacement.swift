@@ -2,8 +2,8 @@ import CoreGraphics
 import DocumentModel
 
 public enum ImagePlacement {
-    /// L'immagine ridotta perché il lato maggiore non superi `maxSide` (i documenti non accettano immagini più
-    /// grandi e non si riaprirebbero); la stessa immagine se ci sta già.
+    /// The image reduced so its longer side does not exceed `maxSide` (documents do not accept larger
+    /// images and would not reopen); the same image if it already fits.
     public static func fitting(_ image: CGImage, maxSide: Int) -> CGImage? {
         let longest = max(image.width, image.height)
         guard longest > maxSide else { return image }
@@ -12,7 +12,7 @@ public enum ImagePlacement {
                                             height: max(1, Int((Double(image.height) * factor).rounded()))))
     }
 
-    /// L'immagine ricampionata a `size` pixel; la stessa immagine se ha già quelle dimensioni.
+    /// The image resampled to `size` pixels; the same image if it already has those dimensions.
     public static func resized(_ image: CGImage, to size: PixelSize) -> CGImage? {
         guard image.width != size.width || image.height != size.height else { return image }
         let width = size.width, height = size.height
@@ -25,15 +25,15 @@ public enum ImagePlacement {
     }
 
     public struct Placement: Equatable, Sendable {
-        /// Riquadro dell'immagine incollata, in pixel del documento.
+        /// Box of the pasted image, in document pixels.
         public var rect: CGRect
-        /// Dimensioni della cattura dopo l'incolla: più grandi delle attuali se l'immagine non ci stava.
+        /// Capture size after the paste: larger than the current one if the image did not fit.
         public var imageSize: PixelSize
     }
 
-    /// Dove va un'immagine incollata, alla stessa densità del documento (uno screenshot Retina in una cattura Retina
-    /// mantiene i suoi pixel). Con `adaptCanvas` la cattura prende le dimensioni dell'immagine, più grande o più piccola,
-    /// e l'immagine la copre tutta; altrimenti la cattura resta com'è e l'immagine ci entra, centrata in `center`.
+    /// Where a pasted image goes, at the same density as the document (a Retina screenshot in a Retina capture
+    /// keeps its pixels). With `adaptCanvas` the capture takes the image's dimensions, larger or smaller,
+    /// and the image covers it entirely; otherwise the capture stays as it is and the image fits in it, centered on `center`.
     public static func place(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint, imageSize: PixelSize,
                              adaptCanvas: Bool, maxSide: Int = PinxelDocument.maxImageSide) -> Placement {
         let factor = documentScale / max(imageScale, 1)
@@ -51,8 +51,8 @@ public enum ImagePlacement {
         return Placement(rect: CGRect(x: x, y: y, width: width, height: height), imageSize: imageSize)
     }
 
-    /// Riquadro di un'immagine aggiunta (trascinata o ⌥⌘V), centrata in `center`, alla densità del documento;
-    /// la tela si adatterà a lei, quindi non la si spinge dentro. Solo il lato massimo la rimpicciolisce.
+    /// Box of an added image (dragged or ⌥⌘V), centered on `center`, at the document density;
+    /// the canvas will adapt to it, so it is not pushed inside. Only the maximum side shrinks it.
     public static func centered(pixelSize: CGSize, imageScale: Double, documentScale: Double, center: CGPoint,
                                 maxSide: Int = PinxelDocument.maxImageSide) -> CGRect {
         let factor = documentScale / max(imageScale, 1)

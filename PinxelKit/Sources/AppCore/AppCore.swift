@@ -1,2 +1,2 @@
-// Logica dell'app indipendente dall'interfaccia (impostazioni, salvataggio, instradamento).
+// App logic independent of the interface (settings, saving, routing).
 enum AppCore {}

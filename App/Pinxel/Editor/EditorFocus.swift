@@ -2,15 +2,15 @@ import Combine
 import EditorUI
 import Observation
 
-/// L'editor della finestra principale e lo stato dei suoi menu. I comandi SwiftUI osservano questo oggetto;
-/// lo stato si ricalcola quando cambiano documento, selezione o testo in modifica dell'editor.
+/// The main window's editor and the state of its menus. SwiftUI commands observe this object;
+/// the state is recomputed when the editor's document, selection or text being edited change.
 @MainActor
 final class EditorFocus: ObservableObject {
     static let shared = EditorFocus()
 
     @Published private(set) var state = EditorMenuState()
     private(set) weak var model: EditorModel?
-    /// `false` quando un foglio della finestra (Salva, Esporta, Ridimensiona) ha la tastiera.
+    /// `false` when a window sheet (Save, Export, Resize) has the keyboard.
     private var editorIsKey = true
 
     func focus(_ model: EditorModel, isKey: Bool) {

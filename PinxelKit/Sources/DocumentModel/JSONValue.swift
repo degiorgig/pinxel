@@ -1,6 +1,6 @@
 import Foundation
 
-/// JSON arbitrario, usato per conservare intatti i tipi di annotazione sconosciuti.
+/// Arbitrary JSON, used to keep unknown annotation types intact.
 public enum JSONValue: Codable, Equatable, Sendable {
     case null
     case bool(Bool)

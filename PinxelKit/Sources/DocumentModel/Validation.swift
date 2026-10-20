@@ -1,11 +1,11 @@
 import Foundation
 
 extension PinxelDocument {
-    /// Lato massimo accettato per la tela.
+    /// Maximum side accepted for the canvas.
     public static let maxImageSide = 32_768
 
-    /// Motivo per cui il documento non è utilizzabile, o `nil` se è valido.
-    /// Da chiamare su ogni documento letto da file prima di disegnarlo.
+    /// Reason why the document is not usable, or `nil` if it is valid.
+    /// To be called on every document read from file before drawing it.
     public func validationError() -> String? {
         let limit = Self.maxImageSide
         guard (0...limit).contains(canvasSize.width), (0...limit).contains(canvasSize.height),

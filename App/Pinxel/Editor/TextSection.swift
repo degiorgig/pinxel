@@ -3,7 +3,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Carattere, dimensione, colore, allineamento e stile di testi e callout, anche durante la modifica sulla tela.
+/// Font, size, color, alignment and style of texts and callouts, also while editing on the canvas.
 struct TextSection: View {
     let model: EditorModel
 

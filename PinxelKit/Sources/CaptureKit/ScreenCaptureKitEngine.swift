@@ -1,7 +1,7 @@
 import CoreGraphics
 @preconcurrency import ScreenCaptureKit
 
-/// Cattura reale con ScreenCaptureKit. Verificata dalla checklist manuale (docs/manual-tests/capture.md).
+/// Real capture with ScreenCaptureKit. Verified by the manual checklist (docs/manual-tests/capture.md).
 @MainActor
 public final class ScreenCaptureKitEngine: CaptureEngine {
     public init() {}
@@ -55,7 +55,7 @@ public final class ScreenCaptureKitEngine: CaptureEngine {
         return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
     }
 
-    /// ID delle finestre sullo schermo, dalla più in primo piano.
+    /// IDs of the on-screen windows, frontmost first.
     static func frontToBackWindowIDs() -> [UInt32] {
         guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
             return []

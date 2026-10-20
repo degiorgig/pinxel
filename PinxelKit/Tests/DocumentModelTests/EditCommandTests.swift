@@ -103,7 +103,7 @@ struct EditCommandTests {
     }
 
     @Test func aCommandFollowedByItsFitRevertsExactly() throws {
-        // La cattura spostata a sinistra: il gruppo comando + adattamento torna esattamente a `base`.
+        // The capture moved to the left: the command + fit group goes back exactly to `base`.
         let capture = base.annotations[0]
         let move = UpdateAnnotations(name: CommandName.move, before: [capture], after: [capture.transformed(by: PointMapping { CGPoint(x: $0.x - 30, y: $0.y) })])
         var moved = base
@@ -129,7 +129,7 @@ struct EditCommandTests {
         var document = base
         group.apply(to: &document)
         #expect(document.annotations.first == shape)
-        // Il secondo comando è stato creato sul documento senza `shape`: il gruppo deve comunque tornare esattamente a `base`.
+        // The second command was created on the document without `shape`: the group must still go back exactly to `base`.
         group.revert(on: &document)
         #expect(document == base)
     }

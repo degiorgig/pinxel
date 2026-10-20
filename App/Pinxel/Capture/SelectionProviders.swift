@@ -12,7 +12,7 @@ struct OverlaySelectionProvider: SelectionProvider {
     }
 }
 
-/// Per gli UI test: nessun overlay, risultato prestabilito.
+/// For UI tests: no overlay, predetermined result.
 @MainActor
 struct FixedSelectionProvider: SelectionProvider {
     let result: SelectionResult

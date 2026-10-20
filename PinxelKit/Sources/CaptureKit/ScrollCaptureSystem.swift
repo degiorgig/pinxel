@@ -3,7 +3,7 @@ import ApplicationServices
 import CoreGraphics
 @preconcurrency import ScreenCaptureKit
 
-/// Fotogrammi reali con ScreenCaptureKit, escludendo le finestre di Pinxel. Verificata dalla checklist manuale
+/// Real frames via ScreenCaptureKit, excluding Pinxel's windows. Verified by the manual checklist
 /// (docs/manual-tests/scrolling.md).
 @MainActor
 public final class ScreenCaptureKitFrameSource: RegionFrameSource {
@@ -17,7 +17,7 @@ public final class ScreenCaptureKitFrameSource: RegionFrameSource {
     public func prepare(display: DisplayInfo) async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let screen = content.displays.first(where: { $0.displayID == display.id }) else { throw CaptureError.displayNotFound }
-        // Escludere l'app intera copre anche le finestre di Pinxel non ancora elencate (la cornice appena comparsa).
+        // Excluding the whole app also covers Pinxel windows not yet listed (the frame that just appeared).
         if let own = content.applications.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
             filter = SCContentFilter(display: screen, excludingApplications: [own], exceptingWindows: [])
         } else {
@@ -48,11 +48,11 @@ public final class ScreenCaptureKitFrameSource: RegionFrameSource {
     }
 }
 
-/// Serve all'event tap che consuma Esc e Invio durante la cattura a scorrimento.
+/// Used by the event tap that consumes Esc and Return during scrolling capture.
 @MainActor
 public protocol AccessibilityPermission {
     var isGranted: Bool { get }
-    /// Mostra la richiesta di sistema.
+    /// Shows the system prompt.
     func request()
     func openSystemSettings()
 }
@@ -64,7 +64,7 @@ public struct SystemAccessibilityPermission: AccessibilityPermission {
     public var isGranted: Bool { AXIsProcessTrusted() }
 
     public func request() {
-        // Chiave di kAXTrustedCheckOptionPrompt, scritta per esteso: la globale C non è concurrency-safe.
+        // Key of kAXTrustedCheckOptionPrompt, written out in full: the C global is not concurrency-safe.
         _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
     }
 
@@ -75,7 +75,7 @@ public struct SystemAccessibilityPermission: AccessibilityPermission {
     }
 }
 
-/// Per test e UI test.
+/// For tests and UI tests.
 @MainActor
 public struct FixedAccessibilityPermission: AccessibilityPermission {
     public let isGranted: Bool

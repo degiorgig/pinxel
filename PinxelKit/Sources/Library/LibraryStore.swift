@@ -12,11 +12,11 @@ public enum LibraryError: Error, Equatable {
 }
 
 public enum LibraryLoadProblem: Equatable, Sendable {
-    /// `library.json` era rovinato: messo da parte e ricostruito dai file.
+    /// `library.json` was corrupt: set aside and rebuilt from the files.
     case corrupt
-    /// `library.json` è di una versione più recente: messo da parte e ricostruito dai file.
+    /// `library.json` is from a newer version: set aside and rebuilt from the files.
     case futureVersion
-    /// `library.json` c'è ma non si legge (permessi, disco): non si tocca, l'indice in memoria viene dai file.
+    /// `library.json` exists but cannot be read (permissions, disk): left untouched, the in-memory index comes from the files.
     case unreadable
 }
 
@@ -25,7 +25,7 @@ public struct LibraryLoad: Sendable {
     public var problem: LibraryLoadProblem?
 }
 
-/// Tutto ciò che tocca la cartella dell'archivio. Si usa dal thread principale; solo `thumbnail(at:)` va bene altrove.
+/// Everything that touches the library folder. Used from the main thread; only `thumbnail(at:)` is fine elsewhere.
 public final class LibraryStore {
     public static let indexName = "library.json"
     public static let corruptName = "library.json.corrupt"
@@ -62,7 +62,7 @@ public final class LibraryStore {
         return standardized.lastPathComponent
     }
 
-    // MARK: Indice
+    // MARK: Index
 
     public func load() -> LibraryLoad {
         var index = LibraryIndex()
@@ -74,7 +74,7 @@ public final class LibraryStore {
                     index = try Self.decoder.decode(LibraryIndex.self, from: data)
                 } catch {
                     problem = error as? LibraryIndexError == nil ? .corrupt : .futureVersion
-                    // Senza la copia messa da parte l'indice non si riscrive: cartelle ed etichette restano recuperabili.
+                    // Without the set-aside copy the index is not rewritten: folders and labels remain recoverable.
                     let corrupt = folder.appendingPathComponent(Self.corruptName)
                     try? fileManager.removeItem(at: corrupt)
                     do { try fileManager.moveItem(at: indexURL, to: corrupt) } catch { problem = .unreadable }
@@ -97,7 +97,7 @@ public final class LibraryStore {
         }
     }
 
-    // MARK: Catture
+    // MARK: Captures
 
     public func add(_ contents: PinxelFileContents, to index: inout LibraryIndex) throws -> LibraryItem {
         try ensureFolder()
@@ -116,14 +116,14 @@ public final class LibraryStore {
         return item
     }
 
-    /// Un nome libero nell'archivio, per salvarci un documento che ancora non c'è (per esempio uno senza titolo).
+    /// A free name in the library, to save a document that does not exist yet (for example an untitled one).
     public func newURL(for date: Date) throws -> URL {
         try ensureFolder()
         let baseName = FileNamer.baseName(template: FileNamer.defaultTemplate, date: date)
         return FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: "pinxel", fileManager: fileManager)
     }
 
-    /// Copia nell'archivio un'immagine o un `.pinxel`; l'originale resta com'è.
+    /// Copies an image or a `.pinxel` into the library; the original is left as it is.
     public func importFile(at source: URL, into index: inout LibraryIndex) throws -> LibraryItem {
         let name = source.lastPathComponent
         guard let data = try? Data(contentsOf: source) else { throw LibraryError.unsupportedFile(name) }
@@ -140,7 +140,7 @@ public final class LibraryStore {
         return try add(contents, to: &index)
     }
 
-    /// Dopo un salvataggio dall'editor: dimensioni (ritaglio, ridimensiona) rilette dal file.
+    /// After a save from the editor: dimensions (crop, resize) re-read from the file.
     public func refreshed(_ file: String, in index: inout LibraryIndex) {
         guard let data = try? Data(contentsOf: folder.appendingPathComponent(file), options: .mappedIfSafe),
               let document = try? PinxelArchive.readDocument(data) else { return }
@@ -179,13 +179,13 @@ public final class LibraryStore {
         }
     }
 
-    /// Miniatura PNG salvata nel file; legge senza decodificare le immagini.
+    /// PNG thumbnail saved in the file; reads without decoding the images.
     public static func thumbnail(at url: URL) -> Data? {
         guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { return nil }
         return PinxelArchive.readThumbnail(data)
     }
 
-    // MARK: Interni
+    // MARK: Internals
 
     private func ensureFolder() throws {
         do {
@@ -196,7 +196,7 @@ public final class LibraryStore {
         guard fileManager.isWritableFile(atPath: folder.path) else { throw LibraryError.notWritable(folder.path) }
     }
 
-    /// File nascosto e poi spostamento: niente file a metà, e `moveItem` non sovrascrive.
+    /// Hidden file and then a move: no half-written files, and `moveItem` does not overwrite.
     private func write(_ data: Data, to url: URL) throws {
         let temporary = folder.appendingPathComponent(".\(UUID().uuidString).tmp")
         try data.write(to: temporary, options: .atomic)
@@ -213,7 +213,7 @@ public final class LibraryStore {
         return Set(names.filter { !$0.hasPrefix(".") && ($0 as NSString).pathExtension.lowercased() == "pinxel" })
     }
 
-    /// Voce per un file trovato nella cartella; se il file è illeggibile, dimensioni 0 (miniatura di errore).
+    /// Entry for a file found in the folder; if the file is unreadable, size 0 (error thumbnail).
     private func makeItem(file: String) -> LibraryItem {
         let url = folder.appendingPathComponent(file)
         let attributes = try? fileManager.attributesOfItem(atPath: url.path)
@@ -231,7 +231,7 @@ public final class LibraryStore {
                     pixelWidth: document.imageSize.width, pixelHeight: document.imageSize.height)
     }
 
-    /// `library.json` tiene le date al secondo (ISO 8601): l'indice in memoria deve essere uguale a quello riletto.
+    /// `library.json` keeps dates to the second (ISO 8601): the in-memory index must equal the one read back.
     private static func whole(_ date: Date) -> Date {
         Date(timeIntervalSince1970: date.timeIntervalSince1970.rounded(.down))
     }

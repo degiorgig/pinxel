@@ -8,7 +8,7 @@ import Testing
 
 @MainActor
 struct EditorModelTests {
-    // Dentro la cattura, lontano dai bordi: nessun comando di questi test cambia la tela.
+    // Inside the capture, away from the edges: none of these tests' commands changes the canvas.
     private let rect = Annotation(id: TestDocuments.id(1), kind: .shape(ShapeData(rect: CGRect(x: 30, y: 30, width: 50, height: 50), shape: .rectangle)))
     private let arrow = Annotation(id: TestDocuments.id(2), kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 30, y: 30), end: CGPoint(x: 80, y: 30)))))
     private let blur = Annotation(id: TestDocuments.id(3), kind: .blur(BlurData(rect: CGRect(x: 30, y: 30, width: 40, height: 40), radius: 12)))

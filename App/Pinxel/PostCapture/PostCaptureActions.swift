@@ -9,7 +9,7 @@ final class PostCaptureActions {
     private let autoSaver: AutoSaver
     private let library: LibraryModel
     private var previews: [QuickPreviewController] = []
-    /// Chiamato a ogni cattura, qualunque sia l'azione scelta.
+    /// Called on every capture, whatever the chosen action.
     var onCapture: ((AppEnvironment.LastCapture) -> Void)?
 
     init(notifier: Notifier, library: LibraryModel, autoSaver: AutoSaver = AutoSaver()) {
@@ -19,7 +19,7 @@ final class PostCaptureActions {
     }
 
     func perform(_ plan: PostCapturePlan, contents: PinxelFileContents, image: CGImage, settings: CaptureSettings) {
-        // Prima di tutto nell'archivio; se non riesce, la cattura segue la via di sempre.
+        // First of all into the archive; if that fails, the capture follows the usual path.
         var libraryURL: URL?
         do {
             libraryURL = try library.add(contents)
@@ -30,7 +30,7 @@ final class PostCaptureActions {
         var editorOpened = false
         run(plan.immediate, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &editorOpened)
         guard plan.showsQuickPreview else { return }
-        // Ogni anteprima toglie dall'elenco solo se stessa: le altre ancora visibili devono restare vive.
+        // Each preview removes only itself from the list: the others still visible must stay alive.
         weak var finished: QuickPreviewController?
         let preview = QuickPreviewController(
             image: image, scale: contents.document.scale,
@@ -50,7 +50,7 @@ final class PostCaptureActions {
         preview.show(stackIndex: previews.count - 1)
     }
 
-    /// Toglie l'anteprima finita e fa scendere quelle rimaste.
+    /// Removes the finished preview and moves the remaining ones down.
     private func removePreview(_ preview: QuickPreviewController?) {
         previews.removeAll { $0 === preview }
         for (index, remaining) in previews.enumerated() { remaining.move(toStackIndex: index) }
@@ -76,7 +76,7 @@ final class PostCaptureActions {
                     _ = try autoSaver.save(contents, settings: settings, date: contents.document.metadata.captureDate)
                 } catch {
                     notifier.failure(error)
-                    // La cattura non va persa: resta aperta in una finestra.
+                    // The capture must not be lost: it stays open in a window.
                     if !editorOpened {
                         openEditor(contents, libraryURL: libraryURL)
                         editorOpened = true

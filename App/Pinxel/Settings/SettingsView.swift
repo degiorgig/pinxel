@@ -25,7 +25,7 @@ struct SettingsView: View {
                     Text("Pinxel Document (.pinxel)").tag(SaveFormat.pinxel)
                     Text("PNG Image").tag(SaveFormat.png)
                 }
-                // Il predefinito si mostra nella lingua dell'app; tornarci (o non toccarlo) lo lascia seguire la lingua.
+                // The default is shown in the app's language; going back to it (or not touching it) lets it follow the language.
                 TextField("File Name", text: Binding(
                     get: { environment.settings.effectiveFileNameTemplate },
                     set: { value in
@@ -78,7 +78,7 @@ struct SettingsView: View {
     }
 }
 
-/// Registra una combinazione: richiede almeno un modificatore; Esc annulla.
+/// Records a combination: requires at least one modifier; Esc cancels.
 struct ShortcutRecorder: View {
     @Binding var combo: KeyCombo
     @State private var recording = false
@@ -115,7 +115,7 @@ struct ShortcutRecorder: View {
     }
 }
 
-/// Pinxel è un'app agente e non sempre viene attivata: porta davanti la finestra che contiene questa vista.
+/// Pinxel is an agent app and is not always activated: brings forward the window that contains this view.
 private struct FrontWindowRaiser: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { RaisingView() }
     func updateNSView(_ nsView: NSView, context: Context) {}

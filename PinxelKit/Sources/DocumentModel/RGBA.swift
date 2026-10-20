@@ -1,6 +1,6 @@
 import Foundation
 
-/// Colore con componenti 0...1 nello spazio colore del documento.
+/// Color with 0...1 components in the document's color space.
 public struct RGBA: Codable, Equatable, Sendable {
     public var red: Double
     public var green: Double

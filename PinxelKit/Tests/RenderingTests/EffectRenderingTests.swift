@@ -44,7 +44,7 @@ struct EffectRenderingTests {
             target: CGRect(x: 40, y: 200, width: 60, height: 60),
             shape: .rectangle, showsConnector: false)), style: Style(stroke: nil))
         let pixels = PixelBuffer(try render([magnifier]))
-        #expect(pixels.pixel(x: 70, y: 230) == red)    // il bersaglio sta nel quadrante blu ma mostra il rosso
+        #expect(pixels.pixel(x: 70, y: 230) == red)    // the target is in the blue quadrant but shows red
         #expect(pixels.pixel(x: 20, y: 230) == blue)
     }
 

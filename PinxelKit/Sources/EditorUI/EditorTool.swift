@@ -21,7 +21,7 @@ public enum EditorTool: String, CaseIterable, Sendable {
         }
     }
 
-    /// Nome in "Annulla …" di un oggetto creato con lo strumento.
+    /// Name in "Undo …" of an object created with the tool.
     public var addCommandName: String {
         switch self {
         case .arrow: String(localized: "Add Arrow", bundle: .module, comment: "Undo: new object")
@@ -38,7 +38,7 @@ public enum EditorTool: String, CaseIterable, Sendable {
         }
     }
 
-    /// Tasto singolo che attiva lo strumento (spec §6.2).
+    /// Single key that activates the tool (spec §6.2).
     public var shortcut: Character {
         switch self {
         case .select: "v"
@@ -75,12 +75,12 @@ public enum EditorTool: String, CaseIterable, Sendable {
         }
     }
 
-    /// Gli strumenti che aggiungono annotazioni (non selezione, ritaglio e taglio).
+    /// The tools that add annotations (not selection, crop and cut).
     public var createsAnnotations: Bool {
         ![.select, .crop, .cutOut].contains(self)
     }
 
-    /// Lo strumento che crea annotazioni di questo tipo.
+    /// The tool that creates annotations of this kind.
     public init?(kind: Annotation.Kind) {
         switch kind {
         case .arrow: self = .arrow
@@ -107,23 +107,23 @@ public enum EffectMode: String, CaseIterable, Sendable {
     case blur, pixelate
 }
 
-/// Stile e opzioni con cui ogni strumento crea le annotazioni.
+/// Style and options with which each tool creates annotations.
 public struct ToolStyles: Equatable, Sendable {
     public var styles: [EditorTool: Style]
     public var arrowHeads = ArrowHeads()
     public var shapeType: ShapeType = .rectangle
     public var stepSequence: StepSequence = .numbers
-    /// Diametro degli step in pixel del documento.
+    /// Diameter of steps in document pixels.
     public var stepDiameter: Double = 48
     public var effectMode: EffectMode = .blur
-    /// Raggio della sfocatura o lato dei blocchi, in pixel del documento.
+    /// Blur radius or block side, in document pixels.
     public var effectAmount: Double = 12
-    /// Carattere, dimensione, colore e allineamento dei testi nuovi (senza run).
+    /// Font, size, color and alignment of new texts (without runs).
     public var text = RichText(runs: [], fontFamily: "Helvetica", fontSize: 24, color: .black)
     public var calloutText = RichText(runs: [], fontFamily: "Helvetica", fontSize: 20, color: .black)
     public var magnifierShape: ShapeType = .ellipse
     public var magnifierConnector = true
-    /// Ingrandimento della lente: lato della destinazione / lato della sorgente.
+    /// Lens magnification: side of the destination / side of the source.
     public var magnifierZoom: Double = 2
     public var cutEdge: CutEdge = .zigzag
 

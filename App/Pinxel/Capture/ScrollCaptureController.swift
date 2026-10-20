@@ -7,8 +7,8 @@ protocol ScrollCapturePresenting {
     func run(_ session: ScrollCaptureSession, rect: CGRect, display: DisplayInfo, narrowed: Bool) async -> CGImage?
 }
 
-/// Cornice attorno all'area e pannello accanto, mentre l'utente scorre e la sessione cuce; quanto scorre arriva alla sessione
-/// come indizio. Tasti: Esc annulla, Invio finisce.
+/// Frame around the area and panel beside it, while the user scrolls and the session stitches; how much is scrolled reaches the session
+/// as a hint. Keys: Esc cancels, Return finishes.
 @MainActor
 final class ScrollCaptureController: ScrollCapturePresenting {
     private var windows: [NSWindow] = []
@@ -51,8 +51,8 @@ final class ScrollCaptureController: ScrollCapturePresenting {
         panel.orderFrontRegardless()
         windows = [border, panel]
 
-        // Esc e Invio non devono arrivare anche all'app sotto (Invio in una chat invierebbe il messaggio): con
-        // Accessibilità un event tap li consuma; senza, un monitor globale li vede soltanto.
+        // Esc and Return must not reach the app underneath too (Return in a chat would send the message): with
+        // Accessibility an event tap consumes them; without it, a global monitor only sees them.
         let keyTap = KeyTap { keyCode in
             switch keyCode {
             case 53: session.cancel()
@@ -72,8 +72,8 @@ final class ScrollCaptureController: ScrollCapturePresenting {
             return event
         }) { monitors.append(local) }
 
-        // Quanto scorre l'utente sopra l'area: decide fra spostamenti che nelle immagini sembrano uguali (righe simili).
-        // `scrollingDeltaY` è positivo verso l'inizio del documento; conta anche l'inerzia del trackpad.
+        // How much the user scrolls over the area: decides between shifts that look identical in the images (similar rows).
+        // `scrollingDeltaY` is positive toward the start of the document; trackpad inertia counts too.
         if let scroll = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel, handler: { event in
             MainActor.assumeIsolated {
                 guard let location = event.cgEvent?.location, rect.contains(location), event.scrollingDeltaY != 0 else { return }
@@ -92,7 +92,7 @@ final class ScrollCaptureController: ScrollCapturePresenting {
     }
 }
 
-/// Filo attorno all'area, a 1,5 punti dal rettangolo catturato: mai nei suoi pixel.
+/// Line around the area, 1.5 points from the captured rectangle: never in its pixels.
 private final class ScrollFrameView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 3, yRadius: 3)
@@ -102,7 +102,7 @@ private final class ScrollFrameView: NSView {
     }
 }
 
-/// Event tap sui tasti: consuma quelli che `handle` gestisce. Richiede il permesso Accessibilità.
+/// Event tap on keys: consumes those that `handle` handles. Requires the Accessibility permission.
 @MainActor
 final class KeyTap {
     private let handler: (Int64) -> Bool
@@ -113,7 +113,7 @@ final class KeyTap {
         self.handler = handler
     }
 
-    /// Esc e Invio senza ⌘, ⌥ o ⌃: con i modificatori restano all'app (per esempio ⌘Invio).
+    /// Esc and Return without ⌘, ⌥ or ⌃: with modifiers they stay with the app (for example ⌘Return).
     func handle(_ keyCode: Int64, flags: CGEventFlags = []) -> Bool {
         guard flags.intersection([.maskCommand, .maskAlternate, .maskControl]).isEmpty else { return false }
         return handler(keyCode)
@@ -127,7 +127,7 @@ final class KeyTap {
             guard let info else { return Unmanaged.passUnretained(event) }
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             let flags = event.flags
-            // Il tap è sul run loop principale.
+            // The tap is on the main run loop.
             let consumed = MainActor.assumeIsolated {
                 let keyTap = Unmanaged<KeyTap>.fromOpaque(info).takeUnretainedValue()
                 if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {

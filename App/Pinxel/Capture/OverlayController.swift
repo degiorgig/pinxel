@@ -1,7 +1,7 @@
 import AppKit
 import CaptureKit
 
-/// Finestra senza bordi che può ricevere la tastiera.
+/// Borderless window that can receive the keyboard.
 final class OverlayWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
@@ -27,7 +27,7 @@ final class OverlayController {
         }
     }
 
-    /// Modifica il modello, ridisegna e, se c'è un risultato, chiude l'overlay.
+    /// Modifies the model, redraws and, if there is a result, closes the overlay.
     func update(_ change: (inout SelectionModel) -> SelectionResult?) {
         let result = change(&model)
         views.forEach { $0.needsDisplay = true }

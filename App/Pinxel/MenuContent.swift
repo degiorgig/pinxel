@@ -43,7 +43,7 @@ struct MenuContent: View {
 }
 
 private extension View {
-    /// Mostra la scorciatoia globale nella colonna nativa a destra del menu.
+    /// Shows the global shortcut in the native column to the right of the menu.
     @ViewBuilder func globalShortcut(_ combo: KeyCombo) -> some View {
         if let key = combo.menuKeyEquivalent?.first {
             keyboardShortcut(KeyEquivalent(key), modifiers: eventModifiers(combo))

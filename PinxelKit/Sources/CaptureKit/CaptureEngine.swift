@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// Tutto ciò che serve all'overlay: immagini congelate degli schermi e finestre visibili (dalla più in primo piano).
+/// Everything the overlay needs: frozen images of the screens and visible windows (frontmost first).
 public struct CaptureSnapshot: Sendable {
     public let displays: [FrozenDisplay]
     public let windows: [WindowInfo]
@@ -10,7 +10,7 @@ public struct CaptureSnapshot: Sendable {
         self.windows = windows
     }
 
-    /// Scala dello schermo che contiene il centro della finestra.
+    /// Scale of the screen that contains the window's center.
     public func scale(for window: WindowInfo) -> Double {
         let center = CGPoint(x: window.frame.midX, y: window.frame.midY)
         return ScreenGeometry.display(at: center, in: displays.map(\.info))?.scale
@@ -30,7 +30,7 @@ public protocol CaptureEngine {
     func captureWindow(_ id: UInt32, includeShadow: Bool) async throws -> CGImage
 }
 
-/// Motore deterministico per test e UI test: uno schermo blu 800×600 pt a 2x con un quadrato rosso.
+/// Deterministic engine for tests and UI tests: a blue 800×600 pt screen at 2x with a red square.
 @MainActor
 public final class FakeCaptureEngine: CaptureEngine {
     public static let windowID: UInt32 = 7
@@ -53,7 +53,7 @@ public final class FakeCaptureEngine: CaptureEngine {
         let ctx = context(width: 1600, height: 1200)
         ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: 1600, height: 1200))
-        // Il contesto ha origine in basso a sinistra: converto il quadrato (punti, in alto a sinistra) in pixel.
+        // The context has its origin at bottom left: convert the square (points, top left) to pixels.
         let square = CGRect(x: redSquare.minX * 2, y: 1200 - redSquare.maxY * 2, width: redSquare.width * 2, height: redSquare.height * 2)
         ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
         ctx.fill(square)

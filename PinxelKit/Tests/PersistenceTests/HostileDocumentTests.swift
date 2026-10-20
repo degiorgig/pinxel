@@ -6,11 +6,11 @@ import Rendering
 @testable import Persistence
 import PinxelTestSupport
 
-/// File `.pinxel` ben formati come ZIP ma con valori ostili in document.json o nelle immagini.
+/// `.pinxel` files well-formed as ZIP but with hostile values in document.json or in the images.
 struct HostileDocumentTests {
     let backgroundPNG = try! ImageCodec.encode(TestImages.quadrants(), type: .png)
 
-    /// Un file con `document.json` così com'è: `version` 1 per i documenti della prima versione.
+    /// A file with `document.json` as is: `version` 1 for first-version documents.
     func archive(json: Data, version: Int, background: Data? = nil) throws -> Data {
         var zip = ZipWriter()
         try zip.add(name: "manifest.json", data: Data(#"{"format":"pinxel","version":\#(version),"appVersion":"0.1.0"}"#.utf8), method: .store)
@@ -19,7 +19,7 @@ struct HostileDocumentTests {
         return try zip.finish()
     }
 
-    /// Documento della versione 1: quello di prova con `background` e `imageOperations` al posto della cattura.
+    /// Version 1 document: the test one with `background` and `imageOperations` in place of the capture.
     func v1JSON(operations: [ImageOperation] = []) throws -> Data {
         var document = TestDocuments.document(annotations: [])
         document.annotations = document.userAnnotations
@@ -34,7 +34,7 @@ struct HostileDocumentTests {
             _ = try PinxelArchive.read(data)
             Issue.record("expected invalidDocument", sourceLocation: sourceLocation)
         } catch PinxelArchiveError.invalidDocument {
-            // atteso
+            // expected
         } catch {
             Issue.record("unexpected \(error)", sourceLocation: sourceLocation)
         }

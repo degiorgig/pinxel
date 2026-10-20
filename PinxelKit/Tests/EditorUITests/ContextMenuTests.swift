@@ -23,9 +23,9 @@ struct ContextMenuTests {
         return canvas
     }
 
-    /// Clic destro su un punto del documento.
+    /// Right-click on a point of the document.
     private func rightClick(_ canvas: CanvasView, at point: CGPoint) -> NSMenu? {
-        // La vista è capovolta: l'evento porta coordinate della finestra.
+        // The view is flipped: the event carries window coordinates.
         let location = canvas.convert(canvas.viewPoint(fromDocument: point), to: nil)
         let event = NSEvent.mouseEvent(with: .rightMouseDown, location: location, modifierFlags: [], timestamp: 0, windowNumber: 0,
                                        context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!

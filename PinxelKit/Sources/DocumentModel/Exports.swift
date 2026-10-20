@@ -1,4 +1,4 @@
-// Con l'SDK di macOS 27, Foundation da sola espone CGPoint/CGRect/CGSize senza l'API
-// di CoreGraphics (`.null`, init con Int, Codable/Equatable). Il modello usa questi tipi
-// nell'interfaccia pubblica, quindi CoreGraphics viene riesportato a chi importa DocumentModel.
+// With the macOS 27 SDK, Foundation alone exposes CGPoint/CGRect/CGSize without the
+// CoreGraphics API (`.null`, init with Int, Codable/Equatable). The model uses these types
+// in its public interface, so CoreGraphics is re-exported to whoever imports DocumentModel.
 @_exported import CoreGraphics

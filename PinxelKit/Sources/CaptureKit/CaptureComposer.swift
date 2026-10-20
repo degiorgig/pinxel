@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// Immagine di uno schermo scattata all'avvio della cattura, ai suoi pixel nativi.
+/// Image of a screen taken at capture start, at its native pixels.
 public struct FrozenDisplay: Sendable {
     public let info: DisplayInfo
     public let image: CGImage
@@ -14,14 +14,14 @@ public struct FrozenDisplay: Sendable {
 public enum CaptureComposer {
     static let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
-    /// Ritaglia `rect` (punti globali, origine in alto a sinistra) dalle immagini congelate.
-    /// Il risultato usa la scala massima tra gli schermi toccati; le zone fuori dagli schermi restano trasparenti.
+    /// Crops `rect` (global points, origin at top left) from the frozen images.
+    /// The result uses the largest scale among the screens touched; areas outside the screens stay transparent.
     public static func compose(_ rect: CGRect, from displays: [FrozenDisplay]) -> (image: CGImage, scale: Double)? {
         let requested = rect.standardized
         guard requested.width >= 1, requested.height >= 1 else { return nil }
         let touched = displays.filter { $0.info.frame.intersects(requested) }
         guard let scale = touched.map(\.info.scale).max() else { return nil }
-        // Allineo la selezione alla griglia dei pixel: con coordinate frazionarie l'immagine verrebbe ricampionata (sfocata).
+        // Align the selection to the pixel grid: with fractional coordinates the image would be resampled (blurred).
         let minX = (requested.minX * scale).rounded(.down) / scale
         let minY = (requested.minY * scale).rounded(.down) / scale
         let maxX = (requested.maxX * scale).rounded(.up) / scale
@@ -34,7 +34,7 @@ public enum CaptureComposer {
               let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: sRGB, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
         ctx.interpolationQuality = .high
-        // Spazio in punti globali con origine in alto a sinistra della selezione.
+        // Space in global points with origin at the selection's top left.
         ctx.translateBy(x: 0, y: CGFloat(height))
         ctx.scaleBy(x: scale, y: -scale)
         ctx.translateBy(x: -selection.minX, y: -selection.minY)

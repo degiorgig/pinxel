@@ -11,15 +11,15 @@ import UniformTypeIdentifiers
 final class LibraryStripState {
     var filter = LibraryFilter()
     var selection: Set<String> = []
-    /// Ultima miniatura cliccata senza ⇧: punto di partenza per ⇧-clic.
+    /// Last thumbnail clicked without ⇧: starting point for ⇧-click.
     var anchor: String?
 }
 
-/// Carosello in fondo all'editor: filtri sopra, miniature dalla più nuova (spec §2).
+/// Carousel at the bottom of the editor: filters above, thumbnails from newest to oldest (spec §2).
 struct LibraryStrip: View {
     let library: LibraryModel
     @Bindable var state: LibraryStripState
-    /// File della cattura aperta in questa finestra, se è nell'archivio.
+    /// File of the capture open in this window, if it is in the library.
     let currentFile: String?
     let open: (Library.LibraryItem, _ newWindow: Bool) -> Void
     @FocusState private var focused: Bool
@@ -42,7 +42,7 @@ struct LibraryStrip: View {
                         .padding(.horizontal, 12)
                     }
                     .scrollIndicators(.automatic)
-                    // Finestra nuova o cattura sostituita: la striscia mostra quella aperta, anche se è vecchia di mesi.
+                    // New window or replaced capture: the strip shows the open one, even if it is months old.
                     .onAppear { if let currentFile { proxy.scrollTo(currentFile, anchor: .center) } }
                 }
             }
@@ -71,7 +71,7 @@ struct LibraryStrip: View {
             .contextMenu { contextMenu(for: item) }
     }
 
-    // MARK: Selezione e clic
+    // MARK: Selection and click
 
     private func click(_ item: Library.LibraryItem) {
         focused = true
@@ -89,12 +89,12 @@ struct LibraryStrip: View {
         }
     }
 
-    /// Il menu agisce sulla selezione se la contiene, altrimenti solo sulla miniatura.
+    /// The menu acts on the selection if it contains the thumbnail, otherwise only on the thumbnail.
     private func targets(_ item: Library.LibraryItem) -> Set<String> {
         state.selection.contains(item.file) ? state.selection : [item.file]
     }
 
-    // MARK: Barra dei filtri
+    // MARK: Filter bar
 
     private var filterBar: some View {
         HStack(spacing: 8) {
@@ -152,7 +152,7 @@ struct LibraryStrip: View {
         }
     }
 
-    // MARK: Menu contestuale
+    // MARK: Context menu
 
     @ViewBuilder private func contextMenu(for item: Library.LibraryItem) -> some View {
         let files = targets(item)
@@ -185,7 +185,7 @@ struct LibraryStrip: View {
         Button("Delete", role: .destructive) { library.delete(files) }
     }
 
-    // MARK: Appunti, trascinamenti
+    // MARK: Pasteboard, drags
 
     private func copy(_ files: Set<String>) {
         let images = items.filter { files.contains($0.file) }.compactMap { renderedPNG(library.url(for: $0)) }
@@ -195,13 +195,13 @@ struct LibraryStrip: View {
         pasteboard.writeObjects(images.compactMap { NSImage(data: $0) })
     }
 
-    /// PNG composito (annotazioni comprese) in un file temporaneo con il nome della cattura: Finder, altre app e tela.
+    /// Composite PNG (annotations included) in a temporary file named after the capture: Finder, other apps and the canvas.
     private func dragProvider(for item: Library.LibraryItem, url: URL) -> NSItemProvider {
         guard let png = renderedPNG(url),
               let file = try? TemporaryFiles.uniqueURL(fileName: (item.file as NSString).deletingPathExtension + ".png"),
               (try? png.write(to: file)) != nil else { return NSItemProvider() }
-        // L'URL del file (Finder, Mail) più i byte PNG: la tela e le altre app leggono l'immagine direttamente.
-        // `NSItemProvider(contentsOf:)` offrirebbe solo un file promesso, che la tela non accetta.
+        // The file URL (Finder, Mail) plus the PNG bytes: the canvas and other apps read the image directly.
+        // `NSItemProvider(contentsOf:)` would only offer a promised file, which the canvas does not accept.
         let provider = NSItemProvider(object: file as NSURL)
         provider.registerDataRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { completion in
             completion(png, nil)
@@ -218,7 +218,7 @@ struct LibraryStrip: View {
         return try? ImageCodec.encode(image, type: .png)
     }
 
-    /// Tutti i file trascinati in un'unica importazione (un solo salvataggio dell'indice).
+    /// All dragged files in a single import (a single save of the index).
     private func importDropped(_ providers: [NSItemProvider]) {
         let group = DispatchGroup()
         let collected = DroppedURLs()
@@ -226,7 +226,7 @@ struct LibraryStrip: View {
         for provider in providers {
             group.enter()
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                // Le miniature trascinate dalla striscia stessa sono PNG temporanei: non si reimportano.
+                // Thumbnails dragged from the strip itself are temporary PNGs: they are not re-imported.
                 if let url, !url.resolvingSymlinksInPath().path.hasPrefix(temporary) { collected.append(url) }
                 group.leave()
             }
@@ -252,7 +252,7 @@ struct LibraryStrip: View {
     }
 }
 
-/// URL raccolti dalle callback di `NSItemProvider`, che arrivano su thread qualsiasi.
+/// URLs collected from `NSItemProvider` callbacks, which arrive on arbitrary threads.
 private final class DroppedURLs: @unchecked Sendable {
     private let lock = NSLock()
     private var stored: [URL] = []

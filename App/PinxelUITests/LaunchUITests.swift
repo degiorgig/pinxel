@@ -6,7 +6,7 @@ final class LaunchUITests: XCTestCase {
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10) || app.wait(for: .runningBackground, timeout: 10))
-        // Agente: nessuna finestra all'avvio.
+        // Agent: no window at launch.
         XCTAssertEqual(app.windows.count, 0)
         app.terminate()
     }

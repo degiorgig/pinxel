@@ -2,22 +2,22 @@ import CoreGraphics
 import DocumentModel
 import Foundation
 
-/// Maniglie di modifica di un'annotazione selezionata.
+/// Edit handles of a selected annotation.
 public enum Handle: Hashable, Sendable {
     case topLeft, top, topRight, right, bottomRight, bottom, bottomLeft, left
     case lineStart, lineEnd
     case rotation
-    /// Punta della coda di un callout.
+    /// Tip of a callout's tail.
     case calloutTail
-    /// Angoli della sorgente di una lente (le otto maniglie del riquadro stanno sulla destinazione).
+    /// Corners of a lens source (the eight box handles sit on the destination).
     case sourceTopLeft, sourceTopRight, sourceBottomRight, sourceBottomLeft
 
-    /// Le otto maniglie del riquadro, in senso orario dall'angolo in alto a sinistra.
+    /// The box's eight handles, clockwise from the top-left corner.
     public static let boxHandles: [Handle] = [.topLeft, .top, .topRight, .right, .bottomRight, .bottom, .bottomLeft, .left]
 
     public var isCorner: Bool { [.topLeft, .topRight, .bottomRight, .bottomLeft].contains(self) }
 
-    /// La maniglia che resta ferma mentre si trascina questa.
+    /// The handle that stays fixed while this one is dragged.
     public var opposite: Handle {
         switch self {
         case .topLeft: .bottomRight
@@ -39,7 +39,7 @@ public enum Handle: Hashable, Sendable {
         }
     }
 
-    /// La maniglia del riquadro che corrisponde a un angolo della sorgente; le altre restano se stesse.
+    /// The box handle that corresponds to a source corner; the others stay themselves.
     public var boxEquivalent: Handle {
         switch self {
         case .sourceTopLeft: .topLeft
@@ -56,13 +56,13 @@ public enum Handle: Hashable, Sendable {
     public var movesY: Bool { [.topLeft, .topRight, .bottomRight, .bottomLeft, .top, .bottom].contains(self) }
 }
 
-/// Le due parti di una lente, che si spostano separatamente.
+/// The two parts of a lens, which move separately.
 public enum MagnifierPart: Sendable {
     case source, target
 }
 
 public enum HitTesting {
-    /// L'annotazione più in alto sotto `point` (coordinate del documento). `tolerance` è in pixel del documento.
+    /// The topmost annotation under `point` (document coordinates). `tolerance` is in document pixels.
     public static func annotation(at point: CGPoint, in annotations: [Annotation], tolerance: Double) -> Annotation? {
         annotations.last { contains($0, point: point, tolerance: tolerance) }
     }
@@ -91,7 +91,7 @@ public enum HitTesting {
             return data.source.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
                 || data.target.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
         case .callout(let data):
-            // Il fumetto o la coda, non lo spazio vuoto fra i due.
+            // The bubble or the tail, not the empty space between the two.
             let rect = data.rect.standardized
             return rect.insetBy(dx: -tolerance, dy: -tolerance).contains(local)
                 || local.distance(toSegment: rect.center, data.tail.tip) <= tolerance + 6
@@ -102,8 +102,8 @@ public enum HitTesting {
         }
     }
 
-    /// ID delle annotazioni il cui riquadro (ruotato) interseca `rect`. Le immagini contano solo se ci stanno tutte:
-    /// la cattura copre la tela e altrimenti ogni riquadro la prenderebbe.
+    /// IDs of the annotations whose (rotated) box intersects `rect`. Images count only if they fit entirely inside:
+    /// the capture covers the canvas and otherwise every rectangle would pick it up.
     public static func ids(intersecting rect: CGRect, in annotations: [Annotation]) -> Set<UUID> {
         let area = rect.standardized
         return Set(annotations.filter { annotation in
@@ -114,15 +114,15 @@ public enum HitTesting {
         }.map(\.id))
     }
 
-    /// Riquadro allineato agli assi che contiene l'annotazione ruotata.
+    /// Axis-aligned box containing the rotated annotation.
     public static func worldBounds(_ annotation: Annotation) -> CGRect {
         let bounds = annotation.bounds
         guard !bounds.isNull, annotation.rotation != 0 else { return bounds }
         return .bounding(corners(of: bounds).map { $0.rotated(around: bounds.center, by: annotation.rotation) })
     }
 
-    /// Contorni da disegnare attorno a un'annotazione selezionata (prima della rotazione).
-    /// Linee e frecce non ne hanno: bastano le maniglie agli estremi.
+    /// Outlines to draw around a selected annotation (before rotation).
+    /// Lines and arrows have none: the handles at the ends are enough.
     public static func selectionFrames(for annotation: Annotation) -> [CGRect] {
         switch annotation.kind {
         case .arrow, .line: return []
@@ -134,15 +134,15 @@ public enum HitTesting {
         }
     }
 
-    /// La parte di una lente sotto `point`; l'ingrandimento, disegnato sopra, vince.
+    /// The part of a lens under `point`; the magnification, drawn on top, wins.
     public static func magnifierPart(at point: CGPoint, in data: MagnifierData, tolerance: Double) -> MagnifierPart? {
         if data.target.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .target }
         if data.source.standardized.insetBy(dx: -tolerance, dy: -tolerance).contains(point) { return .source }
         return nil
     }
 
-    /// Maniglie in coordinate del documento. `rotationOffset` è la distanza della maniglia di rotazione
-    /// sopra il riquadro. Le annotazioni bloccate non hanno maniglie.
+    /// Handles in document coordinates. `rotationOffset` is the distance of the rotation handle
+    /// above the box. Locked annotations have no handles.
     public static func handles(for annotation: Annotation, rotationOffset: Double) -> [(handle: Handle, point: CGPoint)] {
         guard !annotation.isLocked else { return [] }
         let bounds = annotation.bounds
@@ -156,13 +156,13 @@ public enum HitTesting {
         case .step:
             local = Handle.boxHandles.filter(\.isCorner).map { ($0, boxPoint($0, of: bounds)) }
         case .magnifier(let data):
-            // Otto maniglie sull'ingrandimento, quattro sugli angoli della sorgente, niente rotazione.
+            // Eight handles on the magnification, four on the source corners, no rotation.
             let target = data.target.standardized
             let source = data.source.standardized
             local = Handle.boxHandles.map { ($0, boxPoint($0, of: target)) }
                 + [Handle.sourceTopLeft, .sourceTopRight, .sourceBottomRight, .sourceBottomLeft].map { ($0, boxPoint($0, of: source)) }
         case .callout(let data):
-            // Niente rotazione: maniglie sul fumetto e sulla punta della coda.
+            // No rotation: handles on the bubble and on the tail tip.
             let rect = data.rect.standardized
             local = Handle.boxHandles.map { ($0, boxPoint($0, of: rect)) } + [(.calloutTail, data.tail.tip)]
         case .unknown:
@@ -181,7 +181,7 @@ public enum HitTesting {
             .handle
     }
 
-    /// Posizione di una maniglia del riquadro su `rect` (non ruotato).
+    /// Position of a box handle on `rect` (not rotated).
     public static func boxPoint(_ handle: Handle, of rect: CGRect) -> CGPoint {
         switch handle {
         case .topLeft: CGPoint(x: rect.minX, y: rect.minY)

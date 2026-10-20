@@ -16,8 +16,8 @@ final class AppEnvironment {
     let isUITesting: Bool
     private(set) var settings: CaptureSettings
     private(set) var hotKeyConflicts: Set<HotKeyAction> = []
-    /// L'ultima cattura di questa sessione, per riaprirla nell'editor anche se è andata solo negli appunti:
-    /// il file della libreria, o i contenuti se non è entrata nella libreria.
+    /// The last capture of this session, to reopen it in the editor even if it only went to the pasteboard:
+    /// the library file, or the contents if it did not enter the library.
     private(set) var lastCapture: LastCapture?
 
     enum LastCapture {
@@ -58,8 +58,8 @@ final class AppEnvironment {
         if let index = arguments.firstIndex(of: "-PinxelLibraryFolder"), index + 1 < arguments.count {
             libraryFolder = URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
         } else if isUITesting || arguments.contains("-PinxelUITestLibraryName") {
-            // I test non devono mai scrivere nella libreria vera. La cartella è nella temporanea di Pinxel (quella del test sta
-            // nella sua sandbox, e scriverci chiederebbe un permesso); con un nome dato, più avvii la ritrovano.
+            // Tests must never write to the real library. The folder is in Pinxel's temporary directory (the test's own one is in
+            // its sandbox, and writing there would ask for a permission); with a given name, several launches find it again.
             let name = arguments.firstIndex(of: "-PinxelUITestLibraryName").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
                 ?? UUID().uuidString
             libraryFolder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-uitest-library-\(name)", isDirectory: true)
@@ -72,7 +72,7 @@ final class AppEnvironment {
         actions.onCapture = { [unowned self] capture in self.lastCapture = capture }
         let scrolling: ScrollCaptureDependencies
         if arguments.contains("-PinxelUITestFakeScrolling") {
-            // 200×150 pt a 2x come l'area finta: pagina di rumore 400×1200 px, che "l'utente" scorre di 60 px a fotogramma.
+            // 200×150 pt at 2x like the fake area: a 400×1200 px noise page, which "the user" scrolls by 60 px per frame.
             let page = FakeScrollingPage(content: Self.fakeScrollingContent(), viewportHeight: 300, scale: 2)
             page.onFrame = { [unowned page] count in if count > 1 { page.scrollTo(page.position + 60) } }
             scrolling = ScrollCaptureDependencies(accessibility: FixedAccessibilityPermission(isGranted: true),
@@ -103,8 +103,8 @@ final class AppEnvironment {
         if hotKeysChanged { applyHotKeys() }
     }
 
-    /// `fromMenu`: aspetta che il menu si chiuda, altrimenti finisce nell'immagine congelata.
-    /// Dalle scorciatoie la cattura parte subito.
+    /// `fromMenu`: waits for the menu to close, otherwise it ends up in the frozen image.
+    /// From keyboard shortcuts the capture starts immediately.
     func capture(_ mode: CaptureMode, fromMenu: Bool = false) {
         Task {
             if fromMenu { try? await Task.sleep(for: .milliseconds(250)) }
@@ -126,7 +126,7 @@ final class AppEnvironment {
         }
     }
 
-    /// Rumore deterministico: ogni riga è diversa, così la cucitura è verificabile.
+    /// Deterministic noise: every row is different, so the seam is verifiable.
     private static func fakeScrollingContent() -> CGImage {
         let width = 400, height = 1200
         var bytes = [UInt8](repeating: 255, count: width * height * 4)
@@ -150,7 +150,7 @@ final class AppEnvironment {
         }
     }
 
-    /// Apre un editor vuoto, senza oggetti: poi ci si incolla uno screenshot, si trascina un'immagine o si disegna.
+    /// Opens an empty editor, with no objects: then you paste a screenshot, drag an image or draw.
     func openBlank() {
         do {
             DocumentOpener.open(try CaptureDocumentBuilder.blank(scale: Double(NSScreen.main?.backingScaleFactor ?? 2)))
@@ -159,7 +159,7 @@ final class AppEnvironment {
         }
     }
 
-    /// Apre nell'editor l'immagine negli appunti.
+    /// Opens the image on the pasteboard in the editor.
     func openClipboard() {
         guard let (image, scale) = Clipboard.image() else {
             notifier.info(String(localized: "There's no image on the clipboard"))

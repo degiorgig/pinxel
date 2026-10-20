@@ -9,7 +9,7 @@ struct DocumentModelCatalogTests {
     }
 
     @Test func commandNamesAreEnglishInTests() {
-        // Sotto `swift test` la lingua del bundle è l'inglese (verificato): i nomi sono la lingua di base.
+        // Under `swift test` the bundle language is English (verified): the names are the base language.
         #expect(CommandName.move == "Move")
         #expect(CommandName.bringToFront == "Bring to Front")
         #expect(CommandName.fitCanvas == "Fit Canvas")

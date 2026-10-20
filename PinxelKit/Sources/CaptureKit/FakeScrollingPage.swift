@@ -1,7 +1,7 @@
 import CoreGraphics
 
-/// Pagina lunga virtuale per test e UI test: fa da sorgente dei fotogrammi; i test la scorrono con `scrollTo`.
-/// I fotogrammi sono intestazione + `viewportHeight` righe del contenuto + piè di pagina.
+/// Virtual long page for tests and UI tests: it is the frame source; tests scroll it with `scrollTo`.
+/// Frames are header + `viewportHeight` rows of content + footer.
 @MainActor
 public final class FakeScrollingPage: RegionFrameSource {
     public let content: CGImage
@@ -9,9 +9,9 @@ public final class FakeScrollingPage: RegionFrameSource {
     public let header: CGImage?
     public let footer: CGImage?
     public let scale: Double
-    /// Contenuto che cambia da solo: ogni fotogramma è diverso dal precedente.
+    /// Content that changes by itself: every frame differs from the previous one.
     public var isAnimating = false
-    /// Chiamato a ogni fotogramma con il numero del fotogramma (da 1).
+    /// Called at every frame with the frame number (from 1).
     public var onFrame: ((Int) -> Void)?
     public private(set) var position = 0
     public private(set) var frameCount = 0
@@ -27,7 +27,7 @@ public final class FakeScrollingPage: RegionFrameSource {
 
     public var maxPosition: Int { content.height - viewportHeight }
 
-    /// Scorrimento dell'utente, in pixel.
+    /// User scroll, in pixels.
     public func scrollTo(_ newPosition: Int) {
         position = min(max(newPosition, 0), maxPosition)
     }
@@ -42,7 +42,7 @@ public final class FakeScrollingPage: RegionFrameSource {
         let headerHeight = header?.height ?? 0, footerHeight = footer?.height ?? 0
         let width = content.width, height = headerHeight + viewportHeight + footerHeight
         let ctx = Self.context(width: width, height: height)
-        // Il contesto ha origine in basso a sinistra; `cropping` ha origine in alto a sinistra.
+        // The context has its origin at the bottom left; `cropping` has its origin at the top left.
         if isAnimating {
             ctx.setFillColor(CGColor(srgbRed: Double(frameCount % 7) / 7, green: 0.5, blue: Double(frameCount % 3) / 3, alpha: 1))
             ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
@@ -58,7 +58,7 @@ public final class FakeScrollingPage: RegionFrameSource {
         return ctx.makeImage()!
     }
 
-    /// Ciò che una cattura perfetta deve produrre: intestazione, tutto il contenuto, piè di pagina.
+    /// What a perfect capture must produce: header, all the content, footer.
     public var expectedImage: CGImage {
         let headerHeight = header?.height ?? 0, footerHeight = footer?.height ?? 0
         let width = content.width, height = headerHeight + content.height + footerHeight

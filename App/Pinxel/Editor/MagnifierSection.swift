@@ -2,7 +2,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Forma, ingrandimento e connettore della lente (spec §6.4).
+/// Shape, magnification and connector of the magnifier (spec §6.4).
 struct MagnifierSection: View {
     let model: EditorModel
 

@@ -12,9 +12,9 @@ public enum ExportFormat: Equatable, Sendable {
 }
 
 public enum ExportScale: Sendable {
-    /// Punti logici (metà dei pixel di una cattura Retina).
+    /// Logical points (half the pixels of a Retina capture).
     case oneX
-    /// Pixel Retina.
+    /// Retina pixels.
     case twoX
 
     public func outputScale(documentScale: Double) -> Double {
@@ -49,7 +49,7 @@ public enum Exporter {
 
     private static func pdf(_ document: PinxelDocument, assets: any AssetProvider, outputScale: Double, renderer: DocumentRenderer) throws -> Data {
         let canvas = renderer.canvasSize(for: document)
-        // Tela vuota: lo stesso errore degli altri formati.
+        // Empty canvas: the same error as the other formats.
         guard canvas.width > 0, canvas.height > 0 else { throw RenderError.invalidSize }
         var mediaBox = CGRect(x: 0, y: 0, width: canvas.width * outputScale, height: canvas.height * outputScale)
         let data = NSMutableData()

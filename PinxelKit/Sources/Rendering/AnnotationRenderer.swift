@@ -3,14 +3,14 @@ import DocumentModel
 import Foundation
 
 struct RenderContext {
-    /// Dimensioni del contenuto: le regioni degli effetti restano dentro.
+    /// Content dimensions: effect regions stay inside.
     let contentSize: PixelSize
     let stepLabels: [UUID: String]
     let assets: any AssetProvider
     let outputScale: Double
     let effects: EffectCache
-    /// Immagine della regione (pixel del documento) con tutto ciò che sta sotto l'annotazione di indice dato,
-    /// con la chiave che ne descrive il contenuto (per la cache degli effetti).
+    /// Image of the region (document pixels) with everything beneath the annotation at the given index,
+    /// with the key describing its content (for the effects cache).
     let layers: (Int, PixelRect) -> (key: String, image: CGImage)?
 }
 
@@ -31,7 +31,7 @@ enum AnnotationRenderer {
         if let shadow = annotation.style.shadow {
             ShadowStyle.apply(shadow, to: ctx, outputScale: context.outputScale)
         }
-        // L'evidenziatore si fonde in multiply con lo sfondo: il livello va composto in multiply.
+        // The highlighter blends in multiply with the background: the layer must be composited in multiply.
         if case .highlight = annotation.kind { ctx.setBlendMode(.multiply) }
         ctx.setAlpha(annotation.style.opacity)
         ctx.beginTransparencyLayer(auxiliaryInfo: nil)

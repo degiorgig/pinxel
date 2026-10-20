@@ -21,7 +21,7 @@ public enum ShapeType: Codable, Equatable, Sendable {
 }
 
 public struct CalloutTail: Codable, Equatable, Sendable {
-    /// Punta della coda, in coordinate assolute del documento.
+    /// Tail tip, in absolute document coordinates.
     public var tip: CGPoint
     public var baseWidth: Double
 
@@ -37,7 +37,7 @@ public enum StepSequence: String, Codable, Sendable {
 
 public struct StepLabel: Codable, Equatable, Sendable {
     public var sequence: StepSequence
-    /// Se impostato, sostituisce il valore calcolato automaticamente.
+    /// If set, replaces the automatically computed value.
     public var override: String?
 
     public init(sequence: StepSequence = .numbers, override: String? = nil) {

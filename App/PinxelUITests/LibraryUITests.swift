@@ -1,8 +1,8 @@
 import AppKit
 import XCTest
 
-/// La libreria dei test sta nella cartella temporanea di Pinxel con un nome scelto qui: più avvii ritrovano le stesse catture,
-/// e la libreria vera non si tocca mai.
+/// The tests' library lives in Pinxel's temporary folder with a name chosen here: several launches find the same captures,
+/// and the real library is never touched.
 final class LibraryUITests: XCTestCase {
     private var libraryName = ""
     private var pasteboardGuard: PasteboardGuard?
@@ -19,8 +19,8 @@ final class LibraryUITests: XCTestCase {
 
     private func launch(_ extra: [String]) -> XCUIApplication {
         let app = XCUIApplication()
-        // Le coppie chiave-valore prima dei flag senza valore: AppKit legge gli argomenti a coppie, e un valore rimasto
-        // spaiato verrebbe aperto come file (avviso modale che blocca l'app).
+        // Key-value pairs before valueless flags: AppKit reads arguments in pairs, and a leftover
+        // unpaired value would be opened as a file (modal alert that blocks the app).
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestLibraryName", libraryName] + extra + ["-PinxelUITestFakeCapture"]
         app.launch()
         return app
@@ -45,7 +45,7 @@ final class LibraryUITests: XCTestCase {
     func testClipboardOnlyCaptureStillEntersTheLibrary() {
         NSPasteboard.general.clearContents()
         var app = launch(["-PinxelUITestPostCapture", "clipboardOnly", "-PinxelUITestCaptureOnLaunch"])
-        // Nessuna finestra: si aspetta che la cattura arrivi negli appunti, poi si riapre con un editor vuoto.
+        // No window: wait for the capture to arrive on the pasteboard, then reopen with an empty editor.
         let deadline = Date().addingTimeInterval(15)
         while NSPasteboard.general.data(forType: .png) == nil, Date() < deadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
@@ -74,8 +74,8 @@ final class LibraryUITests: XCTestCase {
         app.terminate()
     }
 
-    /// Una finestra con un documento senza titolo (come "Nuova dagli appunti"): il clic resta lì e il documento entra
-    /// nella libreria invece di andare perso.
+    /// A window with an untitled document (like "New from Pasteboard"): the click stays there and the document enters
+    /// the library instead of being lost.
     func testClickingAThumbnailInAnUntitledWindowKeepsTheWindowAndTheDocument() {
         var app = launch(["-PinxelUITestCaptureOnLaunch"])
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))

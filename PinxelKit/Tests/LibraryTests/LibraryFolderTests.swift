@@ -4,7 +4,7 @@ import Testing
 
 struct LibraryFolderTests {
     @Test func theOfficialFolderIsLibrary() {
-        // `Library` in tutte le lingue; la vecchia `Libreria` non si sposta né si legge.
+        // `Library` in all languages; the old `Libreria` is neither moved nor read.
         let folder = LibraryStore.defaultFolder
         #expect(folder.lastPathComponent == "Library")
         #expect(folder.deletingLastPathComponent().lastPathComponent == "Pinxel")

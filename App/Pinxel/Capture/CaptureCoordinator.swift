@@ -4,11 +4,11 @@ import CaptureKit
 import DocumentModel
 import os
 
-/// Ciò che serve alla cattura a scorrimento; nei UI test la pagina finta fa da sorgente.
-/// Scorre sempre l'utente: Pinxel cattura e cuce finché si preme Fine o Invio.
+/// What scrolling capture needs; in UI tests the fake page is the source.
+/// The user always does the scrolling: Pinxel captures and stitches until Done or Return is pressed.
 @MainActor
 struct ScrollCaptureDependencies {
-    /// Serve solo perché Esc e Invio non arrivino anche all'app sotto.
+    /// Only here so that Esc and Return do not also reach the app underneath.
     let accessibility: any AccessibilityPermission
     let makeSource: () -> any RegionFrameSource
     let presenter: any ScrollCapturePresenting
@@ -96,7 +96,7 @@ final class CaptureCoordinator {
             let contents = try CaptureDocumentBuilder.make(image: image, scale: scale, metadata: metadata)
             let plan = PostCaptureRouter.plan(for: current)
             actions.perform(plan, contents: contents, image: image, settings: current)
-            // L'overlay ha attivato Pinxel: se non si apre una finestra, il focus torna all'app di prima (es. per ⌘V).
+            // The overlay activated Pinxel: if no window opens, focus goes back to the previous app (e.g. for ⌘V).
             if !plan.immediate.contains(.openEditor), frontmost?.bundleIdentifier != Bundle.main.bundleIdentifier {
                 frontmost?.activate()
             }
@@ -146,7 +146,7 @@ final class CaptureCoordinator {
                 scrolling.defaults.set(true, forKey: Self.accessibilityAskedKey)
                 scrolling.accessibility.request()
             }
-            // L'app sotto l'area deve ricevere lo scorrimento dell'utente: torna davanti prima di iniziare.
+            // The app under the area must receive the user's scrolling: it comes to the front before starting.
             frontmost?.activate()
             let session = ScrollCaptureSession(source: scrolling.makeSource(), rect: prepared.rect,
                                                display: display, maxHeight: Self.maxScrollingHeight)
@@ -168,7 +168,7 @@ final class CaptureCoordinator {
         }
     }
 
-    /// Solo in Debug: `-PinxelDebugScrollRect x,y,w,h` salta la selezione, per provare la cattura vera da script.
+    /// Debug only: `-PinxelDebugScrollRect x,y,w,h` skips the selection, to try the real capture from a script.
     private static func debugScrollRect() -> CGRect? {
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
@@ -185,7 +185,7 @@ final class CaptureCoordinator {
         let controller = permissionWindow ?? PermissionWindowController(permission: permission)
         permissionWindow = controller
         controller.showWindow(nil)
-        // Un'app agente non sempre viene attivata: la finestra va comunque davanti alle altre.
+        // An agent app is not always activated: the window still goes in front of the others.
         controller.window?.level = .floating
         controller.window?.orderFrontRegardless()
         NSApp.activate()
