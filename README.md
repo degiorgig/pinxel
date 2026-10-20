@@ -37,7 +37,7 @@ You can change them in Settings. In the editor every tool has its own letter (ho
 
 Download `Pinxel-<version>.dmg` or `.zip` from the [releases](https://github.com/degiorgig/pinxel/releases) and drag Pinxel into Applications.
 
-Published builds are not notarized by Apple. On a Mac other than the one that signed them, macOS blocks them on first launch: open the app with right-click ▸ Open, or from System Settings ▸ Privacy & Security ▸ Open Anyway.
+From 0.3.0 the builds are signed with Developer ID and notarized by Apple, so they open normally on any Mac. Versions 0.1.0 and 0.2.0 are not notarized: macOS blocks them on first launch; open them with right-click ▸ Open, or from System Settings ▸ Privacy & Security ▸ Open Anyway.
 
 ## Building from source
 
@@ -71,16 +71,18 @@ To publish version X.Y.Z:
    git tag -a vX.Y.Z -m "Pinxel X.Y.Z" && git push origin vX.Y.Z
    ```
 
-The `Release` workflow then runs the tests, builds and signs the app, creates `Pinxel-X.Y.Z.dmg` and `Pinxel-X.Y.Z.zip`, and publishes the GitHub release with the notes and the SHA-256 checksums. `scripts/release/package.sh X.Y.Z` does the same packaging locally.
+The `Release` workflow then runs the tests, builds the app, signs it with Developer ID, has Apple notarize it, creates `Pinxel-X.Y.Z.dmg` and `Pinxel-X.Y.Z.zip`, and publishes the GitHub release with the notes and the SHA-256 checksums. `scripts/release/package.sh X.Y.Z` does the same packaging locally (see the comment at the top of the script for the notarization credentials).
 
-Running the `Release` workflow by hand (Actions ▸ Release ▸ Run workflow, or `gh workflow run Release`) is a dry run: it builds and signs the version in `project.yml` and keeps the dmg and zip as a workflow artifact for 7 days, without publishing anything.
+Running the `Release` workflow by hand (Actions ▸ Release ▸ Run workflow, or `gh workflow run Release`) is a dry run: it builds, signs and notarizes the version in `project.yml` and keeps the dmg and zip as a workflow artifact for 7 days, without publishing anything.
 
-The workflow signs with an Apple Development certificate, so the Screen Recording permission survives updates. It needs these repository settings:
+The workflow signs with a Developer ID Application certificate, so the app opens on any Mac and the Screen Recording permission survives updates. It needs these repository settings:
 
 | Name | Kind | Value |
 |------|------|-------|
-| `MACOS_CERTIFICATE_P12` | secret | the certificate with its private key, exported as `.p12` and base64-encoded |
+| `MACOS_CERTIFICATE_P12` | secret | the Developer ID Application certificate with its private key, exported as `.p12` and base64-encoded |
 | `MACOS_CERTIFICATE_PASSWORD` | secret | the `.p12` password |
+| `NOTARY_APPLE_ID` | secret | the Apple ID of the developer account |
+| `NOTARY_PASSWORD` | secret | an [app-specific password](https://support.apple.com/102654) of that Apple ID |
 | `DEVELOPMENT_TEAM` | variable | the team ID of the certificate |
 
 ## License
