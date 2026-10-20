@@ -9,4 +9,8 @@ struct LibraryFolderTests {
         #expect(folder.lastPathComponent == "Library")
         #expect(folder.deletingLastPathComponent().lastPathComponent == "Pinxel")
     }
+
+    @Test func theDamagedIndexCopyHasAnEnglishName() {
+        #expect(LibraryStore.corruptName == "library.json.corrupt")
+    }
 }

@@ -28,7 +28,7 @@ public struct LibraryLoad: Sendable {
 /// Tutto ciò che tocca la cartella dell'archivio. Si usa dal thread principale; solo `thumbnail(at:)` va bene altrove.
 public final class LibraryStore {
     public static let indexName = "library.json"
-    public static let corruptName = "library.json.rovinato"
+    public static let corruptName = "library.json.corrupt"
 
     public static let defaultFolderName = "Library"
 
