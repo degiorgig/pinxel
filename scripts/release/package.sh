@@ -29,6 +29,13 @@ APP=$DERIVED/Build/Products/Release/Pinxel.app
 BUILT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
 [ "$BUILT" = "$VERSION" ] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
 
+for bundle in "$APP" "$APP"/Contents/Resources/PinxelKit_*.bundle; do
+    for language in it de fr; do
+        [ -n "$(find "$bundle" -maxdepth 3 -type d -name "$language.lproj" -print -quit)" ] \
+            || fail "$(basename "$bundle") has no $language translation"
+    done
+done
+
 codesign --verify --deep --strict "$APP"
 SIGNATURE=$(codesign -dv --verbose=2 "$APP" 2>&1)
 grep -q "^Authority=Apple Development" <<<"$SIGNATURE" \

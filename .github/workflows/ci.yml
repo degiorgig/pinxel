@@ -29,7 +29,9 @@ jobs:
         run: brew install xcodegen
 
       - name: Package tests
-        run: swift test --package-path PinxelKit
+        # xcodebuild, not swift test: it compiles the String Catalogs on every Xcode.
+        working-directory: PinxelKit
+        run: xcodebuild test -scheme PinxelKit-Package -destination 'platform=macOS' -derivedDataPath ../build/ci-package
 
       - name: Build the app and the UI tests
         # Ad hoc signature (App/Config/Base.xcconfig): no certificate needed.
