@@ -73,6 +73,8 @@ To publish version X.Y.Z:
 
 The `Release` workflow then runs the tests, builds and signs the app, creates `Pinxel-X.Y.Z.dmg` and `Pinxel-X.Y.Z.zip`, and publishes the GitHub release with the notes and the SHA-256 checksums. `scripts/release/package.sh X.Y.Z` does the same packaging locally.
 
+Running the `Release` workflow by hand (Actions ▸ Release ▸ Run workflow, or `gh workflow run Release`) is a dry run: it builds and signs the version in `project.yml` and keeps the dmg and zip as a workflow artifact for 7 days, without publishing anything.
+
 The workflow signs with an Apple Development certificate, so the Screen Recording permission survives updates. It needs these repository settings:
 
 | Name | Kind | Value |
