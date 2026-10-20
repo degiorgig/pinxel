@@ -2,12 +2,14 @@ name: Release
 
 # Pushing a tag vX.Y.Z builds, signs and publishes Pinxel X.Y.Z.
 # Needs docs/releases/X.Y.Z.md, MARKETING_VERSION X.Y.Z in project.yml, and:
-#   secrets.MACOS_CERTIFICATE_P12       the Apple Development certificate (.p12, base64)
+#   secrets.MACOS_CERTIFICATE_P12       the Developer ID Application certificate (.p12, base64)
 #   secrets.MACOS_CERTIFICATE_PASSWORD  the .p12 password
-#   vars.DEVELOPMENT_TEAM               the team ID of that certificate
+#   secrets.NOTARY_APPLE_ID             the Apple ID of the developer account
+#   secrets.NOTARY_PASSWORD             an app-specific password of that Apple ID
+#   vars.DEVELOPMENT_TEAM               the team ID
 # Running it by hand (Actions ▸ Release ▸ Run workflow, or `gh workflow run Release`)
-# is a dry run: it builds and signs the version in project.yml and keeps the dmg and
-# zip as a workflow artifact, without publishing anything.
+# is a dry run: it builds, signs and notarizes the version in project.yml and keeps
+# the dmg and zip as a workflow artifact, without publishing anything.
 on:
   push:
     tags: ['v*']
@@ -72,21 +74,25 @@ jobs:
           KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
           KEYCHAIN_PASSWORD=$(uuidgen)
           echo "$CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
-          curl -fsSL -o "$RUNNER_TEMP/wwdr.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          curl -fsSL -o "$RUNNER_TEMP/developer-id-ca.cer" https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
           security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" \
             -T /usr/bin/codesign -T /usr/bin/security
-          security import "$RUNNER_TEMP/wwdr.cer" -k "$KEYCHAIN" -T /usr/bin/codesign || true
+          security import "$RUNNER_TEMP/developer-id-ca.cer" -k "$KEYCHAIN" -T /usr/bin/codesign || true
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/certificate.p12"
           security find-identity -v -p codesigning "$KEYCHAIN" | sed -E 's/[0-9A-F]{40}/<hash>/'
-          printf 'CODE_SIGN_STYLE = Manual\nCODE_SIGN_IDENTITY = Apple Development\nDEVELOPMENT_TEAM = %s\n' \
+          printf 'CODE_SIGN_STYLE = Manual\nCODE_SIGN_IDENTITY = Developer ID Application\nDEVELOPMENT_TEAM = %s\n' \
             "$DEVELOPMENT_TEAM" > App/Config/Signing.local.xcconfig
 
-      - name: Build and package
+      - name: Build, notarize and package
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ vars.DEVELOPMENT_TEAM }}
         run: scripts/release/package.sh "$VERSION"
 
       - name: Keep the packages (dry run)
