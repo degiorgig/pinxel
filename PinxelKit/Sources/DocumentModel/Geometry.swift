@@ -45,7 +45,7 @@ public struct PixelRect: Codable, Equatable, Hashable, Sendable {
 
     public var cgRect: CGRect { CGRect(x: x, y: y, width: width, height: height) }
 
-    /// Intersezione con l'immagine `0..<size`; larghezza/altezza 0 se fuori.
+    /// Intersection with the image `0..<size`; width/height 0 if outside.
     public func clamped(to size: PixelSize) -> PixelRect {
         let minX = max(0, min(x, size.width))
         let minY = max(0, min(y, size.height))
@@ -54,7 +54,7 @@ public struct PixelRect: Codable, Equatable, Hashable, Sendable {
         return PixelRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-    /// Somma che satura invece di andare in overflow (i valori possono arrivare da file ostili).
+    /// Sum that saturates instead of overflowing (values may come from hostile files).
     private static func saturatingSum(_ a: Int, _ b: Int) -> Int {
         let (sum, overflow) = a.addingReportingOverflow(b)
         guard overflow else { return sum }
@@ -63,7 +63,7 @@ public struct PixelRect: Codable, Equatable, Hashable, Sendable {
 }
 
 extension CGRect {
-    /// Il più piccolo rettangolo che contiene tutti i punti; `.null` se non ci sono punti.
+    /// The smallest rectangle containing all the points; `.null` if there are no points.
     public static func bounding(_ points: [CGPoint]) -> CGRect {
         guard let first = points.first else { return .null }
         var minX = first.x, minY = first.y, maxX = first.x, maxY = first.y

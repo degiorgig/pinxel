@@ -6,7 +6,7 @@ import Rendering
 import Testing
 @testable import EditorUI
 
-/// Difetti trovati dalla revisione successiva a 27a0a80.
+/// Defects found by the review following 27a0a80.
 @MainActor
 struct ReviewFollowUpTests {
     private let shape = Annotation(id: TestDocuments.id(2), kind: .shape(ShapeData(rect: CGRect(x: 20, y: 20, width: 40, height: 30), shape: .rectangle)))
@@ -34,7 +34,7 @@ struct ReviewFollowUpTests {
         return rep.representation(using: .png, properties: [:])!
     }
 
-    // 1. Un'immagine incollata tagliata insieme a una forma arriva anche in un altro documento.
+    // 1. A pasted image cut together with a shape also arrives in another document.
     @Test func mixedSelectionKeepsItsImageAcrossDocuments() throws {
         let source = makeCanvas([shape])
         source.pasteboard.clearContents()
@@ -53,11 +53,11 @@ struct ReviewFollowUpTests {
         }.first)
         let stored = try #require(target.model.session.assets.image(for: image.asset))
         #expect(stored.width == 40 && stored.height == 20)
-        // Il file viene salvato con il nuovo documento.
+        // The file is saved with the new document.
         #expect(target.model.session.assets.addedData[image.asset] != nil)
     }
 
-    // 2. Con un oggetto selezionato, lo strumento Ritaglio mostra le sue opzioni (Ritaglia, Annulla).
+    // 2. With an object selected, the Crop tool shows its options (Crop, Cancel).
     @Test func cropToolTakesThePanelOverTheSelection() {
         let canvas = makeCanvas([shape])
         canvas.model.session.selection = [shape.id]
@@ -70,7 +70,7 @@ struct ReviewFollowUpTests {
         #expect(canvas.model.inspectedKind == .shape)
     }
 
-    // 3. Un testo ruotato resta ruotato mentre lo si scrive.
+    // 3. A rotated text stays rotated while it is being written.
     @Test func rotatedTextIsEditedWithItsRotation() throws {
         let rect = CGRect(x: 100, y: 100, width: 160, height: 40)
         let text = Annotation(id: TestDocuments.id(1), kind: .text(TextData(rect: rect, text: RichText("Ciao"))),
@@ -78,7 +78,7 @@ struct ReviewFollowUpTests {
         let canvas = makeCanvas([text])
         canvas.beginTextEditing(TextEditRequest(annotation: text, isNew: false))
         let editor = try #require(canvas.textEditor)
-        // L'angolo in alto a destra del riquadro, ruotato come lo disegna il renderer, a due livelli di zoom.
+        // The top-right corner of the box, rotated as the renderer draws it, at two zoom levels.
         let rotation = CGAffineTransform(translationX: rect.midX, y: rect.midY).rotated(by: .pi / 2).translatedBy(x: -rect.midX, y: -rect.midY)
         let expected = CGPoint(x: rect.maxX, y: rect.minY).applying(rotation)
         for zoom in [false, true] {

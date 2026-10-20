@@ -9,7 +9,7 @@ struct KeyComboTests {
         #expect(HotKeyAction.screen.defaultCombo.displayString == "⌃⇧3")
         #expect(HotKeyAction.repeatLastArea.defaultCombo.displayString == "⌃⇧4")
         #expect(HotKeyAction.scrolling.defaultCombo.displayString == "⌃⇧5")
-        #expect(HotKeyAction.scrolling.title == "Cattura a scorrimento")
+        #expect(HotKeyAction.scrolling.title == "Scrolling Capture")
         #expect(Set(HotKeyAction.allCases.map(\.defaultCombo)).count == HotKeyAction.allCases.count)
     }
 
@@ -17,8 +17,8 @@ struct KeyComboTests {
         let combo = KeyCombo(keyCode: 0x00, modifiers: KeyCombo.command | KeyCombo.shift | KeyCombo.option | KeyCombo.control)
         #expect(combo.displayString == "⌃⌥⇧⌘A")
         #expect(KeyCombo(keyCode: 0x7A, modifiers: KeyCombo.command).displayString == "⌘F1")
-        #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.option).displayString == "⌥Spazio")
-        #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).displayString == "⌃Tasto 90")
+        #expect(KeyCombo(keyCode: 0x31, modifiers: KeyCombo.option).displayString == "⌥Space")
+        #expect(KeyCombo(keyCode: 0x5A, modifiers: KeyCombo.control).displayString == "⌃Key 90")
     }
 
     @Test func menuKeyEquivalentForNativeShortcutColumn() {
@@ -33,18 +33,18 @@ struct KeyComboTests {
     @Test func cocoaFlagsMapToCarbon() {
         let cocoa: UInt = (1 << 18) | (1 << 17) // control + shift
         #expect(KeyCombo.carbonModifiers(fromCocoa: cocoa) == KeyCombo.control | KeyCombo.shift)
-        let all: UInt = (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20) | (1 << 16) // + caps lock (ignorato)
+        let all: UInt = (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20) | (1 << 16) // + caps lock (ignored)
         #expect(KeyCombo.carbonModifiers(fromCocoa: all) == KeyCombo.control | KeyCombo.shift | KeyCombo.option | KeyCombo.command)
     }
 
     @Test func bareKeyHasNoModifier() {
         #expect(!KeyCombo(keyCode: 0x12, modifiers: 0).hasModifier)
-        // Solo ⇧ su un tasto che scrive equivale a un tasto nudo ("!", "A" maiuscola).
+        // Only ⇧ on a key that types is equivalent to a bare key ("!", capital "A").
         #expect(!KeyCombo(keyCode: 0x12, modifiers: KeyCombo.shift).hasModifier)
         #expect(!KeyCombo(keyCode: 0x00, modifiers: KeyCombo.shift).hasModifier)
         #expect(KeyCombo(keyCode: 0x12, modifiers: KeyCombo.shift | KeyCombo.control).hasModifier)
         #expect(KeyCombo(keyCode: 0x12, modifiers: KeyCombo.command).hasModifier)
-        // I tasti funzione possono essere usati anche da soli o con ⇧.
+        // Function keys can be used on their own or with ⇧.
         #expect(KeyCombo(keyCode: 0x7A, modifiers: KeyCombo.shift).hasModifier)
         #expect(KeyCombo(keyCode: 0x7A, modifiers: 0).hasModifier)
     }

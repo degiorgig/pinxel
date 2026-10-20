@@ -23,7 +23,7 @@ struct EditorMenuStateTests {
         let state = EditorMenuState()
         #expect(!state.hasEditor)
         #expect(state.allows(false))
-        #expect(state.undoTitle == "Annulla" && state.redoTitle == "Ripristina")
+        #expect(state.undoTitle == "Undo" && state.redoTitle == "Redo")
     }
 
     @Test func selectionAndLocksDecideTheArrangeItems() {
@@ -48,13 +48,13 @@ struct EditorMenuStateTests {
 
     @Test func undoAndRedoNameTheAction() {
         let model = makeModel([])
-        model.session.perform(AddAnnotations([free], name: "Aggiungi freccia"))
+        model.session.perform(AddAnnotations([free], name: EditorTool.arrow.addCommandName))
         var state = EditorMenuState(model: model)
-        #expect(state.canUndo && state.undoTitle == "Annulla aggiungi freccia")
+        #expect(state.canUndo && state.undoTitle == UndoManager().undoMenuTitle(forUndoActionName: EditorTool.arrow.addCommandName))
         model.session.undoManager.undo()
         state = EditorMenuState(model: model)
-        #expect(state.canRedo && state.redoTitle == "Ripristina aggiungi freccia")
-        #expect(!state.canUndo && state.undoTitle == "Annulla")
+        #expect(state.canRedo && state.redoTitle == UndoManager().redoMenuTitle(forUndoActionName: EditorTool.arrow.addCommandName))
+        #expect(!state.canUndo && state.undoTitle == "Undo")
     }
 
     @Test func editingTextPassesEverythingThroughToTheTextView() {
@@ -62,7 +62,7 @@ struct EditorMenuStateTests {
         model.editingText = RichText("x")
         let state = EditorMenuState(model: model)
         #expect(state.isEditingText && state.allows(false))
-        #expect(state.undoTitle == "Annulla")
+        #expect(state.undoTitle == "Undo")
     }
 
     @Test func commandEqualsZoomsIn() throws {

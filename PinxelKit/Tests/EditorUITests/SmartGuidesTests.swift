@@ -21,9 +21,9 @@ struct SmartGuidesTests {
 
     @Test func alignsCentersAndPicksTheClosestLine() {
         let snap = SmartGuides.snap(moving, to: [CGRect(x: 108, y: 300, width: 30, height: 30), CGRect(x: 0, y: 147, width: 20, height: 20)], tolerance: 6)
-        // Centro 125 contro centro 123 (−2) batte il bordo sinistro 100 contro 108 (+8, fuori tolleranza).
+        // Center 125 against center 123 (−2) beats left edge 100 against 108 (+8, outside tolerance).
         #expect(snap.offset.width == -2)
-        // Bordo inferiore 150 contro bordo superiore 147 (−3) e centro 125 contro 157 (fuori).
+        // Bottom edge 150 against top edge 147 (−3) and center 125 against 157 (outside).
         #expect(snap.offset.height == -3)
         #expect(snap.guides.contains { $0.orientation == .vertical && $0.position == 123 })
         #expect(snap.guides.contains { $0.orientation == .horizontal && $0.position == 147 })
@@ -40,7 +40,7 @@ struct SmartGuidesTests {
         var document = TestDocuments.document(annotations: [left, right]).withoutCapture
         let start = CGPoint(x: 125, y: 125)
         let end = CGPoint(x: start.x + delta.width, y: start.y + delta.height)
-        // ⇧ al clic toglierebbe l'oggetto dalla selezione: i modificatori contano durante il trascinamento.
+        // ⇧ on click would remove the object from the selection: modifiers count during the drag.
         _ = controller.handle(.down(start, modifiers.subtracting(.shift), clickCount: 1), document: document, selection: [left.id])
         let drag = controller.handle(.drag(end, modifiers), document: document, selection: [left.id])
         let up = controller.handle(.up(end, modifiers), document: document, selection: [left.id])

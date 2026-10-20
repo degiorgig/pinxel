@@ -1,7 +1,7 @@
 import Foundation
 
 public enum StepNumbering {
-    /// Etichetta visualizzata per ogni step, calcolata dall'ordine in `annotations`.
+    /// Label displayed for each step, computed from the order in `annotations`.
     public static func labels(for annotations: [Annotation]) -> [UUID: String] {
         var counters: [StepSequence: Int] = [:]
         var result: [UUID: String] = [:]
@@ -14,7 +14,7 @@ public enum StepNumbering {
         return result
     }
 
-    /// 1 → "1" / "A" / "a"; le lettere usano la numerazione biiettiva in base 26 (27 → "AA").
+    /// 1 → "1" / "A" / "a"; letters use bijective base-26 numbering (27 → "AA").
     public static func format(_ n: Int, _ sequence: StepSequence) -> String {
         switch sequence {
         case .numbers:

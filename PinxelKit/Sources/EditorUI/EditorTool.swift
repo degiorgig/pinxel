@@ -5,23 +5,40 @@ public enum EditorTool: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .select: "Selezione"
-        case .arrow: "Freccia"
-        case .line: "Linea"
-        case .shape: "Forma"
-        case .text: "Testo"
-        case .callout: "Callout"
-        case .step: "Step"
-        case .pen: "Penna"
-        case .highlight: "Evidenziatore"
-        case .blur: "Sfocatura"
-        case .magnifier: "Lente"
-        case .crop: "Ritaglio"
-        case .cutOut: "Taglia e ricuci"
+        case .select: String(localized: "Select", bundle: .module, comment: "Tool name")
+        case .arrow: String(localized: "Arrow", bundle: .module, comment: "Tool name")
+        case .line: String(localized: "Line", bundle: .module, comment: "Tool name")
+        case .shape: String(localized: "Shape", bundle: .module, comment: "Tool name")
+        case .text: String(localized: "Text", bundle: .module, comment: "Tool name")
+        case .callout: String(localized: "Callout", bundle: .module, comment: "Tool name")
+        case .step: String(localized: "Step", bundle: .module, comment: "Tool name")
+        case .pen: String(localized: "Pen", bundle: .module, comment: "Tool name")
+        case .highlight: String(localized: "Highlighter", bundle: .module, comment: "Tool name")
+        case .blur: String(localized: "Blur", bundle: .module, comment: "Tool name")
+        case .magnifier: String(localized: "Magnifier", bundle: .module, comment: "Tool name")
+        case .crop: String(localized: "Crop", bundle: .module, comment: "Tool name")
+        case .cutOut: String(localized: "Cut Out", bundle: .module, comment: "Tool name")
         }
     }
 
-    /// Tasto singolo che attiva lo strumento (spec §6.2).
+    /// Name in "Undo …" of an object created with the tool.
+    public var addCommandName: String {
+        switch self {
+        case .arrow: String(localized: "Add Arrow", bundle: .module, comment: "Undo: new object")
+        case .line: String(localized: "Add Line", bundle: .module, comment: "Undo: new object")
+        case .shape: String(localized: "Add Shape", bundle: .module, comment: "Undo: new object")
+        case .text: String(localized: "Add Text", bundle: .module, comment: "Undo: new object")
+        case .callout: String(localized: "Add Callout", bundle: .module, comment: "Undo: new object")
+        case .step: String(localized: "Add Step", bundle: .module, comment: "Undo: new object")
+        case .pen: String(localized: "Add Pen Stroke", bundle: .module, comment: "Undo: new object")
+        case .highlight: String(localized: "Add Highlight", bundle: .module, comment: "Undo: new object")
+        case .blur: String(localized: "Add Blur", bundle: .module, comment: "Undo: new object")
+        case .magnifier: String(localized: "Add Magnifier", bundle: .module, comment: "Undo: new object")
+        case .select, .crop, .cutOut: CommandName.add
+        }
+    }
+
+    /// Single key that activates the tool (spec §6.2).
     public var shortcut: Character {
         switch self {
         case .select: "v"
@@ -58,12 +75,12 @@ public enum EditorTool: String, CaseIterable, Sendable {
         }
     }
 
-    /// Gli strumenti che aggiungono annotazioni (non selezione, ritaglio e taglio).
+    /// The tools that add annotations (not selection, crop and cut).
     public var createsAnnotations: Bool {
         ![.select, .crop, .cutOut].contains(self)
     }
 
-    /// Lo strumento che crea annotazioni di questo tipo.
+    /// The tool that creates annotations of this kind.
     public init?(kind: Annotation.Kind) {
         switch kind {
         case .arrow: self = .arrow
@@ -90,23 +107,23 @@ public enum EffectMode: String, CaseIterable, Sendable {
     case blur, pixelate
 }
 
-/// Stile e opzioni con cui ogni strumento crea le annotazioni.
+/// Style and options with which each tool creates annotations.
 public struct ToolStyles: Equatable, Sendable {
     public var styles: [EditorTool: Style]
     public var arrowHeads = ArrowHeads()
     public var shapeType: ShapeType = .rectangle
     public var stepSequence: StepSequence = .numbers
-    /// Diametro degli step in pixel del documento.
+    /// Diameter of steps in document pixels.
     public var stepDiameter: Double = 48
     public var effectMode: EffectMode = .blur
-    /// Raggio della sfocatura o lato dei blocchi, in pixel del documento.
+    /// Blur radius or block side, in document pixels.
     public var effectAmount: Double = 12
-    /// Carattere, dimensione, colore e allineamento dei testi nuovi (senza run).
+    /// Font, size, color and alignment of new texts (without runs).
     public var text = RichText(runs: [], fontFamily: "Helvetica", fontSize: 24, color: .black)
     public var calloutText = RichText(runs: [], fontFamily: "Helvetica", fontSize: 20, color: .black)
     public var magnifierShape: ShapeType = .ellipse
     public var magnifierConnector = true
-    /// Ingrandimento della lente: lato della destinazione / lato della sorgente.
+    /// Lens magnification: side of the destination / side of the source.
     public var magnifierZoom: Double = 2
     public var cutEdge: CutEdge = .zigzag
 

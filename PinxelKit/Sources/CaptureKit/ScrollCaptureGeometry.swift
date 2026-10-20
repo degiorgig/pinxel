@@ -1,13 +1,13 @@
 import CoreGraphics
 
-/// Calcoli dell'area e del pannello della cattura a scorrimento. Coordinate globali in punti, origine in alto a sinistra.
+/// Calculations for the scrolling-capture area and panel. Global coordinates in points, origin at top left.
 public enum ScrollCaptureGeometry {
     public static let minimumHeight: CGFloat = 100
-    /// Memoria massima per l'immagine più lunga possibile.
+    /// Maximum memory for the longest possible image.
     public static let byteBudget = 1 << 30
 
-    /// L'area limitata al suo schermo, ristretta ai pixel interi e, se serve, in larghezza per il budget di memoria.
-    /// `nil` se resta più bassa di `minimumHeight`.
+    /// The area limited to its screen, narrowed to whole pixels and, if needed, in width for the memory budget.
+    /// `nil` if it stays shorter than `minimumHeight`.
     public static func prepare(_ rect: CGRect, on display: DisplayInfo, maxHeight: Int) -> (rect: CGRect, narrowed: Bool)? {
         let visible = rect.standardized.intersection(display.frame)
         guard !visible.isNull else { return nil }
@@ -18,8 +18,8 @@ public enum ScrollCaptureGeometry {
         return (CGRect(x: clipped.minX, y: clipped.minY, width: maxWidth, height: clipped.height), true)
     }
 
-    /// Il rettangolo più grande fatto di pixel interi dello schermo dentro `rect`: con bordi a metà pixel l'ultima riga
-    /// catturata prenderebbe un po' di ciò che sta appena fuori, come la cornice dell'area.
+    /// The largest rectangle made of whole screen pixels inside `rect`: with half-pixel edges the last captured row
+    /// would pick up a bit of what lies just outside, like the area's frame.
     static func wholePixels(_ rect: CGRect, on display: DisplayInfo) -> CGRect {
         let scale = display.scale, origin = display.frame.origin
         let minX = ((rect.minX - origin.x) * scale).rounded(.up), maxX = ((rect.maxX - origin.x) * scale).rounded(.down)
@@ -28,8 +28,8 @@ public enum ScrollCaptureGeometry {
                       width: max(0, maxX - minX) / scale, height: max(0, maxY - minY) / scale)
     }
 
-    /// Pannello fuori dall'area: sotto, sopra, a destra, a sinistra; se non c'è posto, in basso a destra dentro lo schermo
-    /// (la cattura esclude comunque le finestre di Pinxel).
+    /// Panel outside the area: below, above, right, left; if there is no room, at the bottom right inside the screen
+    /// (the capture excludes Pinxel's windows anyway).
     public static func panelFrame(size: CGSize, around rect: CGRect, in screen: CGRect, gap: CGFloat = 12) -> CGRect {
         func clampX(_ x: CGFloat) -> CGFloat { min(max(x, screen.minX), screen.maxX - size.width) }
         func clampY(_ y: CGFloat) -> CGFloat { min(max(y, screen.minY), screen.maxY - size.height) }

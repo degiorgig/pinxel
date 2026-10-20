@@ -6,9 +6,9 @@ import Rendering
 public enum Thumbnailer {
     public static let maxSide: Double = 512
 
-    /// PNG con il lato lungo al massimo di 512 px; le immagini più piccole non vengono ingrandite.
+    /// PNG with the long side at most 512 px; smaller images are not enlarged.
     public static func make(_ document: PinxelDocument, assets: any AssetProvider, renderer: DocumentRenderer = DocumentRenderer()) throws -> Data {
-        // Tela vuota (tutto eliminato): una miniatura trasparente di 1 pixel, così il salvataggio riesce.
+        // Empty canvas (everything deleted): a transparent 1-pixel thumbnail, so that saving succeeds.
         guard document.imageSize.width > 0, document.imageSize.height > 0 else {
             guard let ctx = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
                                       space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),

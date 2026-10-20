@@ -3,7 +3,7 @@ import Library
 import Observation
 import Persistence
 
-/// L'archivio condiviso da tutte le finestre. Ogni modifica si salva subito in `library.json`.
+/// The library shared by all windows. Every change is saved immediately to `library.json`.
 @MainActor
 @Observable
 final class LibraryModel {
@@ -14,18 +14,18 @@ final class LibraryModel {
             filtered = nil
         }
     }
-    /// Le etichette in uso, ricalcolate solo quando cambia l'indice (la striscia le chiede a ogni disegno).
+    /// The labels in use, recomputed only when the index changes (the strip asks for them on every draw).
     private(set) var allTags: [String] = []
     @ObservationIgnored private var filtered: (filter: LibraryFilter, items: [Library.LibraryItem])?
-    /// Data di modifica dei file noti: quando cambia, la miniatura si rilegge.
+    /// Modification date of known files: when it changes, the thumbnail is re-read.
     private(set) var thumbnailRevision: [String: Date] = [:]
 
     @ObservationIgnored let store: LibraryStore
     @ObservationIgnored private let notifier: Notifier
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
-    /// `library.json` c'è ma non si legge: finché è così non si riscrive, o cartelle ed etichette andrebbero perse.
+    /// `library.json` exists but cannot be read: while that is so it is not rewritten, or folders and labels would be lost.
     @ObservationIgnored private var indexUnreadable = false
-    /// Date di modifica di cartella e indice all'ultimo caricamento: al ritorno su Pinxel si ricarica solo se cambiano.
+    /// Modification dates of folder and index at the last load: on return to Pinxel it reloads only if they change.
     @ObservationIgnored private var loadedStamp: [Date?] = []
 
     init(store: LibraryStore, notifier: Notifier) {
@@ -46,15 +46,15 @@ final class LibraryModel {
         indexUnreadable = load.problem == .unreadable
         switch load.problem {
         case .corrupt:
-            notifier.info("L'indice della libreria era danneggiato: ricostruito dai file. Cartelle ed etichette sono andate perse; la copia è in \(LibraryStore.corruptName).")
+            notifier.info(String(localized: "The library index was damaged and has been rebuilt from the files. Folders and tags were lost; a copy is in \(LibraryStore.corruptName)."))
         case .futureVersion:
-            notifier.info("L'indice della libreria è di una versione più recente di Pinxel: messo da parte in \(LibraryStore.corruptName) e ricostruito dai file.")
+            notifier.info(String(localized: "The library index comes from a newer version of Pinxel: it was set aside in \(LibraryStore.corruptName) and rebuilt from the files."))
         case .unreadable:
-            notifier.info("Impossibile leggere l'indice della libreria: cartelle ed etichette non si salvano finché non torna leggibile.")
+            notifier.info(String(localized: "Can't read the library index: folders and tags won't be saved until it is readable again."))
         case nil:
             break
         }
-        // Indice illeggibile: le catture si vedono lo stesso, ma senza perdere cartelle ed etichette già in memoria.
+        // Unreadable index: captures are still shown, but without losing folders and labels already in memory.
         if load.problem == .unreadable, !index.items.isEmpty {
             index = index.reconciled(withFiles: Set(load.index.items.map(\.file))) { file in load.index.item(file)! }
         } else if load.index != index {
@@ -64,7 +64,7 @@ final class LibraryModel {
         refreshRevisions()
     }
 
-    /// Al ritorno su Pinxel: qualcosa è cambiato nella cartella (file aggiunti o tolti dal Finder) o nell'indice?
+    /// On return to Pinxel: did something change in the folder (files added or removed from the Finder) or in the index?
     private func reloadIfChanged() {
         if stamp() != loadedStamp { reload() }
     }
@@ -118,8 +118,8 @@ final class LibraryModel {
         }
     }
 
-    /// Sposta le catture nel Cestino (o, se non c'è, chiede e cancella), poi chiude le finestre di quelle eliminate.
-    /// Le finestre si chiudono solo dopo: se l'eliminazione non riesce o si annulla, le modifiche restano.
+    /// Moves captures to the Trash (or, if there is none, asks and deletes), then closes the windows of the deleted ones.
+    /// Windows close only afterwards: if deletion fails or is canceled, the changes remain.
     func delete(_ files: Set<String>) {
         guard !files.isEmpty else { return }
         let open = NSDocumentController.shared.documents.compactMap { document -> (NSDocument, String)? in
@@ -133,10 +133,10 @@ final class LibraryModel {
             try store.trash(files, in: &index)
         } catch LibraryError.trashUnavailable {
             let alert = NSAlert()
-            alert.messageText = files.count == 1 ? "Eliminare definitivamente la cattura?" : "Eliminare definitivamente \(files.count) catture?"
-            alert.informativeText = "Il Cestino non è disponibile: non si potranno recuperare."
-            alert.addButton(withTitle: "Elimina")
-            alert.addButton(withTitle: "Annulla")
+            alert.messageText = files.count == 1 ? String(localized: "Delete the capture permanently?") : String(localized: "Delete \(files.count) captures permanently?")
+            alert.informativeText = String(localized: "The Trash isn't available: they can't be recovered.")
+            alert.addButton(withTitle: String(localized: "Delete"))
+            alert.addButton(withTitle: String(localized: "Cancel"))
             if alert.runModal() == .alertFirstButtonReturn {
                 do { try store.deletePermanently(files, in: &index) } catch { notifier.failure(error) }
             }
@@ -147,7 +147,7 @@ final class LibraryModel {
         thumbnailRevision = thumbnailRevision.filter { index.item($0.key) != nil }
     }
 
-    /// Le catture che il filtro mostra; ricalcolate solo quando cambiano indice o filtro.
+    /// The captures the filter shows; recomputed only when the index or the filter changes.
     func items(for filter: LibraryFilter) -> [Library.LibraryItem] {
         if let filtered, filtered.filter == filter { return filtered.items }
         let items = filter.apply(to: index)
@@ -179,7 +179,7 @@ final class LibraryModel {
         }
     }
 
-    /// Rilegge le date di modifica: di tutti i file dopo un caricamento, altrimenti solo di quelli indicati.
+    /// Re-reads modification dates: of all files after a load, otherwise only of the ones given.
     private func refreshRevisions(_ files: [String]? = nil) {
         var next = files == nil ? [:] : thumbnailRevision
         for file in files ?? index.items.map(\.file) {
@@ -192,8 +192,8 @@ final class LibraryModel {
     private func present(_ error: Error) {
         let alert = NSAlert()
         switch error {
-        case LibraryIndexError.emptyName: alert.messageText = "Il nome della cartella non può essere vuoto."
-        case LibraryIndexError.duplicateName: alert.messageText = "Esiste già una cartella con questo nome."
+        case LibraryIndexError.emptyName: alert.messageText = String(localized: "The folder name can't be empty.")
+        case LibraryIndexError.duplicateName: alert.messageText = String(localized: "A folder with this name already exists.")
         default: alert.messageText = Notifier.message(for: error)
         }
         alert.runModal()

@@ -10,7 +10,7 @@ public enum ImageCodecError: Error, Equatable {
 }
 
 public enum ImageCodec {
-    /// Oltre questa dimensione il PNG dello sfondo viene sostituito da HEIC.
+    /// Beyond this size the background PNG is replaced by HEIC.
     public static let heicThreshold = 20 * 1024 * 1024
 
     public static func encode(_ image: CGImage, type: UTType, quality: Double? = nil) throws -> Data {
@@ -33,7 +33,7 @@ public enum ImageCodec {
         return image
     }
 
-    /// Dimensioni dichiarate dall'immagine, lette dall'intestazione senza decodificarla.
+    /// Size declared by the image, read from the header without decoding it.
     public static func pixelSize(of data: Data) -> PixelSize? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
@@ -42,7 +42,7 @@ public enum ImageCodec {
         return PixelSize(width: width, height: height)
     }
 
-    /// PNG; HEIC se il PNG supera `heicThreshold` e il sistema sa codificare HEIC.
+    /// PNG; HEIC if the PNG exceeds `heicThreshold` and the system can encode HEIC.
     public static func encodeBackground(_ image: CGImage) throws -> (ref: ImageAssetRef, data: Data) {
         let png = try encode(image, type: .png)
         if png.count > heicThreshold, let heic = try? encode(image, type: .heic, quality: 0.9) {

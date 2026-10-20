@@ -1,23 +1,23 @@
 import CoreGraphics
 import Foundation
 
-/// Zoom e scorrimento del canvas. Le coordinate della vista sono in punti con origine in alto a sinistra
-/// (vista capovolta); quelle della tela in pixel del documento, padding incluso.
+/// Canvas zoom and scrolling. View coordinates are in points with the origin at the top left
+/// (flipped view); canvas ones in document pixels, padding included.
 public struct Viewport: Equatable, Sendable {
     public static let zoomLevels: [Double] = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8]
     public static let zoomRange: ClosedRange<Double> = 0.1...8
 
-    /// 1 = 100%: un pixel dell'immagine occupa un pixel dello schermo (1/scale punti).
+    /// 1 = 100%: one image pixel takes up one screen pixel (1/scale points).
     public private(set) var zoom: Double
-    /// Posizione nella vista dell'origine della tela.
+    /// Position of the canvas origin in the view.
     public var origin: CGPoint
     public let documentScale: Double
-    /// Zoom dell'ultimo adattamento alla finestra: i quadretti dello sfondo vi misurano 8 punti.
+    /// Zoom of the last fit to the window: the background squares measure 8 points at it.
     public private(set) var fitZoom: Double = 1
 
     public static let checkerSquareRange: ClosedRange<Double> = 3...128
 
-    /// Lato dei quadretti dello sfondo, in punti: crescono e calano con lo zoom, come se fossero sotto l'immagine.
+    /// Side of the background squares, in points: they grow and shrink with the zoom, as if they were under the image.
     public var checkerSquare: Double {
         min(max(8 * zoom / fitZoom, Self.checkerSquareRange.lowerBound), Self.checkerSquareRange.upperBound)
     }
@@ -28,7 +28,7 @@ public struct Viewport: Equatable, Sendable {
         self.origin = origin
     }
 
-    /// Punti della vista per pixel del documento.
+    /// View points per document pixel.
     public var pointsPerPixel: Double { zoom / documentScale }
 
     public func viewPoint(fromCanvas point: CGPoint) -> CGPoint {
@@ -44,7 +44,7 @@ public struct Viewport: Equatable, Sendable {
         return CGRect(x: topLeft.x, y: topLeft.y, width: rect.width * pointsPerPixel, height: rect.height * pointsPerPixel)
     }
 
-    /// Cambia lo zoom tenendo fermo sotto `anchor` (punto della vista) il punto della tela che c'era.
+    /// Changes the zoom keeping fixed under `anchor` (a view point) the canvas point that was there.
     public mutating func setZoom(_ newZoom: Double, anchor: CGPoint) {
         let fixed = canvasPoint(fromView: anchor)
         zoom = Self.clamp(newZoom)
@@ -59,7 +59,7 @@ public struct Viewport: Equatable, Sendable {
         setZoom(Self.zoomLevels.last { $0 < zoom - 1e-9 } ?? Self.zoomRange.lowerBound, anchor: anchor)
     }
 
-    /// Adatta la tela alla vista, centrata, senza ingrandire oltre il 100%.
+    /// Fits the canvas to the view, centered, without enlarging beyond 100%.
     public mutating func fit(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         guard canvasSize.width > 0, canvasSize.height > 0 else { return }
         let availableWidth = max(viewSize.width - 2 * margin, 1)
@@ -75,8 +75,8 @@ public struct Viewport: Equatable, Sendable {
         center(canvasSize: canvasSize, in: viewSize)
     }
 
-    /// Sposta la tela, ma solo entro i suoi bordi. Lungo un lato che entra nella vista non si scorre: la tela resta
-    /// dov'è (anche fuori centro dopo un adattamento, senza saltare), solo tenuta dentro la vista.
+    /// Moves the canvas, but only within its edges. Along a side that fits in the view there is no scrolling: the canvas stays
+    /// where it is (even off-center after a fit, without jumping), just kept inside the view.
     public mutating func pan(by delta: CGSize, canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         let content = CGSize(width: canvasSize.width * pointsPerPixel, height: canvasSize.height * pointsPerPixel)
         if content.width + 2 * margin > viewSize.width { origin.x += delta.width }
@@ -84,8 +84,8 @@ public struct Viewport: Equatable, Sendable {
         keepInView(canvasSize: canvasSize, in: viewSize, margin: margin)
     }
 
-    /// Come una vista che scorre: in ogni direzione la tela che entra nella vista resta centrata; quella più grande
-    /// si sposta solo finché i suoi bordi restano a `margin` punti da quelli della vista.
+    /// Like a scrolling view: in each direction a canvas that fits in the view stays centered; a larger one
+    /// moves only until its edges stay `margin` points from those of the view.
     public mutating func constrain(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         func axis(_ origin: Double, content: Double, view: Double) -> Double {
             if content + 2 * margin <= view { return (view - content) / 2 }
@@ -95,15 +95,15 @@ public struct Viewport: Equatable, Sendable {
                          y: axis(origin.y, content: canvasSize.height * pointsPerPixel, view: viewSize.height))
     }
 
-    /// Gli oggetti sono stati traslati di `offset` (pixel del documento) per adattare la tela: la si sposta al contrario,
-    /// così sullo schermo restano dove erano.
+    /// The objects have been translated by `offset` (document pixels) to fit the canvas: it is moved the opposite way,
+    /// so on screen they stay where they were.
     public mutating func shift(byCanvas offset: CGVector) {
         origin.x -= offset.dx * pointsPerPixel
         origin.y -= offset.dy * pointsPerPixel
     }
 
-    /// Dopo una modifica: la tela resta dov'è finché se ne vede abbastanza; non si ricentra (gli oggetti salterebbero).
-    /// Una tela più piccola della vista resta tutta dentro, una più grande non lascia vuoti oltre `margin`.
+    /// After an edit: the canvas stays where it is as long as enough of it is visible; it is not recentered (objects would jump).
+    /// A canvas smaller than the view stays entirely inside, a larger one leaves no gaps beyond `margin`.
     public mutating func keepInView(canvasSize: CGSize, in viewSize: CGSize, margin: Double = 20) {
         func axis(_ origin: Double, content: Double, view: Double) -> Double {
             if content + 2 * margin <= view { return min(max(origin, margin), view - content - margin) }

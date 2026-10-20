@@ -5,9 +5,9 @@ public enum PostCaptureAction: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .openEditor: "Apri l'editor"
-        case .quickPreview: "Anteprima veloce"
-        case .clipboardOnly: "Solo appunti"
+        case .openEditor: String(localized: "Open Editor", bundle: .module, comment: "After capture")
+        case .quickPreview: String(localized: "Quick Preview", bundle: .module, comment: "After capture")
+        case .clipboardOnly: String(localized: "Clipboard Only", bundle: .module, comment: "After capture")
         }
     }
 }
@@ -23,18 +23,24 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     public var autoSave = false
     public var saveFolderPath = "~/Pictures/Pinxel"
     public var saveFormat: SaveFormat = .pinxel
-    public var fileNameTemplate = FileNamer.defaultTemplate
+    /// The saved template; while it equals the historical default it follows the language (see `effectiveFileNameTemplate`).
+    public var fileNameTemplate = FileNamer.legacyDefaultTemplate
     public var includeWindowShadow = true
     public var hotKeys: [HotKeyAction: KeyCombo] = Dictionary(uniqueKeysWithValues: HotKeyAction.allCases.map { ($0, $0.defaultCombo) })
 
     public init() {}
 
+    /// The template to use: the saved one, or the default in the current language if it is still the old default.
+    public var effectiveFileNameTemplate: String {
+        fileNameTemplate == FileNamer.legacyDefaultTemplate ? FileNamer.defaultTemplate : fileNameTemplate
+    }
+
     private enum CodingKeys: String, CodingKey {
         case postCaptureAction, autoSave, saveFolderPath, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys
     }
 
-    /// Ogni campo illeggibile torna al valore predefinito senza perdere gli altri (es. un valore di una
-    /// versione futura); le scorciatoie non valide o doppie tornano a quelle predefinite.
+    /// Each unreadable field reverts to its default value without losing the others (e.g. a value from a
+    /// future version); invalid or duplicate shortcuts revert to the defaults.
     public init(from decoder: Decoder) throws {
         self.init()
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -48,9 +54,9 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
         sanitizeHotKeys()
     }
 
-    /// Toglie le scorciatoie senza ⌃, ⌥ o ⌘ e risolve i doppioni fra quelle effettive (predefinite comprese):
-    /// fra due personalizzate resta la prima; una personalizzata che coincide con la predefinita di un'altra azione
-    /// torna alla sua. Le predefinite sono tutte diverse, quindi il ciclo finisce.
+    /// Removes shortcuts without ⌃, ⌥ or ⌘ and resolves duplicates among the effective ones (defaults included):
+    /// between two custom ones the first stays; a custom one that equals another action's default
+    /// reverts to its own. The defaults are all distinct, so the loop terminates.
     public mutating func sanitizeHotKeys() {
         for action in HotKeyAction.allCases where hotKeys[action]?.hasModifier == false {
             hotKeys[action] = nil
@@ -87,7 +93,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     }
 }
 
-/// Persistenza delle impostazioni in `UserDefaults` come JSON; dati illeggibili → valori predefiniti.
+/// Settings persistence in `UserDefaults` as JSON; unreadable data → default values.
 public struct SettingsStore {
     public static let key = "PinxelCaptureSettings"
     public let defaults: UserDefaults

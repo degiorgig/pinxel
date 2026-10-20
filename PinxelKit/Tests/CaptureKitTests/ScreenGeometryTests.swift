@@ -14,7 +14,7 @@ struct ScreenGeometryTests {
     }
 
     @Test func appKitConversionHandlesDisplaysAbovePrimary() {
-        // Schermo sopra il principale: in AppKit y ≥ altezza del principale, in CG y negativa.
+        // Screen above the main one: in AppKit y ≥ the main screen's height, in CG y is negative.
         let rect = CGRect(x: -200, y: 1000, width: 500, height: 300)
         let topLeft = ScreenGeometry.topLeft(fromAppKit: rect, primaryHeight: 1000)
         #expect(topLeft == CGRect(x: -200, y: -300, width: 500, height: 300))
@@ -24,7 +24,7 @@ struct ScreenGeometryTests {
     @Test func displayAtPoint() {
         #expect(ScreenGeometry.display(at: CGPoint(x: 150, y: 50), in: displays)?.id == 2)
         #expect(ScreenGeometry.display(at: CGPoint(x: 0, y: 0), in: displays)?.id == 1)
-        // Il bordo destro/inferiore dell'ultimo schermo appartiene ancora a quello schermo.
+        // The right/bottom edge of the last screen still belongs to that screen.
         #expect(ScreenGeometry.display(at: CGPoint(x: 200, y: 100), in: displays)?.id == 2)
         #expect(ScreenGeometry.display(at: CGPoint(x: 500, y: 500), in: displays) == nil)
     }

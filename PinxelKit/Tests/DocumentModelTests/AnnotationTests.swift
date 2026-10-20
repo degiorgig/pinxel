@@ -74,7 +74,7 @@ struct AnnotationTests {
         #expect(byID[TestDocuments.id(3)]?.bounds == CGRect(x: 180, y: 20, width: 100, height: 60))
         #expect(byID[TestDocuments.id(7)]?.bounds == CGRect(x: 22, y: 212, width: 36, height: 36))
         #expect(byID[TestDocuments.id(13)]?.bounds == CGRect(x: 190, y: 90, width: 190, height: 70))
-        // Il callout include la punta della coda.
+        // The callout includes the tail tip.
         #expect(byID[TestDocuments.id(6)]?.bounds == CGRect(x: 180, y: 110, width: 180, height: 110))
     }
 

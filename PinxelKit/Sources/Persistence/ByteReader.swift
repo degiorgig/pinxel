@@ -1,6 +1,6 @@
 import Foundation
 
-/// Letture little-endian con controllo dei limiti; offset relativi all'inizio dei dati.
+/// Little-endian reads with bounds checking; offsets relative to the start of the data.
 struct ByteReader {
     let data: Data
 

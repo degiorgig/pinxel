@@ -42,7 +42,7 @@ struct ImageImportTests {
     }
 
     @Test func jpegOrientationIsApplied() throws {
-        // Orientamento EXIF 6: la foto va ruotata di 90°, quindi larghezza e altezza si scambiano.
+        // EXIF orientation 6: the photo must be rotated 90°, so width and height swap.
         let data = try encode(try image(width: 120, height: 80), as: .jpeg, properties: [kCGImagePropertyOrientation: 6])
         #expect(try ImageImport.contents(fromImageData: data).document.canvasSize == PixelSize(width: 80, height: 120))
     }

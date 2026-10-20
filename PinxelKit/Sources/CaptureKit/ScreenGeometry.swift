@@ -1,10 +1,10 @@
 import CoreGraphics
 
-/// Uno schermo nello spazio globale di CoreGraphics (origine in alto a sinistra del principale, punti).
+/// A screen in CoreGraphics global space (origin at the top left of the main screen, points).
 public struct DisplayInfo: Equatable, Sendable {
     public let id: UInt32
     public let frame: CGRect
-    /// Pixel per punto.
+    /// Pixels per point.
     public let scale: Double
 
     public init(id: UInt32, frame: CGRect, scale: Double) {
@@ -14,7 +14,7 @@ public struct DisplayInfo: Equatable, Sendable {
     }
 }
 
-/// Una finestra visibile, con frame nello spazio globale di CoreGraphics.
+/// A visible window, with a frame in CoreGraphics global space.
 public struct WindowInfo: Equatable, Sendable, Identifiable {
     public let id: UInt32
     public let frame: CGRect
@@ -32,23 +32,23 @@ public struct WindowInfo: Equatable, Sendable, Identifiable {
 }
 
 public enum ScreenGeometry {
-    /// AppKit (origine in basso a sinistra del principale) → CoreGraphics (in alto a sinistra).
+    /// AppKit (origin at the bottom left of the main screen) → CoreGraphics (top left).
     public static func topLeft(fromAppKit rect: CGRect, primaryHeight: CGFloat) -> CGRect {
         CGRect(x: rect.minX, y: primaryHeight - rect.maxY, width: rect.width, height: rect.height)
     }
 
-    /// La conversione è simmetrica.
+    /// The conversion is symmetric.
     public static func appKit(fromTopLeft rect: CGRect, primaryHeight: CGFloat) -> CGRect {
         topLeft(fromAppKit: rect, primaryHeight: primaryHeight)
     }
 
     public static func display(at point: CGPoint, in displays: [DisplayInfo]) -> DisplayInfo? {
         if let exact = displays.first(where: { $0.frame.contains(point) }) { return exact }
-        // `contains` esclude i bordi destro e inferiore: li assegna allo schermo adiacente.
+        // `contains` excludes the right and bottom edges: it assigns them to the adjacent screen.
         return displays.first { $0.frame.insetBy(dx: -1, dy: -1).contains(point) }
     }
 
-    /// `windows` in ordine dalla più in primo piano alla più in fondo.
+    /// `windows` ordered from frontmost to backmost.
     public static func window(at point: CGPoint, in windows: [WindowInfo]) -> WindowInfo? {
         windows.first { $0.frame.contains(point) }
     }

@@ -1,7 +1,7 @@
 import AppKit
 import CaptureKit
 
-/// Disegna l'immagine congelata di uno schermo e la selezione; traduce mouse e tastiera per il modello.
+/// Draws the frozen image of a screen and the selection; translates mouse and keyboard for the model.
 @MainActor
 final class SelectionView: NSView {
     private let display: FrozenDisplay
@@ -24,7 +24,7 @@ final class SelectionView: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func cursorUpdate(with event: NSEvent) { NSCursor.crosshair.set() }
 
-    // MARK: Coordinate
+    // MARK: Coordinates
 
     private func globalPoint(_ event: NSEvent) -> CGPoint {
         let local = convert(event.locationInWindow, from: nil)
@@ -35,7 +35,7 @@ final class SelectionView: NSView {
         global.offsetBy(dx: -display.info.frame.minX, dy: -display.info.frame.minY)
     }
 
-    // MARK: Eventi
+    // MARK: Events
 
     override func mouseMoved(with event: NSEvent) {
         let point = globalPoint(event)
@@ -89,11 +89,11 @@ final class SelectionView: NSView {
         if event.keyCode == 49 { spaceHeld = false }
     }
 
-    // MARK: Disegno
+    // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext, let model = controller?.model else { return }
-        // Immagine congelata (la vista è capovolta: la ridisegno dritta).
+        // Frozen image (the view is flipped, so it is drawn upright).
         ctx.saveGState()
         ctx.translateBy(x: 0, y: bounds.height)
         ctx.scaleBy(x: 1, y: -1)
@@ -109,7 +109,7 @@ final class SelectionView: NSView {
             focus = bounds
         }
 
-        // Oscuro tutto tranne la zona in evidenza.
+        // Darken everything except the highlighted area.
         let dim = CGMutablePath()
         dim.addRect(bounds)
         if let focus { dim.addRect(focus) }
@@ -141,7 +141,7 @@ final class SelectionView: NSView {
         (text as NSString).draw(at: CGPoint(x: box.minX + 6, y: box.minY + 3), withAttributes: attributes)
     }
 
-    /// Lente 11×11 pixel ingrandita 10×, con mirino e colore del pixel centrale.
+    /// 11×11 pixel magnifier enlarged 10×, with crosshair and the color of the center pixel.
     private func drawLoupe(at global: CGPoint) {
         guard display.info.frame.insetBy(dx: -1, dy: -1).contains(global) else { return }
         let scale = display.info.scale

@@ -40,7 +40,7 @@ struct ShapeRenderingTests {
     }
 
     @Test func highlighterMultipliesWithBackground() throws {
-        // Giallo in multiply sul quadrante blu (in basso a sinistra) dà quasi nero.
+        // Yellow in multiply on the blue quadrant (bottom left) gives almost black.
         let highlight = Annotation(kind: .highlight(HighlightData(path: PathGeometry(points: [CGPoint(x: 20, y: 250), CGPoint(x: 180, y: 250)]))),
                                    style: Style(stroke: RGBA(red: 1, green: 1, blue: 0), lineWidth: 20))
         let pixels = PixelBuffer(try render([highlight], background: TestImages.quadrants()))
@@ -58,7 +58,7 @@ struct ShapeRenderingTests {
         let image = try render(nothing)
         #expect(PixelBuffer(image).differingPixelFraction(from: PixelBuffer(whiteBackground), channelTolerance: 1) == 0)
 
-        // Freccia lunga zero e penna con un solo punto: un punto è accettabile, un crash no.
+        // Zero-length arrow and pen with a single point: one point is acceptable, a crash is not.
         let dots: [Annotation] = [
             Annotation(kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 80, y: 80), end: CGPoint(x: 80, y: 80))))),
             Annotation(kind: .pen(PenData(path: PathGeometry(points: [CGPoint(x: 120, y: 120)])))),

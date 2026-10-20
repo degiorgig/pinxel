@@ -26,7 +26,7 @@ struct SessionFitTests {
         let capture = try #require(session.document.annotations.first { $0.id == TestDocuments.captureID })
         var shifts: [CGVector] = []
         session.onCanvasShift = { shifts.append($0) }
-        session.perform(UpdateAnnotations(name: "Sposta", before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -100, height: 0))]))
+        session.perform(UpdateAnnotations(name: CommandName.move, before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: -100, height: 0))]))
         #expect(captureRect(session) == CGRect(x: 0, y: 0, width: 400, height: 300))
         #expect(session.document.canvasSize == PixelSize(width: 500, height: 300))
         #expect(shifts == [CGVector(dx: 100, dy: 0)])
@@ -47,8 +47,8 @@ struct SessionFitTests {
     @Test func oneActionIsOneUndoStep() throws {
         let session = makeSession()
         let capture = try #require(session.document.annotations.first)
-        session.perform(UpdateAnnotations(name: "Sposta", before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: 50, height: 50))]))
-        #expect(session.undoManager.undoActionName == "Sposta")
+        session.perform(UpdateAnnotations(name: CommandName.move, before: [capture], after: [AnnotationGeometry.moved(capture, by: CGSize(width: 50, height: 50))]))
+        #expect(session.undoManager.undoActionName == CommandName.move)
         session.undoManager.undo()
         #expect(!session.undoManager.canUndo)
     }

@@ -2,8 +2,8 @@ import CoreGraphics
 import Foundation
 
 extension CGPoint {
-    /// Il punto ruotato di `angle` radianti attorno a `center`, nello spazio con l'asse y verso il basso
-    /// (stessa convenzione di `AnnotationRenderer`).
+    /// The point rotated by `angle` radians around `center`, in the space with the y axis pointing down
+    /// (same convention as `AnnotationRenderer`).
     public func rotated(around center: CGPoint, by angle: Double) -> CGPoint {
         guard angle != 0 else { return self }
         let dx = x - center.x, dy = y - center.y

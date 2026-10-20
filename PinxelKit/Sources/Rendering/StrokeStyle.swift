@@ -16,8 +16,8 @@ enum StrokeStyle {
 }
 
 enum ShadowStyle {
-    /// Le ombre di Core Graphics ignorano la CTM: offset e blur vanno in pixel di output,
-    /// e la y è invertita perché il contesto del documento è capovolto.
+    /// Core Graphics shadows ignore the CTM: offset and blur are in output pixels,
+    /// and y is inverted because the document context is flipped.
     static func apply(_ shadow: Shadow, to ctx: CGContext, outputScale: Double) {
         ctx.setShadow(
             offset: CGSize(width: shadow.offset.width * outputScale, height: -shadow.offset.height * outputScale),

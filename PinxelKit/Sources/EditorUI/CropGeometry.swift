@@ -1,13 +1,13 @@
 import CoreGraphics
 import DocumentModel
 
-/// Riquadro del ritaglio mentre lo si disegna, sposta o ridimensiona. Coordinate del documento.
+/// Crop box while it is being drawn, moved or resized. Document coordinates.
 public enum CropGeometry {
     public enum DragMode: Equatable, Sendable {
         case new, move, resize(Handle)
     }
 
-    /// Riquadro dopo aver trascinato da `start` a `point`; resta sempre dentro `image`.
+    /// Box after dragging from `start` to `point`; always stays inside `image`.
     public static func dragged(_ mode: DragMode, from start: CGPoint, to point: CGPoint, original: CGRect,
                                image: CGRect, keepAspect: Bool) -> CGRect {
         switch mode {
@@ -22,7 +22,7 @@ public enum CropGeometry {
             rect.origin.y = min(max(rect.minY, image.minY), image.maxY - rect.height)
             return rect
         case .resize(let handle):
-            // La maniglia segue il puntatore mantenendo la distanza da dove è stata presa.
+            // The handle follows the pointer, keeping the distance from where it was grabbed.
             let handlePoint = HitTesting.boxPoint(handle, of: original)
             let dragged = clamp(CGPoint(x: handlePoint.x + point.x - start.x, y: handlePoint.y + point.y - start.y), to: image)
             let rect = AnnotationGeometry.frame(anchor: HitTesting.boxPoint(handle.opposite, of: original), dragged: dragged,
@@ -31,7 +31,7 @@ public enum CropGeometry {
         }
     }
 
-    /// Pixel interi dentro l'immagine; `nil` se il riquadro è più piccolo di un pixel.
+    /// Whole pixels inside the image; `nil` if the box is smaller than one pixel.
     public static func pixelRect(_ rect: CGRect, imageSize: PixelSize) -> PixelRect? {
         let r = rect.standardized
         guard r.minX.isFinite, r.minY.isFinite, r.maxX.isFinite, r.maxY.isFinite else { return nil }

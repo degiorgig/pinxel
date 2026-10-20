@@ -3,7 +3,7 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Carattere, dimensione, colore, allineamento e stile di testi e callout, anche durante la modifica sulla tela.
+/// Font, size, color, alignment and style of texts and callouts, also while editing on the canvas.
 struct TextSection: View {
     let model: EditorModel
 
@@ -11,48 +11,48 @@ struct TextSection: View {
 
     var body: some View {
         let text = model.inspectedRichText
-        Section("Testo") {
-            Picker("Carattere", selection: Binding(
+        Section("Text") {
+            Picker("Font", selection: Binding(
                 get: { model.inspectedRichText.fontFamily },
-                set: { family in model.updateText(name: "Carattere") { $0.fontFamily = family } }
+                set: { family in model.updateText(name: CommandName.font) { $0.fontFamily = family } }
             )) {
                 ForEach(Self.families, id: \.self) { Text($0).tag($0) }
                 if !Self.families.contains(text.fontFamily) { Text(text.fontFamily).tag(text.fontFamily) }
             }
-            LabeledContent("Dimensione") {
+            LabeledContent("Size") {
                 Stepper(value: Binding(
                     get: { model.inspectedRichText.fontSize },
-                    set: { size in model.updateText(name: "Dimensione testo") { $0.fontSize = size } }
+                    set: { size in model.updateText(name: CommandName.textSize) { $0.fontSize = size } }
                 ), in: 8...200, step: 2) {
-                    Text("\(Int(text.fontSize)) px").monospacedDigit()
+                    Text(verbatim: "\(Int(text.fontSize)) px").monospacedDigit()
                 }
             }
-            ColorPicker("Colore testo", selection: Binding(
+            ColorPicker("Text Color", selection: Binding(
                 get: { Color(nsColor: model.inspectedRichText.color.nsColor) },
-                set: { color in model.updateText(name: "Colore testo", coalescing: true) { $0.setColor(RGBA(nsColor: NSColor(color))) } }
+                set: { color in model.updateText(name: CommandName.textColor, coalescing: true) { $0.setColor(RGBA(nsColor: NSColor(color))) } }
             ), supportsOpacity: false)
-            Picker("Allineamento", selection: Binding(
+            Picker("Alignment", selection: Binding(
                 get: { model.inspectedRichText.alignment },
-                set: { alignment in model.updateText(name: "Allineamento") { $0.alignment = alignment } }
+                set: { alignment in model.updateText(name: CommandName.alignment) { $0.alignment = alignment } }
             )) {
-                Image(systemName: "text.alignleft").help("A sinistra").tag(RichTextAlignment.left)
-                Image(systemName: "text.aligncenter").help("Al centro").tag(RichTextAlignment.center)
-                Image(systemName: "text.alignright").help("A destra").tag(RichTextAlignment.right)
+                Image(systemName: "text.alignleft").help("Left").tag(RichTextAlignment.left)
+                Image(systemName: "text.aligncenter").help("Center").tag(RichTextAlignment.center)
+                Image(systemName: "text.alignright").help("Right").tag(RichTextAlignment.right)
             }
             .pickerStyle(.segmented)
-            LabeledContent("Stile") {
+            LabeledContent("Style") {
                 HStack(spacing: 4) {
-                    styleToggle("bold", help: "Grassetto (⌘B)", isOn: Binding(
+                    styleToggle("bold", help: String(localized: "Bold (⌘B)"), isOn: Binding(
                         get: { model.inspectedRichText.isBold },
-                        set: { on in model.updateText(name: "Grassetto") { $0.setBold(on) } }
+                        set: { on in model.updateText(name: CommandName.bold) { $0.setBold(on) } }
                     ))
-                    styleToggle("italic", help: "Corsivo (⌘I)", isOn: Binding(
+                    styleToggle("italic", help: String(localized: "Italic (⌘I)"), isOn: Binding(
                         get: { model.inspectedRichText.isItalic },
-                        set: { on in model.updateText(name: "Corsivo") { $0.setItalic(on) } }
+                        set: { on in model.updateText(name: CommandName.italic) { $0.setItalic(on) } }
                     ))
-                    styleToggle("underline", help: "Sottolineato (⌘U)", isOn: Binding(
+                    styleToggle("underline", help: String(localized: "Underline (⌘U)"), isOn: Binding(
                         get: { model.inspectedRichText.isUnderlined },
-                        set: { on in model.updateText(name: "Sottolineato") { $0.setUnderline(on) } }
+                        set: { on in model.updateText(name: CommandName.underline) { $0.setUnderline(on) } }
                     ))
                 }
             }

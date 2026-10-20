@@ -9,7 +9,7 @@ public enum TestDocuments {
         UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", n))!
     }
 
-    /// Una annotazione per ogni tipo, disposte su un'immagine 400×300.
+    /// One annotation of each type, laid out on a 400×300 image.
     public static func allKindsAnnotations() -> [Annotation] {
         [
             Annotation(id: id(1), kind: .arrow(ArrowData(
@@ -53,7 +53,7 @@ public enum TestDocuments {
         ]
     }
 
-    /// La cattura di ogni documento di prova: un'immagine in fondo alla pila, grande quanto la tela.
+    /// The capture of each test document: an image at the bottom of the stack, as large as the canvas.
     public static let captureID = id(999)
 
     public static func capture(size: PixelSize) -> Annotation {

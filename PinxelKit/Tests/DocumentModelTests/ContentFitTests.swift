@@ -26,7 +26,7 @@ struct ContentFitTests {
         let arrow = Annotation(kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 0, y: 50), end: CGPoint(x: 100, y: 50)),
                                                       heads: ArrowHeads(start: .none, end: .triangle))),
                                style: Style(stroke: .black, lineWidth: 10))
-        // Tratto 5 + punta max(30,10)*0.6 = 18 → 23 per lato.
+        // Stroke 5 + tip max(30,10)*0.6 = 18 → 23 per side.
         #expect(ContentFit.bounds(of: [arrow]) == PixelRect(x: -23, y: 27, width: 146, height: 46))
     }
 

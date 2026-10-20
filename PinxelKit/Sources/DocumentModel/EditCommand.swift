@@ -1,21 +1,21 @@
 import Foundation
 
-/// Modifica reversibile del documento. Per ogni comando creato da un documento `d`,
-/// `apply` seguito da `revert` deve restituire esattamente `d`.
+/// Reversible change to the document. For every command created from a document `d`,
+/// `apply` followed by `revert` must give back exactly `d`.
 public protocol EditCommand: Sendable {
-    /// Nome mostrato in "Annulla <nome>".
+    /// Name shown in "Undo <name>".
     var name: String { get }
     func apply(to document: inout PinxelDocument)
     func revert(on document: inout PinxelDocument)
 }
 
-/// Le annotazioni aggiunte devono avere ID nuovi: `revert` rimuove per ID.
+/// Added annotations must have new IDs: `revert` removes by ID.
 public struct AddAnnotations: EditCommand {
     public let name: String
     public let annotations: [Annotation]
     public let index: Int?
 
-    public init(_ annotations: [Annotation], at index: Int? = nil, name: String = "Aggiungi") {
+    public init(_ annotations: [Annotation], at index: Int? = nil, name: String = CommandName.add) {
         self.annotations = annotations
         self.index = index
         self.name = name
@@ -44,7 +44,7 @@ public struct DeleteAnnotations: EditCommand {
     public let name: String
     private let removed: [Removed]
 
-    public init(ids: Set<UUID>, in document: PinxelDocument, name: String = "Elimina") {
+    public init(ids: Set<UUID>, in document: PinxelDocument, name: String = CommandName.delete) {
         self.name = name
         removed = document.annotations.enumerated()
             .filter { ids.contains($0.element.id) }
@@ -68,7 +68,7 @@ public struct UpdateAnnotations: EditCommand {
     public let before: [Annotation]
     public let after: [Annotation]
 
-    public init(name: String = "Modifica", before: [Annotation], after: [Annotation]) {
+    public init(name: String = CommandName.edit, before: [Annotation], after: [Annotation]) {
         self.name = name
         self.before = before
         self.after = after
@@ -77,7 +77,7 @@ public struct UpdateAnnotations: EditCommand {
     public func apply(to document: inout PinxelDocument) { replace(with: after, in: &document) }
     public func revert(on document: inout PinxelDocument) { replace(with: before, in: &document) }
 
-    /// Unisce due modifiche consecutive sugli stessi oggetti (es. spostamenti con le frecce).
+    /// Merges two consecutive changes on the same objects (e.g. moves with the arrow keys).
     public func merged(with next: UpdateAnnotations) -> UpdateAnnotations? {
         guard Set(after.map(\.id)) == Set(next.before.map(\.id)),
               Set(before.map(\.id)) == Set(next.after.map(\.id)) else { return nil }
@@ -93,7 +93,7 @@ public struct UpdateAnnotations: EditCommand {
     }
 }
 
-/// Sostituisce tutta la lista degli oggetti (ritaglio, ridimensiona, taglia e ricuci): l'annullamento la rimette com'era.
+/// Replaces the whole list of objects (crop, resize, cut and stitch): undo puts it back as it was.
 public struct SetAnnotations: EditCommand {
     public let name: String
     public let before: [Annotation]
@@ -114,7 +114,7 @@ public struct ReorderAnnotations: EditCommand {
     private let before: [UUID]
     private let after: [UUID]
 
-    public init(name: String = "Disponi", newOrder: [UUID], in document: PinxelDocument) {
+    public init(name: String = CommandName.arrange, newOrder: [UUID], in document: PinxelDocument) {
         self.name = name
         before = document.annotations.map(\.id)
         after = newOrder
@@ -127,18 +127,18 @@ public struct ReorderAnnotations: EditCommand {
         let byID = Dictionary(document.annotations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let ordered = order.compactMap { byID[$0] }
         let listed = Set(order)
-        // Le annotazioni non elencate restano in cima, nel loro ordine.
+        // Annotations not listed stay on top, in their order.
         document.annotations = ordered + document.annotations.filter { !listed.contains($0.id) }
     }
 
     public static func bringToFront(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
         let order = document.annotations.map(\.id)
-        return ReorderAnnotations(name: "Porta in primo piano", newOrder: order.filter { !ids.contains($0) } + order.filter { ids.contains($0) }, in: document)
+        return ReorderAnnotations(name: CommandName.bringToFront, newOrder: order.filter { !ids.contains($0) } + order.filter { ids.contains($0) }, in: document)
     }
 
     public static func sendToBack(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
         let order = document.annotations.map(\.id)
-        return ReorderAnnotations(name: "Porta in fondo", newOrder: order.filter { ids.contains($0) } + order.filter { !ids.contains($0) }, in: document)
+        return ReorderAnnotations(name: CommandName.sendToBack, newOrder: order.filter { ids.contains($0) } + order.filter { !ids.contains($0) }, in: document)
     }
 
     public static func bringForward(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
@@ -148,7 +148,7 @@ public struct ReorderAnnotations: EditCommand {
             if ids.contains(order[i]) && !ids.contains(order[i + 1]) { order.swapAt(i, i + 1) }
             i -= 1
         }
-        return ReorderAnnotations(name: "Porta avanti", newOrder: order, in: document)
+        return ReorderAnnotations(name: CommandName.bringForward, newOrder: order, in: document)
     }
 
     public static func sendBackward(_ ids: Set<UUID>, in document: PinxelDocument) -> ReorderAnnotations {
@@ -158,7 +158,7 @@ public struct ReorderAnnotations: EditCommand {
             if ids.contains(order[i]) && !ids.contains(order[i - 1]) { order.swapAt(i - 1, i) }
             i += 1
         }
-        return ReorderAnnotations(name: "Porta indietro", newOrder: order, in: document)
+        return ReorderAnnotations(name: CommandName.sendBackward, newOrder: order, in: document)
     }
 }
 
@@ -167,7 +167,7 @@ public struct UpdateCanvasStyle: EditCommand {
     public let before: CanvasStyle
     public let after: CanvasStyle
 
-    public init(before: CanvasStyle, after: CanvasStyle, name: String = "Stile tela") {
+    public init(before: CanvasStyle, after: CanvasStyle, name: String = CommandName.canvasStyle) {
         self.before = before
         self.after = after
         self.name = name
@@ -195,17 +195,17 @@ public struct CommandGroup: EditCommand {
     }
 }
 
-/// Porta il rettangolo del contenuto a partire da (0,0) e ci adatta la tela; la sessione lo aggiunge dopo ogni comando.
-/// Tiene le annotazioni di prima: l'annullamento è esatto anche con rettangoli non normalizzati.
+/// Moves the content rectangle to start at (0,0) and fits the canvas to it; the session adds it after every command.
+/// Keeps the previous annotations: undo is exact even with non-normalized rectangles.
 public struct FitCanvas: EditCommand {
-    public let name = "Adatta tela"
-    /// Spostamento applicato a tutti gli oggetti, in pixel interi del documento.
+    public let name = CommandName.fitCanvas
+    /// Shift applied to all objects, in whole document pixels.
     public let offset: CGVector
     public let sizeAfter: PixelSize
     private let sizeBefore: PixelSize
     private let annotationsBefore: [Annotation]
 
-    /// `nil` se la tela è già adattata al contenuto.
+    /// `nil` if the canvas already fits the content.
     public init?(in document: PinxelDocument) {
         let limit = PinxelDocument.maxImageSide
         let target = ContentFit.bounds(of: document.annotations)

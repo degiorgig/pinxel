@@ -1,8 +1,8 @@
 import AppKit
 import DocumentModel
 
-/// Conversione fra `RichText` del modello e `NSAttributedString` per l'`NSTextView` di modifica sulla tela.
-/// Le dimensioni sono in pixel del documento, come in `Rendering`.
+/// Conversion between the model's `RichText` and `NSAttributedString` for the `NSTextView` used to edit on the canvas.
+/// Sizes are in document pixels, as in `Rendering`.
 public enum RichTextBridge {
     public static func font(family: String, size: Double, bold: Bool, italic: Bool) -> NSFont {
         let base = NSFont(name: family, size: size) ?? .systemFont(ofSize: size)
@@ -13,7 +13,7 @@ public enum RichTextBridge {
         return NSFont(descriptor: base.fontDescriptor.withSymbolicTraits(traits), size: size) ?? base
     }
 
-    /// Attributi di un run; senza run, quelli del testo digitato in un campo vuoto.
+    /// Attributes of a run; with no runs, those of the text typed in an empty field.
     public static func attributes(_ text: RichText, run: TextRun? = nil) -> [NSAttributedString.Key: Any] {
         var attributes: [NSAttributedString.Key: Any] = [
             .font: font(family: text.fontFamily, size: text.fontSize, bold: run?.bold ?? false, italic: run?.italic ?? false),
@@ -32,8 +32,8 @@ public enum RichTextBridge {
         return result
     }
 
-    /// `template` dà famiglia, dimensione, colore e allineamento; grassetto, corsivo, sottolineato e colore
-    /// dei run vengono dagli attributi. Run adiacenti uguali vengono uniti.
+    /// `template` gives family, size, color and alignment; bold, italic, underline and color
+    /// of the runs come from the attributes. Adjacent equal runs are merged.
     public static func richText(from string: NSAttributedString, template: RichText) -> RichText {
         var runs: [TextRun] = []
         let content = string.string as NSString
@@ -68,7 +68,7 @@ public enum RichTextBridge {
 }
 
 extension RGBA {
-    /// Uguale entro mezzo passo di un canale a 8 bit (le conversioni di colore arrotondano).
+    /// Equal within half a step of an 8-bit channel (color conversions round).
     func isClose(to other: RGBA) -> Bool {
         let tolerance = 0.5 / 255
         return abs(red - other.red) <= tolerance && abs(green - other.green) <= tolerance

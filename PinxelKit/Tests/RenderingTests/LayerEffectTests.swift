@@ -8,7 +8,7 @@ import PinxelTestSupport
 struct LayerEffectTests {
     let noiseRef = ImageAssetRef(name: "assets/noise.png")
 
-    /// Stesse immagini per tutti i render di un test: la cache del renderer le riconosce.
+    /// Same images for all renders of a test: the renderer's cache recognizes them.
     let assets: DictionaryAssetProvider
 
     init() {
@@ -48,8 +48,8 @@ struct LayerEffectTests {
         let blur = Annotation(kind: .blur(BlurData(rect: CGRect(x: 0, y: 0, width: 200, height: 200), radius: 10)))
         let below = PixelBuffer(try render([arrow(100), blur]))
         let above = PixelBuffer(try render([blur, arrow(100)]))
-        #expect(below.pixel(x: 100, y: 100).r > 60)   // la freccia sotto è sfocata: niente più nero pieno
-        #expect(above.pixel(x: 100, y: 100).r < 10)   // quella sopra resta nitida
+        #expect(below.pixel(x: 100, y: 100).r > 60)   // the arrow below is blurred: no more solid black
+        #expect(above.pixel(x: 100, y: 100).r < 10)   // the one above stays sharp
     }
 
     @Test func magnifierShowsAPlacedImage() throws {
@@ -82,8 +82,8 @@ struct LayerEffectTests {
     }
 
     @Test func stepNumbersUnderAnEffectFollowRenumbering() throws {
-        // Lente sopra lo step "2": lo step "1" diventa una forma (stesso posto nella pila), il badge passa a "1"
-        // e la lente deve mostrarlo, non la copia in cache.
+        // Lens above step "2": step "1" becomes a shape (same place in the stack), the badge changes to "1"
+        // and the lens must show it, not the cached copy.
         let renderer = DocumentRenderer()
         let first = Annotation(id: TestDocuments.id(60), kind: .step(StepData(center: CGPoint(x: 20, y: 180), diameter: 20, label: StepLabel())),
                                style: Style(stroke: nil, fill: .accentRed))

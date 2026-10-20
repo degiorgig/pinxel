@@ -1,18 +1,18 @@
-/// Cosa mostra la finestra in cui si clicca una miniatura.
+/// What the window in which a thumbnail is clicked shows.
 public enum WindowContent: Equatable, Sendable {
-    /// Una cattura dell'archivio: si salva da sola dove sta.
+    /// A library capture: it saves itself where it is.
     case libraryItem
-    /// Un altro file `.pinxel`: si salva da solo dove sta.
+    /// Another `.pinxel` file: it saves itself where it is.
     case otherFile
-    /// Un documento senza titolo; `blank` se è vuoto (Nuovo senza niente dentro).
+    /// An untitled document; `blank` if it is empty (New with nothing in it).
     case untitled(blank: Bool)
 }
 
-/// Cosa fa il clic su una miniatura: resta sempre nella stessa finestra, senza mai perdere quello che c'era.
+/// What clicking a thumbnail does: it always stays in the same window, never losing what was there.
 public enum LibraryOpenDecision: Equatable, Sendable {
     case focusExisting
     case replaceInWindow
-    /// Il documento senza titolo entra prima nella libreria, poi la cattura scelta prende il suo posto.
+    /// The untitled document first enters the library, then the chosen capture takes its place.
     case keepInLibraryThenReplace
 
     public static func decide(targetAlreadyOpen: Bool, current: WindowContent) -> LibraryOpenDecision {

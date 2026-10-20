@@ -2,7 +2,7 @@ import DocumentModel
 import Foundation
 import Observation
 
-/// Tipo di oggetto a cui si riferisce il pannello proprietà.
+/// Kind of object the properties panel refers to.
 public enum InspectedKind: Equatable, Sendable {
     case arrow, line, shape, text, callout, pen, highlight, step, effect, magnifier, image, crop, cutOut, none
 
@@ -48,32 +48,32 @@ public enum InspectedKind: Equatable, Sendable {
     public var showsOpacity: Bool { ![.effect, .crop, .cutOut, .none].contains(self) }
     public var showsShadow: Bool { ![.effect, .highlight, .crop, .cutOut, .none].contains(self) }
     public var showsText: Bool { self == .text || self == .callout }
-    /// Ritaglio e taglio non hanno colori né tratti: il pannello mostra solo le loro opzioni.
+    /// Crop and cut have no colors or strokes: the panel shows only their options.
     public var showsStyleSection: Bool { showsStroke || showsFill || showsOpacity || showsShadow }
 }
 
-/// Stato della finestra dell'editor oltre al documento: strumento attivo, stili degli strumenti, pannello.
+/// Editor window state beyond the document: active tool, tool styles, panel.
 @MainActor
 @Observable
 public final class EditorModel {
     public let session: EditorSession
     public var tool: EditorTool = .select {
-        // Scegliere uno strumento spegne la manina.
+        // Choosing a tool turns off the hand.
         didSet { isPanning = false }
     }
-    /// Manina dei comandi sopra la tela: trascinare sposta la vista invece di usare lo strumento.
+    /// Hand control above the canvas: dragging pans the view instead of using the tool.
     public var isPanning = false
-    /// Zoom della tela (1 = 100%), copiato dalla tela per i comandi sopra l'immagine.
+    /// Canvas zoom (1 = 100%), copied from the canvas for the controls above the image.
     public internal(set) var zoom: Double = 1
-    /// La tela, a cui i comandi sopra l'immagine mandano zoom e adattamento.
+    /// The canvas, to which the controls above the image send zoom and fit.
     @ObservationIgnored public internal(set) weak var canvas: (any EditorActions)?
     public var toolStyles = ToolStyles()
     public var isInspectorPresented = true
-    /// Foglio del menu Immagine aperto sulla finestra.
+    /// Sheet of the Image menu open on the window.
     public var presentedSheet: EditorSheet?
-    /// Testo in modifica sulla tela (copia osservabile per il pannello); `nil` fuori dalla modifica.
+    /// Text being edited on the canvas (observable copy for the panel); `nil` when not editing.
     public internal(set) var editingText: RichText?
-    /// Il testo in modifica, a cui il pannello manda le sue modifiche.
+    /// The text being edited, to which the panel sends its changes.
     @ObservationIgnored public internal(set) weak var textEditing: (any TextEditingControl)?
 
     public let quickStyles: QuickStyleStore
@@ -83,23 +83,23 @@ public final class EditorModel {
         self.quickStyles = quickStyles
     }
 
-    /// Lo strumento di cui il pannello mostra gli stili rapidi: quello dell'oggetto selezionato o quello attivo.
+    /// The tool whose quick styles the panel shows: that of the selected object or the active one.
     public var quickStyleTool: EditorTool? {
         if let annotation = inspectedAnnotation { return EditorTool(kind: annotation.kind) }
         return tool.createsAnnotations ? tool : nil
     }
 
-    /// Applica uno stile rapido agli oggetti selezionati dello stesso strumento, o allo strumento.
+    /// Applies a quick style to the selected objects of the same tool, or to the tool.
     public func applyQuickStyle(_ style: Style) {
         guard let target = quickStyleTool else { return }
-        update(name: "Stile rapido", selection: { annotation in
+        update(name: CommandName.quickStyle, selection: { annotation in
             if EditorTool(kind: annotation.kind) == target { annotation.style = style }
         }, tool: { styles in
             styles.styles[target] = style
         })
     }
 
-    /// Ritaglio e taglio lavorano sull'immagine intera: il pannello mostra le loro opzioni anche con una selezione.
+    /// Crop and cut work on the whole image: the panel shows their options even with a selection.
     public var inspectedAnnotation: Annotation? {
         [.crop, .cutOut].contains(tool) ? nil : session.selectedAnnotations.first
     }
@@ -109,14 +109,14 @@ public final class EditorModel {
         return InspectedKind(tool)
     }
 
-    /// Stile della prima annotazione selezionata, altrimenti quello dello strumento attivo.
+    /// Style of the first selected annotation, otherwise that of the active tool.
     public var inspectedStyle: Style {
         inspectedAnnotation?.style ?? toolStyles.style(for: tool)
     }
 
     public func setStyle<Value: Equatable>(_ keyPath: WritableKeyPath<Style, Value>, _ value: Value, coalescing: Bool = false) {
         let tool = self.tool
-        update(name: "Stile", coalescing: coalescing, selection: { $0.style[keyPath: keyPath] = value }, tool: { styles in
+        update(name: CommandName.style, coalescing: coalescing, selection: { $0.style[keyPath: keyPath] = value }, tool: { styles in
             styles.styles[tool, default: ToolStyles.defaultStyle(for: tool)][keyPath: keyPath] = value
         })
     }
@@ -128,7 +128,7 @@ public final class EditorModel {
         })
     }
 
-    /// Con una selezione modifica le annotazioni selezionate (un comando); altrimenti gli stili dello strumento.
+    /// With a selection it edits the selected annotations (one command); otherwise the tool styles.
     public func update(name: String, coalescing: Bool = false,
                        selection change: (inout Annotation) -> Void,
                        tool toolChange: (inout ToolStyles) -> Void) {
@@ -138,12 +138,12 @@ public final class EditorModel {
         } else if let command = AnnotationEditing.update(session.selection, in: session.document, name: name, change) {
             session.perform(command, coalescingKey: coalescing ? name : nil)
         } else {
-            // Nessun cambiamento (es. cursore tornato al valore di partenza): via l'anteprima.
+            // No change (e.g. slider back at its starting value): drop the preview.
             session.preview = nil
         }
     }
 
-    /// Anteprima non registrata di una modifica in corso (cursore trascinato).
+    /// Unrecorded preview of an edit in progress (slider being dragged).
     public func previewUpdate(selection change: (inout Annotation) -> Void, tool toolChange: (inout ToolStyles) -> Void) {
         if session.selection.isEmpty {
             textEditing?.applyToNewAnnotation(change)
@@ -160,21 +160,21 @@ public final class EditorModel {
         }
     }
 
-    /// Conferma il testo in modifica sulla tela: da chiamare prima di salvare, esportare, trascinare o chiudere,
-    /// altrimenti il documento letto non contiene ciò che si sta scrivendo.
+    /// Commits the text being edited on the canvas: call before saving, exporting, dragging or closing,
+    /// otherwise the document that is read does not contain what is being typed.
     public func commitTextEditing() {
         textEditing?.finish()
     }
 
-    /// Testo mostrato nel pannello: quello in modifica, quello selezionato o il modello dello strumento.
+    /// Text shown in the panel: the one being edited, the selected one, or the tool's template.
     public var inspectedRichText: RichText {
         if let editingText { return editingText }
         if let text = inspectedAnnotation?.richText { return text }
         return tool == .callout ? toolStyles.calloutText : toolStyles.text
     }
 
-    /// Modifica il testo in modifica (senza comandi: conta la fine della modifica), o i testi selezionati
-    /// (un comando), o il modello del testo dello strumento.
+    /// Edits the text being edited (no commands: only the end of the edit counts), or the selected texts
+    /// (one command), or the tool's text template.
     public func updateText(name: String, coalescing: Bool = false, _ change: (inout RichText) -> Void) {
         if let textEditing {
             textEditing.applyToAll(change)
@@ -190,15 +190,15 @@ public final class EditorModel {
         })
     }
 
-    /// Accende o spegne il riempimento solo dove ha senso (forme, step, testi, callout). Testi e callout
-    /// partono dal bianco, gli altri dal colore del tratto.
+    /// Turns fill on or off only where it makes sense (shapes, steps, texts, callouts). Texts and callouts
+    /// start from white, the others from the stroke color.
     public func setFill(_ on: Bool) {
         let tool = self.tool
         func fill(for kind: InspectedKind, current: Style) -> RGBA? {
             guard on else { return nil }
             return current.fill ?? (kind == .text || kind == .callout ? .white : (current.stroke ?? .accentRed))
         }
-        update(name: "Riempimento", selection: { annotation in
+        update(name: CommandName.fill, selection: { annotation in
             let kind = InspectedKind(annotation.kind)
             guard kind.showsFill else { return }
             annotation.style.fill = fill(for: kind, current: annotation.style)
@@ -212,10 +212,10 @@ public final class EditorModel {
     }
 
     public func setEffectMode(_ mode: EffectMode) {
-        update(name: "Effetto", selection: { $0.convertEffect(to: mode) }, tool: { $0.effectMode = mode })
+        update(name: CommandName.effect, selection: { $0.convertEffect(to: mode) }, tool: { $0.effectMode = mode })
     }
 
-    /// Attiva lo strumento del tasto premuto; `false` se il tasto non è di nessuno strumento.
+    /// Activates the tool for the pressed key; `false` if the key belongs to no tool.
     @discardableResult
     public func selectTool(forKey characters: String) -> Bool {
         guard !session.isReadOnly, characters.count == 1, let first = characters.first,

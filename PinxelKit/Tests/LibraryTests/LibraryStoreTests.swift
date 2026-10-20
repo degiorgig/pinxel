@@ -6,14 +6,14 @@ import AppCore
 @testable import Library
 import PinxelTestSupport
 
-/// FileManager con Cestino non disponibile, per il ripiego della cancellazione definitiva.
+/// FileManager with the Trash unavailable, for the permanent-deletion fallback.
 final class NoTrashFileManager: FileManager, @unchecked Sendable {
     override func trashItem(at url: URL, resultingItemURL outResultingURL: AutoreleasingUnsafeMutablePointer<NSURL?>?) throws {
         throw CocoaError(.featureUnsupported)
     }
 }
 
-/// FileManager che non può spostare nel Cestino per un motivo diverso dal Cestino assente (permessi).
+/// FileManager that cannot move to the Trash for a reason other than a missing Trash (permissions).
 final class DeniedTrashFileManager: FileManager, @unchecked Sendable {
     override func trashItem(at url: URL, resultingItemURL outResultingURL: AutoreleasingUnsafeMutablePointer<NSURL?>?) throws {
         throw CocoaError(.fileWriteNoPermission)
@@ -85,7 +85,7 @@ struct LibraryStoreTests {
         let gone = try store.add(contents(), to: &index)
         try store.save(index)
         try FileManager.default.removeItem(at: store.url(for: gone))
-        // Un .pinxel copiato a mano nella cartella.
+        // A .pinxel copied by hand into the folder.
         try FileManager.default.copyItem(at: store.url(for: kept), to: folder.appendingPathComponent("A mano.pinxel"))
         let load = store.load()
         #expect(Set(load.index.items.map(\.file)) == [kept.file, "A mano.pinxel"])
@@ -172,7 +172,7 @@ struct LibraryStoreTests {
         let store = LibraryStore(folder: folder)
         var index = LibraryIndex()
         let item = try store.add(contents(), to: &index)
-        // Il documento salvato dall'editor ora è più piccolo (ritaglio).
+        // The document saved by the editor is now smaller (crop).
         let smaller = try CaptureDocumentBuilder.make(image: TestImages.quadrants(width: 100, height: 50), scale: 2, metadata: CaptureMetadata())
         let data = try PinxelArchive.write(document: smaller.document, images: smaller.images, thumbnail: Data([1]), appVersion: "0.1.0")
         try data.write(to: store.url(for: item))
@@ -181,7 +181,7 @@ struct LibraryStoreTests {
         #expect(index.item(item.file)?.pixelHeight == 50)
     }
 
-    /// Il documento dopo un ritaglio nell'editor: la cattura e la tela sono più piccole della cattura originale.
+    /// The document after a crop in the editor: the capture and the canvas are smaller than the original capture.
     func cropped(_ contents: PinxelFileContents) throws -> Data {
         var document = contents.document
         guard case .image(var capture) = document.annotations[0].kind else { throw CocoaError(.fileReadCorruptFile) }

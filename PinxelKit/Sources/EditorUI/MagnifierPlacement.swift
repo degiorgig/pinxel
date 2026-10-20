@@ -1,8 +1,8 @@
 import CoreGraphics
 
 public enum MagnifierPlacement {
-    /// Riquadro dell'ingrandimento di una lente nuova: la sorgente scalata di `zoom`, a destra della sorgente
-    /// (a sinistra se non ci sta), centrata in verticale e dentro l'immagine finché possibile.
+    /// Box of a new lens's magnification: the source scaled by `zoom`, to the right of the source
+    /// (to the left if it does not fit), vertically centered and inside the image whenever possible.
     public static func target(for source: CGRect, zoom: Double, imageSize: CGSize, gap: Double = 24) -> CGRect {
         let s = source.standardized
         let size = CGSize(width: s.width * zoom, height: s.height * zoom)

@@ -9,7 +9,7 @@ struct ZipTests {
         return try writer.finish()
     }
 
-    /// Offset della prima voce del central directory (firma PK\u{1}\u{2}).
+    /// Offset of the first central directory entry (signature PK\u{1}\u{2}).
     func centralDirectoryOffset(in data: Data) -> Int {
         let bytes = [UInt8](data)
         for i in 0..<(bytes.count - 4) where bytes[i] == 0x50 && bytes[i + 1] == 0x4B && bytes[i + 2] == 0x01 && bytes[i + 3] == 0x02 {
@@ -27,7 +27,7 @@ struct ZipTests {
         let text = Data(String(repeating: "pinxel ", count: 2000).utf8)
         let binary = Data((0..<1000).map { UInt8(truncatingIfNeeded: $0 &* 31) })
         let zip = try archive([("doc.json", text, .deflate), ("image.png", binary, .store), ("empty.txt", Data(), .deflate), ("àèì/ü.txt", Data("ok".utf8), .store)])
-        #expect(zip.count < text.count) // il JSON ripetitivo è stato compresso
+        #expect(zip.count < text.count) // the repetitive JSON was compressed
         let reader = try ZipReader(zip)
         #expect(reader.entries.map(\.name) == ["doc.json", "image.png", "empty.txt", "àèì/ü.txt"])
         #expect(try reader.data(for: "doc.json") == text)
@@ -83,7 +83,7 @@ struct ZipTests {
 
     @Test func detectsChecksumMismatch() throws {
         var zip = try archive([("a.txt", Data("hello world".utf8), .store)])
-        // Il contenuto memorizzato inizia dopo l'header locale (30 byte) e il nome (5 byte).
+        // The stored content starts after the local header (30 bytes) and the name (5 bytes).
         zip[zip.startIndex + 35] ^= 0xFF
         let reader = try ZipReader(zip)
         #expect(throws: ZipError.checksumMismatch("a.txt")) { try reader.data(for: "a.txt") }
@@ -91,7 +91,7 @@ struct ZipTests {
 
     @Test func zipBombWithLyingSizeIsStopped() throws {
         var zip = try archive([("bomb.bin", Data(count: 1_000_000), .deflate)])
-        // Il central directory dichiara 10 byte decompressi invece di 1 MB.
+        // The central directory declares 10 decompressed bytes instead of 1 MB.
         let cd = centralDirectoryOffset(in: zip)
         #expect(cd > 0)
         for (i, byte) in [UInt8(10), 0, 0, 0].enumerated() { zip[zip.startIndex + cd + 24 + i] = byte }

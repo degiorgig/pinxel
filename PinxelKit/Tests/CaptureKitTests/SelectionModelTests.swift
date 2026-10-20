@@ -34,7 +34,7 @@ struct SelectionModelTests {
         m.mouseMoved(to: CGPoint(x: 250, y: 150))
         #expect(m.highlightedWindow == window)
         m.mouseDown(at: CGPoint(x: 250, y: 150))
-        m.mouseDragged(to: CGPoint(x: 251, y: 151), square: false) // sotto la soglia
+        m.mouseDragged(to: CGPoint(x: 251, y: 151), square: false) // below the threshold
         #expect(m.mouseUp(at: CGPoint(x: 251, y: 151)) == .window(window))
 
         m.mouseDown(at: CGPoint(x: 500, y: 50))

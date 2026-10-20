@@ -15,7 +15,7 @@ enum Clipboard {
         }
     }
 
-    /// L'immagine negli appunti, con la sua scala in pixel per punto.
+    /// The image on the pasteboard, with its scale in pixels per point.
     static func image() -> (image: CGImage, scale: Double)? {
         guard let image = NSImage(pasteboard: .general),
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }

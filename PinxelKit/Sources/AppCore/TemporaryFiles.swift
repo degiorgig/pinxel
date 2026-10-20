@@ -5,8 +5,8 @@ public enum TemporaryFiles {
         FileManager.default.temporaryDirectory.appendingPathComponent("Pinxel", isDirectory: true)
     }
 
-    /// URL di `fileName` in una cartella nuova: due file con lo stesso nome non si sovrascrivono mai,
-    /// e chi li riceve (Finder, Mail, Messaggi) vede il nome pulito.
+    /// URL of `fileName` in a new folder: two files with the same name never overwrite each other,
+    /// and whoever receives them (Finder, Mail, Messages) sees the clean name.
     public static func uniqueURL(fileName: String, root: URL = TemporaryFiles.root, fileManager: FileManager = .default) throws -> URL {
         let folder = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)

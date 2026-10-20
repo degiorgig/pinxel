@@ -6,7 +6,7 @@ public enum FolderScope: Hashable, Sendable {
     case folder(UUID)
 }
 
-/// Cosa mostra il carosello: cartella, etichetta e testo insieme (E logico), dalla cattura più nuova.
+/// What the carousel shows: folder, label and text together (logical AND), from the newest capture.
 public struct LibraryFilter: Equatable, Sendable {
     public var folder: FolderScope = .all
     public var tag: String?

@@ -2,9 +2,9 @@ import CoreGraphics
 import DocumentModel
 import Foundation
 
-/// Trasformazioni geometriche dei gesti dell'editor. Tutte le coordinate sono del documento.
+/// Geometric transformations for the editor's gestures. All coordinates are document coordinates.
 public enum AnnotationGeometry {
-    /// Lato minimo di un riquadro ridimensionato, in pixel del documento.
+    /// Minimum side of a resized box, in document pixels.
     public static let minimumSize: Double = 1
 
     public static func moved(_ annotation: Annotation, by delta: CGSize) -> Annotation {
@@ -13,7 +13,7 @@ public enum AnnotationGeometry {
         return annotation.transformed(by: PointMapping { CGPoint(x: $0.x + dx, y: $0.y + dy) })
     }
 
-    /// Sposta solo una parte di una lente; per gli altri tipi sposta tutto.
+    /// Moves only one part of a lens; for the other types it moves everything.
     public static func moved(_ annotation: Annotation, part: MagnifierPart, by delta: CGSize) -> Annotation {
         guard case .magnifier(var data) = annotation.kind else { return moved(annotation, by: delta) }
         switch part {
@@ -25,8 +25,8 @@ public enum AnnotationGeometry {
         return copy
     }
 
-    /// Ridimensiona trascinando `handle` fino a `point`. Per le annotazioni ruotate il punto opposto
-    /// resta fermo sullo schermo.
+    /// Resizes by dragging `handle` to `point`. For rotated annotations the opposite point
+    /// stays fixed on screen.
     public static func resized(_ annotation: Annotation, handle: Handle, to point: CGPoint, keepAspect: Bool) -> Annotation {
         switch handle {
         case .lineStart, .lineEnd: return movingEndpoint(annotation, handle, to: point, constrain: keepAspect)
@@ -35,7 +35,7 @@ public enum AnnotationGeometry {
         default: break
         }
         if case .magnifier(var data) = annotation.kind {
-            // Le maniglie della sorgente ridimensionano la sorgente, le altre l'ingrandimento.
+            // The source handles resize the source, the others the magnification.
             let box = handle.boxEquivalent
             let old = (handle.isSourceHandle ? data.source : data.target).standardized
             let rect = frame(anchor: HitTesting.boxPoint(box.opposite, of: old), dragged: point, handle: box,
@@ -46,7 +46,7 @@ public enum AnnotationGeometry {
             return copy
         }
         if case .callout(var data) = annotation.kind {
-            // Si ridimensiona il fumetto; la punta della coda resta dov'è.
+            // The bubble is resized; the tail tip stays where it is.
             let old = data.rect.standardized
             data.rect = frame(anchor: HitTesting.boxPoint(handle.opposite, of: old), dragged: point, handle: handle,
                               old: old, keepAspect: keepAspect && handle.isCorner)
@@ -71,7 +71,7 @@ public enum AnnotationGeometry {
         }
         var result = annotation.transformed(by: mapping)
         if annotation.rotation != 0 {
-            // Il centro di rotazione si è spostato: trasla perché il punto fermo resti dov'era sullo schermo.
+            // The rotation center has moved: translate so the fixed point stays where it was on screen.
             let before = anchor.rotated(around: old.center, by: annotation.rotation)
             let after = anchor.rotated(around: result.bounds.center, by: annotation.rotation)
             result = moved(result, by: CGSize(width: before.x - after.x, height: before.y - after.y))
@@ -79,11 +79,11 @@ public enum AnnotationGeometry {
         return result
     }
 
-    /// Ruota attorno al centro verso il puntatore; con `snap` a passi di 15°.
+    /// Rotates around the center toward the pointer; with `snap` in 15° steps.
     public static func rotated(_ annotation: Annotation, pointer: CGPoint, snap: Bool) -> Annotation {
         let bounds = annotation.bounds
         guard !bounds.isNull else { return annotation }
-        // La maniglia sta sopra il centro: puntatore in alto = rotazione zero.
+        // The handle sits above the center: pointer straight up = zero rotation.
         var angle = atan2(pointer.y - bounds.midY, pointer.x - bounds.midX) + .pi / 2
         if snap {
             let step = Double.pi / 12
@@ -94,7 +94,7 @@ public enum AnnotationGeometry {
         return copy
     }
 
-    /// `point` portato sulla direzione multipla di 45° più vicina, alla stessa distanza da `origin`.
+    /// `point` brought onto the nearest multiple-of-45° direction, at the same distance from `origin`.
     public static func constrained45(from origin: CGPoint, to point: CGPoint) -> CGPoint {
         let dx = point.x - origin.x, dy = point.y - origin.y
         let length = hypot(dx, dy)
@@ -104,7 +104,7 @@ public enum AnnotationGeometry {
         return CGPoint(x: origin.x + length * cos(angle), y: origin.y + length * sin(angle))
     }
 
-    /// Angolo opposto di un quadrato con un vertice in `origin`, verso `point`.
+    /// Opposite corner of a square with a vertex at `origin`, toward `point`.
     public static func squared(from origin: CGPoint, to point: CGPoint) -> CGPoint {
         let dx = point.x - origin.x, dy = point.y - origin.y
         let side = max(abs(dx), abs(dy))

@@ -1,6 +1,6 @@
 # Prove a mano — Libreria
 
-Avvia l'app normale (libreria in `~/Pictures/Pinxel/Libreria`).
+Avvia l'app normale (libreria in `~/Pictures/Pinxel/Library`).
 
 | # | Prova | Atteso |
 |---|-------|--------|

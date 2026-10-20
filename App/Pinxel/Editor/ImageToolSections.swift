@@ -3,16 +3,16 @@ import DocumentModel
 import EditorUI
 import SwiftUI
 
-/// Strumento Ritaglio: istruzioni e pulsanti (le azioni arrivano alla tela tramite la catena dei responder).
+/// Crop tool: instructions and buttons (the actions reach the canvas through the responder chain).
 struct CropSection: View {
     var body: some View {
-        Section("Ritaglio") {
-            Text("Trascina sull'immagine o sposta le maniglie. ⇧ mantiene un quadrato. Invio ritaglia, Esc annulla.")
+        Section("Crop") {
+            Text("Drag over the image or move the handles. ⇧ keeps a square. Return crops, Esc cancels.")
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Annulla") { NSApp.sendAction(#selector(EditorActions.cancelCrop(_:)), to: nil, from: nil) }
+                Button("Cancel") { NSApp.sendAction(#selector(EditorActions.cancelCrop(_:)), to: nil, from: nil) }
                 Spacer()
-                Button("Ritaglia") { NSApp.sendAction(#selector(EditorActions.commitCrop(_:)), to: nil, from: nil) }
+                Button("Crop") { NSApp.sendAction(#selector(EditorActions.commitCrop(_:)), to: nil, from: nil) }
                     .buttonStyle(.borderedProminent)
             }
         }
@@ -20,18 +20,18 @@ struct CropSection: View {
 }
 
 
-/// Strumento Taglia e ricuci: bordo della cucitura e istruzioni.
+/// Cut and stitch tool: seam border and instructions.
 struct CutSection: View {
     @Bindable var model: EditorModel
 
     var body: some View {
-        Section("Taglia e ricuci") {
-            Picker("Bordo", selection: $model.toolStyles.cutEdge) {
-                Text("Dritto").tag(CutEdge.straight)
-                Text("Zig-zag").tag(CutEdge.zigzag)
+        Section("Cut Out") {
+            Picker("Edge", selection: $model.toolStyles.cutEdge) {
+                Text("Straight").tag(CutEdge.straight)
+                Text("Zigzag").tag(CutEdge.zigzag)
             }
             .pickerStyle(.segmented)
-            Text("Trascina in verticale per togliere una fascia orizzontale, in orizzontale per togliere una fascia verticale.")
+            Text("Drag vertically to remove a horizontal band, horizontally to remove a vertical band.")
                 .foregroundStyle(.secondary)
         }
     }

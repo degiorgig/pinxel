@@ -4,7 +4,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Solo in Debug: con `-PinxelDebugDumpFrames <cartella>` salva ogni fotogramma della cattura a scorrimento.
+/// Debug only: with `-PinxelDebugDumpFrames <folder>` saves every frame of the scroll capture.
 @MainActor
 enum DebugFrameDump {
     static func wrap(_ source: any RegionFrameSource) -> any RegionFrameSource {

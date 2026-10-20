@@ -1,7 +1,7 @@
 import AppKit
 
-/// I test scrivono negli appunti di sistema (catture finte, immagini da incollare): alla fine si rimette
-/// quello che c'era, così l'utente non si ritrova negli appunti un rettangolo rosso di prova.
+/// The tests write to the system pasteboard (fake captures, images to paste): at the end
+/// what was there is put back, so the user does not find a red test rectangle on the pasteboard.
 final class PasteboardGuard {
     private let items: [[NSPasteboard.PasteboardType: Data]]
 

@@ -43,7 +43,7 @@ struct ImageEditingTests {
         let session = EditorSession(document: TestDocuments.document(annotations: [shape]),
                                     assets: DictionaryAssetProvider([TestDocuments.background: TestImages.quadrants()]), undoManager: undo)
         let before = session.document
-        session.perform(SetAnnotations(name: "Ridimensiona", before: before.annotations,
+        session.perform(SetAnnotations(name: CommandName.resize, before: before.annotations,
                                        after: ContentEditing.scaled(before.annotations, from: draft.original, to: size)))
         #expect(session.document.imageSize == PixelSize(width: 200, height: 150))
         #expect(session.document.annotations[1].bounds == CGRect(x: 50, y: 50, width: 25, height: 25))

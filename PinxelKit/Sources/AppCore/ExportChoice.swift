@@ -35,7 +35,7 @@ public enum ExportFileType: String, CaseIterable, Sendable {
     public var hasQuality: Bool { self == .jpeg || self == .heic }
 }
 
-/// Scelte del pannello Esporta… tradotte nei formati di `Exporter` (spec §9).
+/// Choices of the Export… panel translated into `Exporter` formats (spec §9).
 public struct ExportChoice: Equatable, Sendable {
     private static let replaceableExtensions: Set<String> = ["pinxel", "png", "jpg", "jpeg", "heic", "pdf"]
 
@@ -44,7 +44,7 @@ public struct ExportChoice: Equatable, Sendable {
     public var quality: Double = 90
     public var scale: ExportScale
 
-    /// Per una cattura Retina il default è 2x (pixel nativi), altrimenti 1x.
+    /// For a Retina capture the default is 2x (native pixels), otherwise 1x.
     public init(documentScale: Double) {
         scale = documentScale >= 2 ? .twoX : .oneX
     }
@@ -59,7 +59,7 @@ public struct ExportChoice: Equatable, Sendable {
         }
     }
 
-    /// Nome con l'estensione del formato scelto; sostituisce solo estensioni note.
+    /// Name with the extension of the chosen format; replaces only known extensions.
     public func fileName(from baseName: String) -> String {
         let name = baseName as NSString
         let base = Self.replaceableExtensions.contains(name.pathExtension.lowercased()) ? name.deletingPathExtension : baseName

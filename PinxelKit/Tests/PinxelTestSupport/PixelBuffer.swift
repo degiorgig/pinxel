@@ -8,7 +8,7 @@ public struct RGBA8: Equatable, Sendable, CustomStringConvertible {
     public var description: String { "RGBA8(\(r), \(g), \(b), \(a))" }
 }
 
-/// Pixel RGBA8 premoltiplicati in sRGB; la riga 0 è quella in alto.
+/// Premultiplied RGBA8 pixels in sRGB; row 0 is the top one.
 public struct PixelBuffer: Equatable {
     public let width: Int
     public let height: Int
@@ -34,8 +34,8 @@ public struct PixelBuffer: Equatable {
         return RGBA8(r: bytes[i], g: bytes[i + 1], b: bytes[i + 2], a: bytes[i + 3])
     }
 
-    /// Frazione (0...1) di pixel con almeno un canale che differisce più di `channelTolerance`.
-    /// Restituisce 1 se le dimensioni sono diverse.
+    /// Fraction (0...1) of pixels with at least one channel differing by more than `channelTolerance`.
+    /// Returns 1 if the dimensions differ.
     public func differingPixelFraction(from other: PixelBuffer, channelTolerance: Int = 8) -> Double {
         guard width == other.width, height == other.height else { return 1 }
         var differing = 0

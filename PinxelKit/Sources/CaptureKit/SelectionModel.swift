@@ -15,7 +15,7 @@ public enum SelectionKey: Sendable {
     case left, right, up, down, escape, enter
 }
 
-/// Stato dell'overlay di selezione, indipendente dalle finestre. Punti globali con origine in alto a sinistra.
+/// State of the selection overlay, independent of the windows. Global points with origin at the top left.
 public struct SelectionModel: Sendable {
     public enum Phase: Equatable, Sendable {
         case hovering
@@ -78,7 +78,7 @@ public struct SelectionModel: Sendable {
         }
     }
 
-    /// Sposta l'intera selezione (Spazio tenuto premuto durante il trascinamento).
+    /// Moves the whole selection (Space held down while dragging).
     public mutating func moveSelection(by delta: CGSize) {
         guard case .dragging(let anchor, let current) = phase else { return }
         phase = .dragging(anchor: anchor.offset(by: delta), current: current.offset(by: delta))
@@ -101,7 +101,7 @@ public struct SelectionModel: Sendable {
         }
     }
 
-    /// `pixelSize`: punti per pixel dello schermo (0.5 su Retina), così le frecce spostano di 1 pixel (spec §7.2).
+    /// `pixelSize`: points per screen pixel (0.5 on Retina), so the arrows move by 1 pixel (spec §7.2).
     public mutating func key(_ key: SelectionKey, shift: Bool, pixelSize: CGFloat = 1) -> SelectionResult? {
         let step: CGFloat = (shift ? 10 : 1) * pixelSize
         let delta: CGSize

@@ -7,7 +7,7 @@ public enum PostCaptureStep: Equatable, Sendable {
 public struct PostCapturePlan: Equatable, Sendable {
     public var immediate: [PostCaptureStep]
     public var showsQuickPreview: Bool
-    /// Passi eseguiti quando l'anteprima veloce scade senza essere aperta.
+    /// Steps performed when the quick preview expires without being opened.
     public var afterPreview: [PostCaptureStep]
 
     public init(immediate: [PostCaptureStep], showsQuickPreview: Bool, afterPreview: [PostCaptureStep]) {

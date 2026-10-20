@@ -60,7 +60,7 @@ struct LibraryFilterTests {
         #expect(filter.apply(to: index, timeZone: utc).isEmpty)
     }
 
-    /// Spec §1 criterio 4: la striscia ricalcola filtro ed etichette a ogni modifica; con 2000 catture deve restare veloce.
+    /// Spec §1 criterion 4: the strip recalculates filter and labels at every change; with 2000 captures it must stay fast.
     @Test func twoThousandCapturesFilterQuickly() {
         var index = LibraryIndex()
         for i in 0..<2000 {

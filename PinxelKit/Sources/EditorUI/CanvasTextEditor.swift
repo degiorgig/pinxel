@@ -1,29 +1,29 @@
 import AppKit
 import DocumentModel
 
-/// `NSTextView` temporaneo sopra un testo o un callout (spec §6.3). Lavora in pixel del documento:
-/// il contenitore ha i bounds del riquadro e la tela gli dà la cornice in punti, così lo zoom scala il testo
-/// come lo scala il renderer.
+/// Temporary `NSTextView` over a text or callout (spec §6.3). Works in document pixels:
+/// the container has the box's bounds and the canvas gives it the frame in points, so zoom scales the text
+/// the way the renderer scales it.
 @MainActor
 final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
-    /// La richiesta; per un testo nuovo l'annotazione segue le modifiche di stile fatte durante la scrittura.
+    /// The request; for a new text the annotation follows style changes made while typing.
     private(set) var request: TextEditRequest
     let container = FlippedView()
     let textView = PinxelTextView(usingTextLayoutManager: false)
-    /// Riquadro del testo nel documento; l'altezza cresce con il contenuto, non cala.
+    /// Text box in the document; the height grows with the content, never shrinks.
     private(set) var frame: CGRect
-    /// Famiglia, dimensione, colore e allineamento (senza run).
+    /// Family, size, color and alignment (without runs).
     private var template: RichText
     private let inset: Double
-    /// Rotazione del testo (radianti, come nel documento): l'editor la segue, così si scrive com'è disegnato.
+    /// Text rotation (radians, as in the document): the editor follows it, so you write as it is drawn.
     private let rotation: Double
-    /// Le annullate della digitazione restano qui: alla fine conta un solo comando nel documento.
+    /// Typing undos stay here: in the end only a single command counts in the document.
     private let typingUndo = UndoManager()
     private var finished = false
 
     var onChange: ((RichText) -> Void)?
     var onFrameChange: (() -> Void)?
-    /// Testo, altezza e se la modifica si è chiusa perché il testo ha perso il fuoco (es. un clic altrove).
+    /// Text, height and whether the edit ended because the text lost focus (e.g. a click elsewhere).
     var onFinish: ((RichText, Double, Bool) -> Void)?
 
     init(request: TextEditRequest) {
@@ -59,8 +59,8 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         RichTextBridge.richText(from: textView.attributedString(), template: template)
     }
 
-    /// La tela si è adattata e ha traslato gli oggetti di `offset`: il riquadro segue il suo testo. Un testo nuovo,
-    /// non ancora nel documento, verrà aggiunto nel punto traslato.
+    /// The canvas fit itself and translated the objects by `offset`: the box follows its text. A new text,
+    /// not yet in the document, will be added at the translated point.
     func shift(by offset: CGVector) {
         frame = frame.offsetBy(dx: offset.dx, dy: offset.dy)
         if request.isNew {
@@ -69,15 +69,15 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         }
     }
 
-    /// Mette il contenitore sulla tela; `convert` porta un rettangolo del documento in punti della vista.
+    /// Puts the container on the canvas; `convert` maps a document rectangle to view points.
     func place(in convert: (CGRect) -> CGRect) {
-        // La cornice si posa dritta, poi ruota attorno alla sua origine e torna con il centro al suo posto.
+        // The frame is laid down upright, then rotates around its origin and comes back with its center in place.
         container.frameRotation = 0
         let target = convert(frame)
         container.frame = target
         container.bounds = CGRect(origin: .zero, size: frame.size)
         if rotation != 0, let canvas = container.superview {
-            // La tela è capovolta come il documento: l'angolo positivo del renderer è orario anche qui.
+            // The canvas is flipped like the document: the renderer's positive angle is clockwise here too.
             container.frameRotation = rotation * 180 / .pi
             let center = container.convert(CGPoint(x: frame.width / 2, y: frame.height / 2), to: canvas)
             container.setFrameOrigin(CGPoint(x: container.frame.origin.x + target.midX - center.x,
@@ -86,7 +86,7 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         textView.frame = container.bounds.insetBy(dx: inset, dy: inset)
     }
 
-    /// Chiude la modifica una volta sola (Esc, clic fuori, cambio di strumento, perdita del fuoco).
+    /// Ends the edit exactly once (Esc, click outside, tool change, loss of focus).
     func finish() {
         finish(byFocusLoss: false)
     }
@@ -97,8 +97,8 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
         onFinish?(richText, frame.height, byFocusLoss)
     }
 
-    /// Modifica di stile dal pannello (o uno stile rapido) mentre si scrive un oggetto nuovo: non è ancora nel
-    /// documento, quindi la modifica va all'oggetto in scrittura.
+    /// Style change from the panel (or a quick style) while a new object is being written: it is not yet in the
+    /// document, so the change goes to the object being written.
     func applyToNewAnnotation(_ change: (inout Annotation) -> Void) {
         guard request.isNew else { return }
         change(&request.annotation)
@@ -130,7 +130,7 @@ final class CanvasTextEditor: NSObject, NSTextViewDelegate, TextEditingControl {
     }
 
     func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-        // Esc conferma il testo, come uscire dalla modifica in Keynote.
+        // Esc confirms the text, like leaving edit mode in Keynote.
         if commandSelector == #selector(NSResponder.cancelOperation(_:)) || commandSelector == #selector(NSTextView.complete(_:)) {
             finish()
             return true

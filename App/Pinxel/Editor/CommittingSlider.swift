@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Cursore che durante il trascinamento mostra solo un'anteprima e alla fine registra un solo comando
-/// (spec §5.4). Le modifiche da tastiera, senza trascinamento, si registrano subito.
+/// Slider that shows only a preview while dragging and records a single command at the end
+/// (spec §5.4). Keyboard changes, without dragging, are recorded immediately.
 struct CommittingSlider: View {
     let value: Double
     let range: ClosedRange<Double>

@@ -9,7 +9,7 @@ public struct TextRun: Codable, Equatable, Sendable {
     public var bold: Bool
     public var italic: Bool
     public var underline: Bool
-    /// `nil` = usa `RichText.color`.
+    /// `nil` = use `RichText.color`.
     public var color: RGBA?
 
     public init(text: String, bold: Bool = false, italic: Bool = false, underline: Bool = false, color: RGBA? = nil) {

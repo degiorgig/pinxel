@@ -7,8 +7,8 @@ import os
 enum LibraryOpener {
     private static let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "library")
 
-    /// Clic su una miniatura: porta avanti la finestra che la mostra già, altrimenti la mostra nella stessa finestra.
-    /// Un documento senza titolo con qualcosa dentro entra prima nella libreria, così non si perde.
+    /// Click on a thumbnail: brings forward the window that already shows it, otherwise shows it in the same window.
+    /// An untitled document with something in it first enters the library, so it is not lost.
     static func open(_ item: Library.LibraryItem, from window: NSWindow?, newWindow: Bool = false) {
         let library = AppEnvironment.shared.library
         let url = library.url(for: item).standardizedFileURL
@@ -24,11 +24,11 @@ enum LibraryOpener {
         case .focusExisting:
             existing?.showWindows()
         case .replaceInWindow:
-            // Si salva dove sta (se ha un file), poi la nuova cattura entra nella stessa finestra.
+            // It saves where it is (if it has a file), then the new capture enters the same window.
             guard current.fileURL != nil else { return replace(current, in: controller, with: url, item: item) }
             current.autosave(withImplicitCancellability: false) { error in
                 MainActor.assumeIsolated {
-                    // Se il salvataggio non riesce la finestra resta com'è: niente modifiche perse.
+                    // If saving fails the window stays as it is: no edits are lost.
                     if let error {
                         _ = current.presentError(error)
                         return
@@ -65,7 +65,7 @@ enum LibraryOpener {
         return .untitled(blank: blank && !document.isDocumentEdited)
     }
 
-    /// La finestra passa al documento nuovo: cornice, toolbar, pannello e carosello restano, cambia la tela.
+    /// The window switches to the new document: frame, toolbar, panel and carousel stay, the canvas changes.
     private static func replace(_ current: PinxelFileDocument, in controller: EditorWindowController, with url: URL, item: Library.LibraryItem) {
         NSDocumentController.shared.openDocument(withContentsOf: url, display: false) { document, _, error in
             MainActor.assumeIsolated {

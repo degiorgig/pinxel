@@ -13,8 +13,8 @@ final class CaptureFlowUITests: XCTestCase {
         pasteboardGuard?.restore()
     }
 
-    /// L'icona nella barra dei menu, se si può cliccare. Con la barra piena macOS la nasconde (succede accanto alla tacca
-    /// dei MacBook): il clic non aprirebbe il menu e il test fallirebbe per la disposizione dello schermo, non per Pinxel.
+    /// The menu bar icon, if it can be clicked. With a full bar macOS hides it (it happens next to the notch
+    /// of MacBooks): the click would not open the menu and the test would fail because of the screen layout, not because of Pinxel.
     private func clickableStatusItem(of app: XCUIApplication) throws -> XCUIElement {
         let statusItem = app.statusItems.firstMatch
         XCTAssertTrue(statusItem.waitForExistence(timeout: 10))
@@ -26,7 +26,7 @@ final class CaptureFlowUITests: XCTestCase {
 
     func testAreaCaptureOpensDocumentWindow() {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
         app.launch()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 15))
         app.terminate()
@@ -35,7 +35,7 @@ final class CaptureFlowUITests: XCTestCase {
     func testClipboardOnlyPutsCaptureOnPasteboard() {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
         app.launch()
         let deadline = Date().addingTimeInterval(15)
         var png = NSPasteboard.general.data(forType: .png)
@@ -54,10 +54,10 @@ final class CaptureFlowUITests: XCTestCase {
     func testMenuBarIconOpensLastCaptureInEditor() throws {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch", "-PinxelUITestPostCapture", "clipboardOnly"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
-        // La cattura è finita quando arriva negli appunti.
+        // The capture is done when it arrives on the clipboard.
         let deadline = Date().addingTimeInterval(15)
         while NSPasteboard.general.data(forType: .png) == nil, Date() < deadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
@@ -77,7 +77,7 @@ final class CaptureFlowUITests: XCTestCase {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setData(rep.representation(using: .png, properties: [:]), forType: .png)
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
         statusItem.click()
@@ -88,7 +88,7 @@ final class CaptureFlowUITests: XCTestCase {
 
     func testMenuBarNewOpensAnEmptyEditor() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         let statusItem = try clickableStatusItem(of: app)
         statusItem.click()

@@ -2,8 +2,8 @@ import AppCore
 import AppKit
 import UniformTypeIdentifiers
 
-/// Apre anche le immagini (PNG, JPEG, HEIC…): ognuna diventa un documento nuovo senza titolo con l'immagine
-/// come sfondo, così il file originale non viene mai sovrascritto. I documenti `.pinxel` seguono la via normale.
+/// Also opens images (PNG, JPEG, HEIC…): each becomes a new untitled document with the image
+/// as its background, so the original file is never overwritten. `.pinxel` documents follow the normal path.
 @MainActor
 final class PinxelDocumentController: NSDocumentController {
     override func openDocument(withContentsOf url: URL, display displayDocument: Bool,
@@ -20,8 +20,8 @@ final class PinxelDocumentController: NSDocumentController {
             completionHandler(document, false, nil)
         } catch {
             completionHandler(nil, false, NSError(domain: "com.degiorgi.pinxel", code: 3, userInfo: [
-                NSLocalizedDescriptionKey: "Impossibile aprire l'immagine «\(url.lastPathComponent)».",
-                NSLocalizedRecoverySuggestionErrorKey: "Il file non è un'immagine leggibile o è danneggiato.",
+                NSLocalizedDescriptionKey: String(localized: "Can't open the image “\(url.lastPathComponent)”."),
+                NSLocalizedRecoverySuggestionErrorKey: String(localized: "The file isn't a readable image or is damaged."),
                 NSUnderlyingErrorKey: error,
             ]))
         }

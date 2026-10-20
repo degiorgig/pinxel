@@ -21,7 +21,7 @@ struct ValidationTests {
         padding.canvasStyle.padding = 1e308
         #expect(padding.validationError() != nil)
 
-        // Le operazioni ostili dei file della versione 1: LegacyDocumentV1 e HostileDocumentTests.
+        // The hostile operations of version 1 files: LegacyDocumentV1 and HostileDocumentTests.
         var size = TestDocuments.document(size: PixelSize(width: 0, height: 300))
         #expect(size.validationError() != nil)
         size = TestDocuments.document(size: PixelSize(width: 100_000, height: 300))

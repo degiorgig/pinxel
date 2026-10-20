@@ -12,7 +12,7 @@ enum ImageDrawing {
         )
     }
 
-    /// Disegna `image` in `rect` in un contesto già capovolto (origine in alto a sinistra).
+    /// Draws `image` in `rect` in an already flipped context (origin at top left).
     static func draw(_ image: CGImage, in rect: CGRect, context ctx: CGContext) {
         ctx.saveGState()
         ctx.translateBy(x: rect.minX, y: rect.maxY)
@@ -21,7 +21,7 @@ enum ImageDrawing {
         ctx.restoreGState()
     }
 
-    /// Conversione sicura a Int anche per coordinate enormi.
+    /// Safe conversion to Int even for huge coordinates.
     static func clampedInt(_ value: CGFloat) -> Int {
         Int(max(-10_000_000, min(10_000_000, value)))
     }

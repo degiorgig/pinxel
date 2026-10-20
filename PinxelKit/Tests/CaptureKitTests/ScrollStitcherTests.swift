@@ -5,8 +5,8 @@ import PinxelTestSupport
 
 @MainActor
 struct ScrollStitcherTests {
-    /// Scorre la pagina a passi di `step` pixel attesi (`factor` decide quelli veri) fino in fondo, con lo spostamento
-    /// atteso come indizio. Dopo un `noMatch` torna su di mezzo passo e dimezza il passo.
+    /// Scrolls the page in steps of `step` expected pixels (`factor` decides the real ones) all the way down, with the expected
+    /// shift as a hint. After a `noMatch` it goes back up half a step and halves the step.
     func stitch(_ page: FakeScrollingPage, step initialStep: Int, factor: Double = 1, hint: Bool = true,
                 maxHeight: Int = 32768) -> (ScrollStitcher, [StitchStep]) {
         let stitcher = ScrollStitcher(maxHeight: maxHeight)
@@ -15,7 +15,7 @@ struct ScrollStitcherTests {
         var step = initialStep
         var backedOff = false
         while unchanged < 2, steps.count < 200 {
-            // Dopo essere tornati su di mezzo passo si cattura senza scorrere: lo spostamento netto è il nuovo passo.
+            // After going back up half a step, it captures without scrolling: the net shift is the new step.
             if !backedOff { page.scrollTo(page.position + Int((Double(step) * factor).rounded())) }
             backedOff = false
             let result = stitcher.add(page.currentFrame(), hint: hint ? step : nil)
@@ -65,15 +65,15 @@ struct ScrollStitcherTests {
         let ctx = FakeScrollingPage.context(width: 64, height: 700)
         ctx.draw(TestImages.noise(width: 64, height: 700), in: CGRect(x: 0, y: 0, width: 64, height: 700))
         ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
-        ctx.fill(CGRect(x: 0, y: 700 - 100, width: 64, height: 100)) // 100 righe bianche in cima, più del passo
+        ctx.fill(CGRect(x: 0, y: 700 - 100, width: 64, height: 100)) // 100 white rows at the top, more than the step
         let page = FakeScrollingPage(content: ctx.makeImage()!, viewportHeight: 120, scale: 1)
         let (stitcher, _) = stitch(page, step: 80)
-        #expect(stitcher.topBand > 0) // le righe bianche sembrano un'intestazione fissa
+        #expect(stitcher.topBand > 0) // the white rows look like a fixed header
         expectEqual(stitcher.image(), page.expectedImage)
     }
 
     @Test func theBottomBandComesFromTheLastFrameOfTheCapture() {
-        // Righe bianche 100..<140 nel contenuto: al primo movimento sembrano una barra fissa in basso.
+        // White rows 100..<140 in the content: on the first move they look like a fixed bar at the bottom.
         let ctx = FakeScrollingPage.context(width: 64, height: 700)
         ctx.draw(TestImages.noise(width: 64, height: 700), in: CGRect(x: 0, y: 0, width: 64, height: 700))
         ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
@@ -86,13 +86,13 @@ struct ScrollStitcherTests {
         }
         let image = PixelBuffer(stitcher.image()!)
         let expected = PixelBuffer(page.expectedImage)
-        // Si è scesi fino a 300: l'immagine è il contenuto fino a 420, anche dopo essere tornati su a 240.
+        // Scrolled down to 300: the image is the content up to 420, even after going back up to 240.
         #expect(image.height == 420)
         #expect((0..<image.height).allSatisfy { y in (0..<64).allSatisfy { image.pixel(x: $0, y: y) == expected.pixel(x: $0, y: y) } })
     }
 
     @Test func aRetinaFrameIsStitchedQuickly() {
-        // 800×1000 px, come un'area di 400×500 punti a 2x: nella build di debug deve restare reattivo.
+        // 800×1000 px, like a 400×500 point area at 2x: in the debug build it must stay responsive.
         let page = FakeScrollingPage(content: TestImages.noise(width: 800, height: 3000), viewportHeight: 1000, scale: 2)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
@@ -103,14 +103,14 @@ struct ScrollStitcherTests {
         #expect(elapsed < .milliseconds(400), "\(elapsed)")
     }
 
-    /// Strisce alternate ogni 20 px (periodo 40).
+    /// Stripes alternating every 20 px (period 40).
     func stripes(height: Int, markers: Bool) -> CGImage {
         let ctx = FakeScrollingPage.context(width: 64, height: height)
         for row in 0..<(height / 20) {
             ctx.setFillColor(CGColor(srgbRed: row % 2 == 0 ? 0.9 : 0.2, green: 0.4, blue: 0.6, alpha: 1))
             ctx.fill(CGRect(x: 0, y: row * 20, width: 64, height: 20))
             if markers {
-                // Come il testo di una lista: ogni riga ha qualcosa di suo.
+                // Like list text: every row has something of its own.
                 ctx.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1))
                 ctx.fill(CGRect(x: (row * 13) % 56, y: row * 20 + 6, width: 8, height: 8))
             }
@@ -125,7 +125,7 @@ struct ScrollStitcherTests {
     }
 
     @Test func equivalentShiftsFollowTheHint() {
-        // Strisce identiche: 70, 30, -10… combaciano tutti; l'indizio sceglie 70, non un altro allineamento.
+        // Identical stripes: 70, 30, -10… all match; the hint picks 70, not another alignment.
         let page = FakeScrollingPage(content: stripes(height: 600, markers: false), viewportHeight: 120, scale: 1)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
@@ -141,7 +141,7 @@ struct ScrollStitcherTests {
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
         page.scrollTo(page.position + 50)
-        // Fotogrammi identici: nessun movimento visibile.
+        // Identical frames: no visible movement.
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .unchanged)
     }
 
@@ -168,12 +168,12 @@ struct ScrollStitcherTests {
         _ = stitcher.add(page.currentFrame(), hint: nil)
         page.scrollTo(400)
         #expect(stitcher.add(page.currentFrame(), hint: 400) == .noMatch)
-        // Il riferimento resta il fotogramma buono: tornando vicino si riprende.
+        // The reference stays the good frame: coming back near it, tracking resumes.
         page.scrollTo(60)
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .appended(60))
     }
 
-    /// Tabella larga 640 px: righe alte 40 px con lo stesso fondo e un "testo" diverso in ciascuna.
+    /// 640 px wide table: 40 px tall rows with the same background and a different "text" in each.
     func table(height: Int) -> CGImage {
         let ctx = FakeScrollingPage.context(width: 640, height: height)
         ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
@@ -183,7 +183,7 @@ struct ScrollStitcherTests {
             ctx.setFillColor(CGColor(srgbRed: 0.85, green: 0.85, blue: 0.85, alpha: 1))
             ctx.fill(CGRect(x: 0, y: top, width: 640, height: 1))
             ctx.setFillColor(CGColor(srgbRed: 0.2, green: 0.2, blue: 0.2, alpha: 1))
-            // Stessa impaginazione in ogni riga (date, etichette, barre); cambia solo qualche cifra.
+            // Same layout in every row (dates, labels, bars); only a few digits change.
             for x in stride(from: 20, to: 600, by: 70) { ctx.fill(CGRect(x: x, y: top + 15, width: 50, height: 10)) }
             ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
             for (column, factor) in [(1, 7), (3, 11), (5, 5), (7, 13)] {
@@ -193,7 +193,7 @@ struct ScrollStitcherTests {
         return ctx.makeImage()!
     }
 
-    /// Copia di `image` con la barra di scorrimento che macOS mostra a destra mentre si scorre.
+    /// Copy of `image` with the scroll bar that macOS shows on the right while scrolling.
     func withScrollbar(_ image: CGImage) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
@@ -216,7 +216,7 @@ struct ScrollStitcherTests {
         #expect(steps.allSatisfy { $0 == .appended(90) }, "\(steps)")
     }
 
-    /// Fotogramma di una chat: i fumetti (`bubbles`, trasparente fra l'uno e l'altro) scorrono sopra una tappezzeria ferma.
+    /// Frame of a chat: the bubbles (`bubbles`, transparent between one and the next) scroll over a fixed wallpaper.
     func chatFrame(bubbles: CGImage, wallpaper: CGImage, position: Int, height: Int) -> CGImage {
         let width = bubbles.width
         let ctx = FakeScrollingPage.context(width: width, height: height)
@@ -231,7 +231,7 @@ struct ScrollStitcherTests {
         return ctx.makeImage()!
     }
 
-    /// Fumetti alti 40–70 px, alternati a sinistra e a destra, con 20 px di tappezzeria fra l'uno e l'altro.
+    /// Bubbles 40–70 px tall, alternating left and right, with 20 px of wallpaper between one and the next.
     func bubbles(width: Int, height: Int) -> CGImage {
         let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -252,7 +252,7 @@ struct ScrollStitcherTests {
 
     @Test func aChatOverAStillWallpaperIsStitched() {
         let content = bubbles(width: 320, height: 1600)
-        // Disegni grandi come quelli di WhatsApp: macchie di circa 13×12 px, non rumore fine che si annulla nella media.
+        // Large drawings like WhatsApp's: blobs of about 13×12 px, not fine noise that averages out.
         let wallpaper = TestImages.noise(width: 24, height: 25)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(chatFrame(bubbles: content, wallpaper: wallpaper, position: 0, height: 300), hint: nil)
@@ -263,7 +263,7 @@ struct ScrollStitcherTests {
         #expect(steps.allSatisfy { $0 == .appended(70) }, "\(steps)")
     }
 
-    /// Copia di `frame` con un pulsante rotondo fermo in basso a destra, come "vai in fondo" nelle chat.
+    /// Copy of `frame` with a fixed round button at the bottom right, like "go to bottom" in chats.
     func withFloatingButton(_ frame: CGImage) -> CGImage {
         let ctx = FakeScrollingPage.context(width: frame.width, height: frame.height)
         ctx.draw(frame, in: CGRect(x: 0, y: 0, width: frame.width, height: frame.height))
@@ -283,8 +283,8 @@ struct ScrollStitcherTests {
         let image = PixelBuffer(stitcher.image()!)
         let expected = PixelBuffer(page.expectedImage)
         #expect(image.height == expected.height)
-        // Ogni riga viene dal fotogramma in cui stava più vicina al centro: il pulsante resta solo nell'ultima mezza
-        // schermata, dove c'era davvero alla fine.
+        // Each row comes from the frame in which it was closest to the center: the button remains only in the last half
+        // screen, where it really was at the end.
         let clean = expected.height - page.viewportHeight / 2
         let wrong = (0..<clean).filter { y in (0..<image.width).contains { image.pixel(x: $0, y: y) != expected.pixel(x: $0, y: y) } }
         #expect(wrong.isEmpty, "\(wrong.count) righe sporche, la prima \(wrong.first ?? -1)")
@@ -298,7 +298,7 @@ struct ScrollStitcherTests {
         page.scrollTo(400)
         _ = stitcher.add(page.currentFrame(), hint: nil)
         var steps: [StitchStep] = []
-        // Su fino all'inizio, poi giù fino in fondo.
+        // Up to the start, then down to the bottom.
         for position in Array(stride(from: 360, through: 0, by: -40)) + Array(stride(from: 40, to: page.maxPosition, by: 40)) + [page.maxPosition] {
             page.scrollTo(position)
             steps.append(stitcher.add(page.currentFrame(), hint: nil))
@@ -308,7 +308,7 @@ struct ScrollStitcherTests {
         expectEqual(stitcher.finalImage(), page.expectedImage)
     }
 
-    /// Copia di `image` con le righe `rows` (dall'alto) scurite, come una riga evidenziata sotto il puntatore.
+    /// Copy of `image` with rows `rows` (from the top) darkened, like a row highlighted under the pointer.
     func highlighted(_ image: CGImage, rows: Range<Int>) -> CGImage {
         let ctx = FakeScrollingPage.context(width: image.width, height: image.height)
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
@@ -321,7 +321,7 @@ struct ScrollStitcherTests {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 200, scale: 1)
         let stitcher = ScrollStitcher(maxHeight: 32768)
         _ = stitcher.add(page.currentFrame(), hint: nil)
-        // Solo una riga cambia (evidenziazione al passaggio del puntatore): non è uno scorrimento.
+        // Only one row changes (hover highlight under the pointer): it is not a scroll.
         #expect(stitcher.add(highlighted(page.currentFrame(), rows: 180..<184), hint: nil) == .unchanged)
         page.scrollTo(100)
         #expect(stitcher.add(page.currentFrame(), hint: nil) == .appended(100))

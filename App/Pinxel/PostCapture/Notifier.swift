@@ -17,7 +17,7 @@ final class Notifier {
     func failure(_ error: Error) {
         let message = Self.message(for: error)
         logger.error("\(message, privacy: .public)")
-        post(title: "Cattura non riuscita", body: message)
+        post(title: String(localized: "Capture Failed"), body: message)
     }
 
     func info(_ text: String) {
@@ -26,15 +26,15 @@ final class Notifier {
 
     static func message(for error: Error) -> String {
         switch error {
-        case CaptureError.windowNotFound: "La finestra è stata chiusa prima della cattura."
-        case CaptureError.displayNotFound: "Lo schermo non è più disponibile."
-        case CaptureError.emptySelection: "La selezione è vuota."
-        case AutoSaveError.folderNotWritable(let path): "Impossibile scrivere in \(path). Scegli un'altra cartella nelle Preferenze."
-        case AutoSaveError.writeFailed(let path): "Salvataggio non riuscito: \(path)."
-        case LibraryError.notWritable(let path): "Impossibile scrivere nella libreria (\(path)). La cattura resta fuori dalla libreria."
-        case LibraryError.writeFailed(let path): "Salvataggio nella libreria non riuscito: \(path)."
-        case LibraryError.unsupportedFile(let name): "«\(name)» non è un'immagine né un documento Pinxel."
-        case LibraryError.trashUnavailable: "Il Cestino non è disponibile per questi file."
+        case CaptureError.windowNotFound: String(localized: "The window was closed before the capture.")
+        case CaptureError.displayNotFound: String(localized: "The display is no longer available.")
+        case CaptureError.emptySelection: String(localized: "The selection is empty.")
+        case AutoSaveError.folderNotWritable(let path): String(localized: "Can't write to \(path). Choose another folder in Settings.")
+        case AutoSaveError.writeFailed(let path): String(localized: "Saving failed: \(path).")
+        case LibraryError.notWritable(let path): String(localized: "Can't write to the library (\(path)). The capture stays outside the library.")
+        case LibraryError.writeFailed(let path): String(localized: "Saving to the library failed: \(path).")
+        case LibraryError.unsupportedFile(let name): String(localized: "“\(name)” is neither an image nor a Pinxel document.")
+        case LibraryError.trashUnavailable: String(localized: "The Trash isn't available for these files.")
         default: error.localizedDescription
         }
     }

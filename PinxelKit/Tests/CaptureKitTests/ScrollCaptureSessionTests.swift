@@ -3,7 +3,7 @@ import Testing
 @testable import CaptureKit
 import PinxelTestSupport
 
-/// Tempo finto: `sleep` avanza l'orologio senza aspettare.
+/// Fake time: `sleep` advances the clock without waiting.
 @MainActor
 final class FakeTime {
     var now: Double = 0
@@ -23,8 +23,8 @@ struct ScrollCaptureSessionTests {
                              sleep: { await time.sleep($0) }, now: { time.now })
     }
 
-    /// L'utente scorre di `speed` pixel fra un fotogramma e l'altro, dal secondo, e preme Fine `pause` fotogrammi dopo
-    /// essere arrivato in fondo. `onFrame` arriva prima del fotogramma.
+    /// The user scrolls `speed` pixels between one frame and the next, from the second, and presses Done `pause` frames after
+    /// reaching the bottom. `onFrame` arrives before the frame.
     func scrollByHand(_ page: FakeScrollingPage, _ session: ScrollCaptureSession, speed: Int, pause: Int = 3) {
         page.onFrame = { count in
             page.scrollTo((count - 1) * speed)
@@ -78,7 +78,7 @@ struct ScrollCaptureSessionTests {
         let image = await session.run()
         #expect(asked)
         #expect(session.outcome == .finishedByUser)
-        #expect(image?.height == 120) // resta il primo fotogramma
+        #expect(image?.height == 120) // the first frame remains
     }
 
     @Test func stopsAtTheHeightLimit() async {
@@ -90,8 +90,8 @@ struct ScrollCaptureSessionTests {
         #expect(image?.height == 400)
     }
 
-    /// Pagina bianca con paragrafi di 1–3 righe di "testo" alte 10 px, separati da tratti bianchi di 120–`maxGap` px,
-    /// a volte allungati di `extra`: la pagina più difficile da cucire.
+    /// White page with paragraphs of 1–3 lines of "text" 10 px tall, separated by white gaps of 120–`maxGap` px,
+    /// sometimes stretched by `extra`: the hardest page to stitch.
     static func sparsePage(seed: UInt64, maxGap: Int, extra: Int) -> CGImage {
         let width = 640, height = 6000
         let ctx = FakeScrollingPage.context(width: width, height: height)
@@ -114,7 +114,7 @@ struct ScrollCaptureSessionTests {
         return ctx.makeImage()!
     }
 
-    /// Le righe non bianche, in ordine: il "testo" della pagina.
+    /// The non-white rows, in order: the page's "text".
     static func textRows(_ buffer: PixelBuffer) -> [[RGBA8]] {
         let white = RGBA8(r: 255, g: 255, b: 255)
         return (0..<buffer.height).compactMap { y in
@@ -131,7 +131,7 @@ struct ScrollCaptureSessionTests {
         scrollByHand(page, session, speed: 120)
         let image = await session.run()
         guard let image else { Issue.record("no image"); return }
-        // Tutto il testo, in ordine, senza righe doppie né mancanti.
+        // All the text, in order, with no duplicated or missing rows.
         #expect(Self.textRows(PixelBuffer(image)) == Self.textRows(PixelBuffer(page.expectedImage)))
         #expect((6000...6000 + 600 / 4).contains(image.height), "\(image.height)")
     }
@@ -143,12 +143,12 @@ struct ScrollCaptureSessionTests {
         var captureTimes: [Double] = []
         page.onFrame = { count in
             captureTimes.append(time.now)
-            time.now += 0.02 // catturare e cucire richiede tempo
+            time.now += 0.02 // capturing and stitching takes time
             if count == 6 { session.finish() }
         }
         _ = await session.run()
         let gaps = zip(captureTimes.dropFirst(), captureTimes.dropFirst(2)).map { $1 - $0 }
-        // In un'area piccola uno scorrimento normale supera in un decimo di secondo lo spostamento misurabile.
+        // In a small area a normal scroll exceeds the measurable shift within a tenth of a second.
         #expect(gaps.allSatisfy { abs($0 - 1.0 / 30) < 0.001 }, "\(gaps)")
     }
 
@@ -159,8 +159,8 @@ struct ScrollCaptureSessionTests {
         page.onFrame = { count in
             switch count {
             case 2: page.scrollTo(60)
-            case 3: page.scrollTo(400) // troppo veloce: fuori dalla sovrapposizione
-            case 8: askedToGoBack = session.pause == .scrollBack; page.scrollTo(120) // l'utente torna su
+            case 3: page.scrollTo(400) // too fast: outside the overlap
+            case 8: askedToGoBack = session.pause == .scrollBack; page.scrollTo(120) // the user scrolls back up
             case 9...20: page.scrollTo(min(page.maxPosition, 120 + (count - 8) * 50))
             case 21: session.finish()
             default: break
@@ -172,7 +172,7 @@ struct ScrollCaptureSessionTests {
     }
 
     @Test func rowsThatAllLookAlikeAskToScrollSlowlyNotThatItWasTooFast() async {
-        // Strisce identiche ogni 20 px: ogni spostamento multiplo di 40 combacia allo stesso modo.
+        // Identical stripes every 20 px: every shift that is a multiple of 40 matches equally well.
         let ctx = FakeScrollingPage.context(width: 64, height: 900)
         for row in 0..<45 {
             ctx.setFillColor(CGColor(srgbRed: row % 2 == 0 ? 0.9 : 0.2, green: 0.4, blue: 0.6, alpha: 1))
@@ -182,7 +182,7 @@ struct ScrollCaptureSessionTests {
         let session = makeSession(page)
         var pause: ScrollCaptureSession.Pause?
         page.onFrame = { count in
-            // Passi di 25 px: nessuna posizione coincide con la prima a meno di un periodo, quindi nessun fotogramma è uguale.
+            // Steps of 25 px: no position matches the first one within one period, so no frame is identical.
             page.scrollTo((count - 1) * 25)
             if count == 6 { pause = session.pause; session.finish() }
         }
@@ -190,8 +190,8 @@ struct ScrollCaptureSessionTests {
         #expect(pause == .similarRows)
     }
 
-    /// Strisce identiche ogni 20 px sotto `noiseRows` righe di rumore: dove ci sono solo strisce, lo spostamento lo dice
-    /// soltanto quanto ha scorso l'utente.
+    /// Identical stripes every 20 px under `noiseRows` rows of noise: where there are only stripes, the shift tells
+    /// only how far the user scrolled.
     static func stripedPage(noiseRows: Int, height: Int = 900) -> CGImage {
         let ctx = FakeScrollingPage.context(width: 64, height: height)
         for row in 0..<(height / 20) {
@@ -222,7 +222,7 @@ struct ScrollCaptureSessionTests {
     }
 
     @Test func wheelNotchesAreMeasuredOnClearContentFirst() async {
-        // Una rotella a scatti: quanto vale uno scatto lo si impara sul rumore, poi serve sulle strisce.
+        // A notched wheel: the value of one notch is learned on the noise, then used on the stripes.
         let page = FakeScrollingPage(content: Self.stripedPage(noiseRows: 300), viewportHeight: 120, scale: 1)
         let session = makeSession(page)
         page.onFrame = { count in

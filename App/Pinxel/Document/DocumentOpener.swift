@@ -3,7 +3,7 @@ import Persistence
 
 @MainActor
 enum DocumentOpener {
-    /// Apre i contenuti in un documento senza titolo; `name` è il nome proposto (finestra e Salva).
+    /// Opens the contents in an untitled document; `name` is the proposed name (window and Save).
     @discardableResult
     static func open(_ contents: PinxelFileContents, name: String? = nil) -> NSDocument {
         let document = PinxelFileDocument(contents: contents)
@@ -16,7 +16,7 @@ enum DocumentOpener {
         return document
     }
 
-    /// Apre un file (per esempio una cattura della libreria): si salva da solo dove sta.
+    /// Opens a file (for example a library capture): it saves itself where it is.
     static func open(url: URL, completion: ((NSDocument?) -> Void)? = nil) {
         NSApp.setActivationPolicy(.regular)
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { document, _, error in

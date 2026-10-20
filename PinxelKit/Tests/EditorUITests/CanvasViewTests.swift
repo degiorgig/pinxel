@@ -80,7 +80,7 @@ struct CanvasViewTests {
         guard case .image(let capture) = session.document.annotations.first?.kind else { Issue.record("no capture"); return }
         #expect(capture.rect == CGRect(x: 0, y: 0, width: 110, height: 110))
         #expect(session.document.userAnnotations.first?.bounds.origin == CGPoint(x: 10, y: 10))
-        #expect(session.undoManager.undoActionName == "Ritaglia")
+        #expect(session.undoManager.undoActionName == CommandName.crop)
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
         #expect(session.document.userAnnotations.first?.bounds.origin == CGPoint(x: 100, y: 100))
@@ -138,7 +138,7 @@ struct CanvasViewTests {
         let pasted = try #require(session.selectedAnnotations.first)
         #expect(pasted.id != blue.id)
         #expect(pasted.bounds.origin == CGPoint(x: 110, y: 110))
-        #expect(session.undoManager.undoActionName == "Incolla")
+        #expect(session.undoManager.undoActionName == CommandName.paste)
     }
 
     @Test func toolShortcutKeyChangesTheTool() throws {

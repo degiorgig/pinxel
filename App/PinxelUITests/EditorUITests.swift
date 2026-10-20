@@ -15,7 +15,7 @@ final class EditorUITests: XCTestCase {
 
     private func launchWithSample() -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]
         app.launch()
         return app
     }
@@ -25,7 +25,7 @@ final class EditorUITests: XCTestCase {
         wait(for: [expectation(for: predicate, evaluatedWith: element)], timeout: 5)
     }
 
-    // La cattura è un oggetto: nel conteggio c'è sempre anche lei.
+    // The capture is an object: it is always included in the count too.
     func testDrawShapeThenUndoAndRedo() {
         let app = launchWithSample()
         let canvas = app.images["pinxel.editor.canvas"]
@@ -92,7 +92,7 @@ final class EditorUITests: XCTestCase {
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
         canvas.click()
-        // Il clic ha selezionato la cattura: Esc toglie la selezione.
+        // The click selected the capture: Esc clears the selection.
         canvas.typeKey(.escape, modifierFlags: [])
         let arrange = app.menuBars.menuBarItems["Disponi"]
         arrange.click()
@@ -112,9 +112,9 @@ final class EditorUITests: XCTestCase {
     func testToolsAreVisibleAtTheInitialWindowSize() {
         let app = launchWithSample()
         XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 10))
-        // Un'app agente non passa davanti da sola: senza, un'altra finestra può coprire la toolbar.
+        // An agent app does not come to the front on its own: without this, another window can cover the toolbar.
         app.activate()
-        // Sotto una certa larghezza la toolbar va tutta nel menu di overflow.
+        // Below a certain width the whole toolbar goes into the overflow menu.
         XCTAssertTrue(app.radioButtons["Selezione"].isHittable)
         XCTAssertTrue(app.radioButtons["Taglia e ricuci"].isHittable)
         XCTAssertTrue(app.images["Trascina l'immagine"].isHittable)
@@ -134,7 +134,7 @@ final class EditorUITests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture"]
         app.launch()
         app.open(url)
         let canvas = app.images["pinxel.editor.canvas"]
@@ -152,7 +152,7 @@ final class EditorUITests: XCTestCase {
         let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
         let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
         app.launch()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
@@ -167,7 +167,7 @@ final class EditorUITests: XCTestCase {
         NSPasteboard.general.setData(png, forType: .png)
         canvas.click()
         app.typeKey("v", modifierFlags: .command)
-        // La tela prende le dimensioni dello screenshot (in pixel del documento, che dipendono dalla scala dello schermo).
+        // The canvas takes the screenshot's dimensions (in document pixels, which depend on the screen scale).
         let pasted = NSPredicate(format: "value BEGINSWITH %@ AND value != %@", "Annotazioni: 1", blankValue)
         wait(for: [expectation(for: pasted, evaluatedWith: canvas)], timeout: 5)
         let size = try XCTUnwrap((canvas.value as? String)?.components(separatedBy: "immagine: ").last)
@@ -180,7 +180,7 @@ final class EditorUITests: XCTestCase {
     }
 
     func testScissorsRemoveABandAndCloseTheGap() throws {
-        // Righe colorate numerate: dopo il taglio si vede quali sono sparite e come si ricuciono.
+        // Numbered colored rows: after the cut you can see which ones are gone and how they are stitched back.
         let image = NSImage(size: NSSize(width: 600, height: 400), flipped: true) { rect in
             let colors: [NSColor] = [.systemRed, .systemOrange, .systemYellow, .systemGreen, .systemBlue, .systemPurple, .systemPink, .systemTeal]
             for row in 0..<8 {
@@ -194,7 +194,7 @@ final class EditorUITests: XCTestCase {
         let rep = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
         let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenBlank"]
         app.launch()
         let canvas = app.images["pinxel.editor.canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
@@ -212,7 +212,7 @@ final class EditorUITests: XCTestCase {
         let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.40))
         let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
         start.click(forDuration: 0.2, thenDragTo: end)
-        // Lo screenshot è l'immagine in fondo: la fascia sparisce e l'altezza cala, senza oggetti schiacciati.
+        // The screenshot is the image at the bottom: the band disappears and the height drops, with no squashed objects.
         wait(for: [expectation(for: NSPredicate(format: "value != %@", pastedValue), evaluatedWith: canvas)], timeout: 5)
         func height(_ value: String) -> Int? { value.components(separatedBy: "\u{00D7}").last.flatMap { Int($0) } }
         let cutValue = try XCTUnwrap(canvas.value as? String)
@@ -245,7 +245,7 @@ final class EditorUITests: XCTestCase {
         NSPasteboard.general.setData(png, forType: .png)
         canvas.click()
         app.typeKey("v", modifierFlags: .command)
-        // Il campione è 200x200: lo screenshot incollato la porta alle sue dimensioni, a grandezza piena.
+        // The sample is 200x200: the pasted screenshot brings it to its dimensions, at full size.
         let grown = NSPredicate(format: "value ENDSWITH %@", "immagine: \(rep.pixelsWide)\u{00D7}\(rep.pixelsHigh)")
         wait(for: [expectation(for: grown, evaluatedWith: canvas)], timeout: 5)
         let shot = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())

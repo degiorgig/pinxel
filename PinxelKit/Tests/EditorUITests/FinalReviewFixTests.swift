@@ -6,7 +6,7 @@ import Rendering
 import Testing
 @testable import EditorUI
 
-/// Difetti trovati dalla revisione finale del piano 4.
+/// Defects found by plan 4's final review.
 @MainActor
 struct FinalReviewFixTests {
     private let text = Annotation(id: TestDocuments.id(1), kind: .text(TextData(
@@ -40,7 +40,7 @@ struct FinalReviewFixTests {
         return rep.representation(using: .png, properties: [:])!
     }
 
-    // 1. Salva, Esporta, trascina e chiudi devono vedere il testo ancora in modifica.
+    // 1. Save, Export, drag and close must see the text still being edited.
     @Test func pendingTextIsCommittedBeforeTheDocumentIsRead() {
         let (canvas, _) = makeCanvas([text])
         canvas.beginTextEditing(TextEditRequest(annotation: text, isNew: false))
@@ -50,7 +50,7 @@ struct FinalReviewFixTests {
         #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Errore 42")
     }
 
-    // 2. Stile e stili rapidi cambiati mentre si scrive un callout nuovo arrivano al fumetto.
+    // 2. Style and quick styles changed while typing a new callout reach the bubble.
     @Test func styleChangesWhileTypingANewCalloutReachTheBubble() {
         let (canvas, _) = makeCanvas()
         canvas.model.tool = .callout
@@ -65,14 +65,14 @@ struct FinalReviewFixTests {
         #expect(created?.style.lineWidth == 7)
     }
 
-    // 3. Un clic fuori dal testo, arrivato dalla finestra, chiude la modifica e non fa altro.
+    // 3. A click outside the text, coming from the window, ends the edit and does nothing else.
     @Test func clickAwayThroughTheWindowOnlyFinishesEditing() throws {
         let (canvas, window) = makeCanvas([text])
         canvas.model.tool = .text
         canvas.send(.down(CGPoint(x: 150, y: 120), [], clickCount: 1))
         canvas.send(.up(CGPoint(x: 150, y: 120), []))
         type("Cambiato", in: canvas)
-        // Finestra in primo piano: come nell'app, il clic passa da `NSWindow.sendEvent`, che sposta il fuoco.
+        // Window in front: as in the app, the click goes through `NSWindow.sendEvent`, which moves the focus.
         window.makeKeyAndOrderFront(nil)
         let location = NSPoint(x: 20, y: 20)
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
@@ -85,17 +85,17 @@ struct FinalReviewFixTests {
         #expect(canvas.model.session.document.userAnnotations[0].richText?.plainText == "Cambiato")
     }
 
-    // 4. Con un foglio (Salva, Esporta, Ridimensiona) in primo piano le voci di modifica vanno ai suoi campi.
+    // 4. With a sheet (Save, Export, Resize) in front, the edit commands go to its fields.
     @Test func editItemsPassThroughWhenAnotherWindowIsKey() {
         let (canvas, _) = makeCanvas([text])
         var state = EditorMenuState(model: canvas.model)
         #expect(!state.allows(false))
         state.editorIsKey = false
         #expect(state.allows(false))
-        #expect(state.undoTitle == "Annulla")
+        #expect(state.undoTitle == "Undo")
     }
 
-    // 5. Tagliare e incollare un'immagine incollata la riporta.
+    // 5. Cutting and pasting a pasted image brings it back.
     @Test func cutAndPasteOfAPastedImageBringsItBack() throws {
         let (canvas, _) = makeCanvas()
         canvas.pasteboard.clearContents()
@@ -112,7 +112,7 @@ struct FinalReviewFixTests {
         #expect(data.asset == original.asset)
     }
 
-    // 6. Un'immagine incollata più grande del limite dei documenti viene ridotta (o il file non si riaprirebbe).
+    // 6. A pasted image larger than the documents' limit is reduced (or the file would not reopen).
     @Test func oversizedImagesAreScaledDownToTheLimit() throws {
         let image = TestImages.solid(width: 400, height: 50, red: 1, green: 0, blue: 0)
         let fitted = try #require(ImagePlacement.fitting(image, maxSide: 100))
@@ -131,7 +131,7 @@ struct FinalReviewFixTests {
         #expect(stored.width <= PinxelDocument.maxImageSide)
     }
 
-    // 7. Il menu Formato mette in grassetto solo le parole selezionate (senza scontrarsi con lo zoom).
+    // 7. The Format menu bolds only the selected words (without clashing with zoom).
     @Test func boldToggleChangesOnlyTheSelectedRange() throws {
         let view = PinxelTextView(usingTextLayoutManager: false)
         view.isRichText = true

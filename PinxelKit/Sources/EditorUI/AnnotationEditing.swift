@@ -3,7 +3,7 @@ import DocumentModel
 import Foundation
 
 public enum AnnotationEditing {
-    /// Comando che applica `change` alle annotazioni indicate e non bloccate; `nil` se nulla cambia.
+    /// Command that applies `change` to the indicated, unlocked annotations; `nil` if nothing changes.
     public static func update(_ ids: Set<UUID>, in document: PinxelDocument, name: String, _ change: (inout Annotation) -> Void) -> UpdateAnnotations? {
         var before: [Annotation] = []
         var after: [Annotation] = []
@@ -26,10 +26,10 @@ public enum AnnotationEditing {
             copy.isLocked = locked
             return copy
         }
-        return UpdateAnnotations(name: locked ? "Blocca" : "Sblocca", before: before, after: after)
+        return UpdateAnnotations(name: locked ? CommandName.lock : CommandName.unlock, before: before, after: after)
     }
 
-    /// Copie spostate di `offset`, con ID nuovi e sbloccate.
+    /// Copies moved by `offset`, with new IDs and unlocked.
     public static func duplicates(of annotations: [Annotation], offset: CGSize, makeID: () -> UUID = { UUID() }) -> [Annotation] {
         annotations.map { annotation in
             let moved = AnnotationGeometry.moved(annotation, by: offset)
@@ -75,7 +75,7 @@ extension Annotation {
         }
     }
 
-    /// Raggio della sfocatura o lato dei blocchi della pixelatura.
+    /// Blur radius or side of the pixelation blocks.
     public var effectAmount: Double? {
         get {
             switch kind {
@@ -131,8 +131,8 @@ extension Annotation {
         }
     }
 
-    /// Ingrandimento (lato dell'ingrandimento / lato della sorgente); cambiarlo ridimensiona l'ingrandimento
-    /// attorno al suo centro.
+    /// Magnification (side of the magnified view / side of the source); changing it resizes the magnified view
+    /// around its center.
     public var magnifierZoom: Double? {
         get {
             guard case .magnifier(let data) = kind else { return nil }

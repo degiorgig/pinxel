@@ -9,7 +9,7 @@ enum EffectRenderer {
         .cacheIntermediates: false,
     ])
 
-    /// Regione intera di `rect` dentro il contenuto, o `nil` se vuota.
+    /// Whole region of `rect` within the content, or `nil` if empty.
     static func region(_ rect: CGRect, in size: PixelSize) -> PixelRect? {
         let r = rect.standardized.integral
         guard r.minX.isFinite, r.minY.isFinite, r.width.isFinite, r.height.isFinite else { return nil }
@@ -57,7 +57,7 @@ enum EffectRenderer {
         guard target.width > 0, target.height > 0, source.width > 0, source.height > 0,
               let region = region(data.source, in: context.contentSize),
               let crop = context.layers(index, region)?.image else { return }
-        // Solo la parte della sorgente dentro l'immagine viene ingrandita, nella posizione corrispondente.
+        // Only the part of the source inside the image is magnified, at the corresponding position.
         let sx = target.width / source.width
         let sy = target.height / source.height
         let visible = region.cgRect
@@ -103,7 +103,7 @@ enum EffectRenderer {
             ImageDrawing.draw(image, in: rect, context: ctx)
             return
         }
-        // Segnaposto per immagine mancante: grigio con una X.
+        // Placeholder for a missing image: gray with an X.
         ctx.setFillColor(CGColor(gray: 0.85, alpha: 1))
         ctx.fill(rect)
         ctx.setStrokeColor(CGColor(gray: 0.5, alpha: 1))

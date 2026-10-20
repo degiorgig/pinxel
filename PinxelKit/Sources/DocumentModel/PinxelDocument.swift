@@ -1,6 +1,6 @@
 import Foundation
 
-/// Riferimento a un'immagine dentro l'archivio `.pinxel` (es. "background.png", "assets/<uuid>.png").
+/// Reference to an image inside the `.pinxel` archive (e.g. "background.png", "assets/<uuid>.png").
 public struct ImageAssetRef: Codable, Hashable, Sendable {
     public var name: String
 
@@ -24,7 +24,7 @@ public struct Border: Codable, Equatable, Sendable {
 }
 
 public struct CanvasStyle: Codable, Equatable, Sendable {
-    /// Margine attorno all'immagine, in pixel del documento.
+    /// Margin around the image, in document pixels.
     public var padding: Double
     public var backgroundColor: RGBA?
     public var border: Border?
@@ -55,14 +55,14 @@ public struct CaptureMetadata: Codable, Equatable, Sendable {
 }
 
 public struct PinxelDocument: Codable, Equatable, Sendable {
-    /// Dimensioni della tela in pixel: il rettangolo che racchiude il contenuto (`FitCanvas`). Zero se non c'è niente.
+    /// Canvas size in pixels: the rectangle enclosing the content (`FitCanvas`). Zero if there is nothing.
     public var canvasSize: PixelSize
-    /// Pixel per punto (2 su Retina).
+    /// Pixels per point (2 on Retina).
     public var scale: Double
     public var colorSpace: ColorSpaceID
-    /// Margine, colore, bordo e ombra intorno al contenuto.
+    /// Margin, color, border and shadow around the content.
     public var canvasStyle: CanvasStyle
-    /// Ordine = z-order (indice 0 = in fondo). La cattura è un'immagine come le altre.
+    /// Order = z-order (index 0 = at the bottom). The capture is an image like the others.
     public var annotations: [Annotation]
     public var metadata: CaptureMetadata
 
@@ -82,6 +82,6 @@ public struct PinxelDocument: Codable, Equatable, Sendable {
         self.metadata = metadata
     }
 
-    /// Dimensioni del contenuto (uguali alla tela): il nome che usano libreria, esportazione e strumenti.
+    /// Content size (equal to the canvas): the name used by library, export and tools.
     public var imageSize: PixelSize { canvasSize }
 }

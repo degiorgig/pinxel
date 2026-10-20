@@ -1,11 +1,11 @@
 import CoreGraphics
 
-/// Piccola cache LRU per sfocature, pixelature e livelli già calcolati.
+/// Small LRU cache for blurs, pixelations and layers already computed.
 final class EffectCache {
     private var storage: [String: CGImage] = [:]
     private var order: [String] = []
     private let capacity: Int
-    /// Quante immagini sono state calcolate (per i test).
+    /// How many images have been computed (for tests).
     private(set) var misses = 0
 
     init(capacity: Int = 64) {

@@ -46,8 +46,8 @@ struct EditorSessionTests {
 
     @Test func undoMenuUsesTheCommandName() {
         let session = makeSession()
-        session.perform(AddAnnotations([shape(1)], name: "Aggiungi forma"))
-        #expect(session.undoManager.undoActionName == "Aggiungi forma")
+        session.perform(AddAnnotations([shape(1)], name: EditorTool.shape.addCommandName))
+        #expect(session.undoManager.undoActionName == EditorTool.shape.addCommandName)
     }
 
     @Test func readOnlySessionIgnoresEdits() {

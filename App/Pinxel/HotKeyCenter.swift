@@ -1,7 +1,7 @@
 import Carbon.HIToolbox
 import AppCore
 
-/// Scorciatoie globali con `RegisterEventHotKey` (non richiede il permesso Accessibilità).
+/// Global shortcuts with `RegisterEventHotKey` (does not require the Accessibility permission).
 @MainActor
 final class HotKeyCenter {
     private var references: [UInt32: EventHotKeyRef] = [:]
@@ -9,7 +9,7 @@ final class HotKeyCenter {
     private var handlerInstalled = false
     private static let signature: OSType = 0x5058_4C21 // 'PXL!'
 
-    /// `false` se la combinazione è già usata da un'altra app o non ha modificatori.
+    /// `false` if the combination is already used by another app or has no modifiers.
     func register(_ combo: KeyCombo, id: UInt32, action: @escaping @MainActor () -> Void) -> Bool {
         unregister(id: id)
         guard combo.hasModifier else { return false }
@@ -49,7 +49,7 @@ final class HotKeyCenter {
             guard status == noErr else { return status }
             let center = Unmanaged<HotKeyCenter>.fromOpaque(userData).takeUnretainedValue()
             let id = hotKeyID.id
-            // Gli eventi Carbon arrivano sul thread principale.
+            // Carbon events arrive on the main thread.
             MainActor.assumeIsolated { center.fire(id) }
             return noErr
         }, 1, &spec, userData, nil)

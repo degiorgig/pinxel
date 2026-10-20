@@ -1,7 +1,7 @@
 import AppCore
 import AppKit
 
-/// Opzione "Apri l'immagine" dell'errore di un file danneggiato: apre lo sfondo integro in un documento nuovo.
+/// "Open the image" option of the damaged-file error: opens the intact background in a new document.
 final class RecoveryAttempter: NSObject {
     private let data: Data
 

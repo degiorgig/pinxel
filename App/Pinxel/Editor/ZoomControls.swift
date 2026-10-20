@@ -1,8 +1,8 @@
 import EditorUI
 import SwiftUI
 
-/// Comandi sopra la tela, separati dagli strumenti: riduci, percentuale (clic adatta, doppio clic 100%), ingrandisci
-/// e la manina per spostare la vista trascinando.
+/// Controls above the canvas, separate from the tools: zoom out, percentage (click fits, double-click 100%), zoom in
+/// and the hand to move the view by dragging.
 struct ZoomControls: View {
     @Bindable var model: EditorModel
 
@@ -11,20 +11,20 @@ struct ZoomControls: View {
             Button { model.canvas?.zoomOut(nil) } label: {
                 Image(systemName: "minus.magnifyingglass").frame(width: 24, height: 24)
             }
-            .help("Riduci (⌘−)")
+            .help("Zoom Out (⌘−)")
             .accessibilityIdentifier("pinxel.editor.zoomOut")
 
-            Text("\(Int((model.zoom * 100).rounded()))%")
+            Text(verbatim: "\(Int((model.zoom * 100).rounded()))%")
                 .font(.callout)
                 .monospacedDigit()
                 .frame(minWidth: 44)
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { model.canvas?.zoomToActualSize(nil) }
                 .onTapGesture { model.canvas?.zoomToFit(nil) }
-                .help("Clic: adatta alla finestra. Doppio clic: dimensioni reali")
+                .help("Click: zoom to fit. Double-click: actual size")
                 .accessibilityElement()
                 .accessibilityLabel("Zoom")
-                .accessibilityValue("\(Int((model.zoom * 100).rounded())) percento")
+                .accessibilityValue("\(Int((model.zoom * 100).rounded())) percent")
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { model.canvas?.zoomToFit(nil) }
                 .accessibilityIdentifier("pinxel.editor.zoomLevel")
@@ -32,7 +32,7 @@ struct ZoomControls: View {
             Button { model.canvas?.zoomIn(nil) } label: {
                 Image(systemName: "plus.magnifyingglass").frame(width: 24, height: 24)
             }
-            .help("Ingrandisci (⌘+)")
+            .help("Zoom In (⌘+)")
             .accessibilityIdentifier("pinxel.editor.zoomIn")
 
             Divider().frame(height: 18).padding(.horizontal, 4)
@@ -41,8 +41,8 @@ struct ZoomControls: View {
                 Image(systemName: model.isPanning ? "hand.raised.fill" : "hand.raised").frame(width: 24, height: 24)
             }
             .toggleStyle(.button)
-            .help("Sposta la vista trascinando (o tieni premuta la barra spaziatrice). Esc per uscire")
-            .accessibilityLabel("Sposta la vista")
+            .help("Drag to move the view (or hold the space bar). Esc to exit")
+            .accessibilityLabel("Move View")
             .accessibilityIdentifier("pinxel.editor.pan")
         }
         .buttonStyle(.borderless)

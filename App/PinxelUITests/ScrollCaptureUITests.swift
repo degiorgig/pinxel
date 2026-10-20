@@ -12,13 +12,13 @@ final class ScrollCaptureUITests: XCTestCase {
         pasteboardGuard?.restore()
     }
 
-    /// La pagina finta è larga 400 px e lunga 1200: scorsa fino in fondo, la cattura la deve ricostruire intera.
+    /// The fake page is 400 px wide and 1200 long: scrolled all the way down, the capture must rebuild it whole.
     func testScrollingCaptureOpensTheWholePageInTheEditor() {
         let app = XCUIApplication()
-        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestFakeCapture", "-PinxelUITestFakeScrolling",
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestFakeScrolling",
                                "-PinxelUITestPostCapture", "openEditor", "-PinxelUITestScrollOnLaunch"]
         app.launch()
-        // La pagina finta scorre da sola come farebbe l'utente; la cattura finisce con Fine.
+        // The fake page scrolls by itself as the user would; the capture ends with Done.
         let finish = app.buttons["Fine"]
         XCTAssertTrue(finish.waitForExistence(timeout: 10))
         sleep(4)

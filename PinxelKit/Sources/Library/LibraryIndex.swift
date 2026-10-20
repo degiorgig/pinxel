@@ -10,7 +10,7 @@ public struct LibraryFolder: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
-/// Una cattura dell'archivio: il nome del file è la sua identità.
+/// A library capture: the file name is its identity.
 public struct LibraryItem: Codable, Equatable, Sendable, Identifiable {
     public var file: String
     public var added: Date
@@ -44,8 +44,8 @@ public enum LibraryIndexError: Error, Equatable {
     case duplicateName
 }
 
-/// Contenuto di `library.json`: cartelle e catture. Le etichette non hanno una lista propria:
-/// sono quelle usate dalle catture.
+/// Contents of `library.json`: folders and captures. Labels have no list of their own:
+/// they are the ones used by the captures.
 public struct LibraryIndex: Codable, Equatable, Sendable {
     public static let currentVersion = 1
 
@@ -57,7 +57,7 @@ public struct LibraryIndex: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey { case version, folders, items }
 
-    /// Una voce illeggibile si salta senza perdere le altre; un indice di una versione futura non si tocca.
+    /// An unreadable entry is skipped without losing the others; an index from a future version is left untouched.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let version = try c.decode(Int.self, forKey: .version)
@@ -99,7 +99,7 @@ public struct LibraryIndex: Codable, Equatable, Sendable {
     public mutating func addTag(_ tag: String, to files: Set<String>) {
         let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        // Stessa etichetta scritta in un altro modo: si usa la grafia già presente.
+        // Same label written differently: the spelling already present is used.
         let spelling = allTags.first { Self.same($0, trimmed) } ?? trimmed
         for i in items.indices where files.contains(items[i].file) && !items[i].tags.contains(where: { Self.same($0, spelling) }) {
             items[i].tags.append(spelling)
@@ -129,14 +129,14 @@ public struct LibraryIndex: Codable, Equatable, Sendable {
         for i in items.indices where items[i].folder == id { items[i].folder = nil }
     }
 
-    /// Le etichette in uso, una per grafia (la prima incontrata), in ordine alfabetico.
+    /// Labels in use, one per spelling (the first encountered), in alphabetical order.
     public var allTags: [String] {
         var seen: [String] = []
         for tag in items.flatMap(\.tags) where !seen.contains(where: { Self.same($0, tag) }) { seen.append(tag) }
         return seen.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
-    /// I file comandano: entrano quelli senza voce, escono le voci senza file; una cartella sparita diventa "nessuna".
+    /// Files rule: those without an entry are added, entries without a file are removed; a vanished folder becomes "none".
     public func reconciled(withFiles files: Set<String>, makeItem: (String) -> LibraryItem) -> LibraryIndex {
         var result = self
         result.items.removeAll { !files.contains($0.file) }
@@ -161,7 +161,7 @@ public struct LibraryIndex: Codable, Equatable, Sendable {
     }
 }
 
-/// Decodifica che non fallisce: un elemento illeggibile diventa `nil`.
+/// Decoding that does not fail: an unreadable element becomes `nil`.
 private struct Lenient<Value: Decodable>: Decodable {
     let value: Value?
 

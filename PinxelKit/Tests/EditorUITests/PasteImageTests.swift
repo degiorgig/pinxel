@@ -75,7 +75,7 @@ struct PasteImageTests {
     }
 
     @Test func addedImagesAreCenteredWithoutBeingPushedInside() {
-        // Vicino al bordo l'oggetto resta dov'è: sarà la tela ad adattarsi.
+        // Near the edge the object stays where it is: the canvas will adapt.
         #expect(ImagePlacement.centered(pixelSize: CGSize(width: 100, height: 100), imageScale: 1, documentScale: 1, center: CGPoint(x: 390, y: 10))
                 == CGRect(x: 340, y: -40, width: 100, height: 100))
         #expect(ImagePlacement.centered(pixelSize: CGSize(width: 200, height: 100), imageScale: 2, documentScale: 2, center: CGPoint(x: 300, y: 200))
@@ -98,7 +98,7 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 150, height: 100))
-        // Lo screenshot prende il posto della cattura, non diventa un oggetto in più.
+        // The screenshot takes the place of the capture, it does not become an extra object.
         #expect(session.document.userAnnotations.isEmpty)
         let pasted = try #require(captureAsset(session))
         #expect(pasted != TestDocuments.background)
@@ -127,7 +127,7 @@ struct PasteImageTests {
         let session = canvas.model.session
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
         #expect(session.document.userAnnotations.isEmpty)
-        #expect(session.undoManager.undoActionName == "Incolla immagine")
+        #expect(session.undoManager.undoActionName == CommandName.pasteImage)
         session.undoManager.undo()
         #expect(session.document.imageSize == PixelSize(width: 400, height: 300))
         #expect(captureAsset(session) == TestDocuments.background)
@@ -135,7 +135,7 @@ struct PasteImageTests {
         #expect(session.document.imageSize == PixelSize(width: 900, height: 700))
     }
 
-    /// Tre fasce: rossa 0..<30, verde 30..<70, blu 70..<100 (righe dall'alto).
+    /// Three bands: red 0..<30, green 30..<70, blue 70..<100 (rows from the top).
     private func bandsPNG() -> Data {
         let ctx = CGContext(data: nil, width: 100, height: 100, bitsPerComponent: 8, bytesPerRow: 0,
                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -155,14 +155,14 @@ struct PasteImageTests {
         canvas.paste(nil)
         let session = canvas.model.session
         let before = session.document.annotations
-        session.perform(SetAnnotations(name: "Taglia e ricuci", before: before,
+        session.perform(SetAnnotations(name: CommandName.cutOut, before: before,
                                        after: ContentEditing.cut(before, CutOut(axis: .horizontal, start: 30, length: 40), canvas: session.document.imageSize,
                                                                  images: session.assets.image(for:), add: { session.assets.add($0) })))
         #expect(session.document.imageSize == PixelSize(width: 100, height: 60))
         let rendered = try DocumentRenderer().renderImage(session.document, assets: session.assets)
         let rep = NSBitmapImageRep(cgImage: rendered)
         func isGreen(_ y: Int) -> Bool { (rep.colorAt(x: 50, y: y)?.usingColorSpace(.sRGB)?.greenComponent ?? 0) > 0.5 }
-        // Via la fascia verde: restano rosso sopra e blu sotto, ricuciti, senza verde schiacciato in mezzo.
+        // Remove the green band: red stays above and blue below, stitched together, with no green squeezed in the middle.
         #expect(!(0..<60).contains(where: isGreen))
         #expect((rep.colorAt(x: 50, y: 10)?.usingColorSpace(.sRGB)?.redComponent ?? 0) > 0.9)
         #expect((rep.colorAt(x: 50, y: 50)?.usingColorSpace(.sRGB)?.blueComponent ?? 0) > 0.9)

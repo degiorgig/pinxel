@@ -60,12 +60,12 @@ struct TextRenderingTests {
     }
 
     @Test func stepUsesComputedLabel() throws {
-        // Un solo step "1" e lo stesso con override "1": devono essere identici.
+        // A single step "1" and the same with override "1": they must be identical.
         let automatic = Annotation(kind: .step(StepData(center: CGPoint(x: 50, y: 50), diameter: 40)), style: Style(stroke: nil, fill: .accentRed))
         let manual = Annotation(kind: .step(StepData(center: CGPoint(x: 50, y: 50), diameter: 40, label: StepLabel(override: "1"))), style: Style(stroke: nil, fill: .accentRed))
         let a = PixelBuffer(try render([automatic]))
         let b = PixelBuffer(try render([manual]))
         #expect(a.differingPixelFraction(from: b, channelTolerance: 0) == 0)
-        #expect(a.pixel(x: 50, y: 34) != white) // dentro il cerchio
+        #expect(a.pixel(x: 50, y: 34) != white) // inside the circle
     }
 }

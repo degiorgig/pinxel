@@ -2,11 +2,11 @@ import CoreGraphics
 import DocumentModel
 
 public enum CutGeometry {
-    /// Fascia minima, in pixel: sotto questa un trascinamento è un clic.
+    /// Minimum band, in pixels: below this a drag is a click.
     public static let minimumLength = 2
 
-    /// Fascia da togliere trascinando da `start` a `end`: un trascinamento soprattutto verticale toglie righe
-    /// (fascia orizzontale), uno orizzontale toglie colonne. `nil` se troppo corta o se toglierebbe tutto.
+    /// Band to remove by dragging from `start` to `end`: a mostly vertical drag removes rows
+    /// (horizontal band), a horizontal one removes columns. `nil` if too short or if it would remove everything.
     public static func cut(from start: CGPoint, to end: CGPoint, imageSize: PixelSize, edge: CutEdge) -> CutOut? {
         let axis: Axis = abs(end.y - start.y) >= abs(end.x - start.x) ? .horizontal : .vertical
         let a = axis == .horizontal ? start.y : start.x

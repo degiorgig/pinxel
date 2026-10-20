@@ -1,11 +1,11 @@
 import CoreGraphics
 
-/// Immagini di un rettangolo dello schermo, una alla volta, per la cattura a scorrimento.
+/// Images of a screen rectangle, one at a time, for scrolling capture.
 @MainActor
 public protocol RegionFrameSource {
-    /// Prepara la cattura dopo che le finestre di Pinxel (cornice, pannello) sono comparse, per escluderle.
+    /// Prepares the capture after Pinxel's windows (frame, panel) have appeared, to exclude them.
     func prepare(display: DisplayInfo) async throws
-    /// `rect` in punti globali con origine in alto a sinistra; l'immagine è alla risoluzione dello schermo.
+    /// `rect` in global points with origin at top left; the image is at the screen's resolution.
     func frame(of rect: CGRect, on display: DisplayInfo) async throws -> CGImage
 }
 

@@ -5,9 +5,9 @@ import PinxelTestSupport
 import Testing
 import UniformTypeIdentifiers
 
-/// Confronto con PNG di riferimento in `__Snapshots__/`.
-/// Se il riferimento manca (o con PINXEL_RECORD_SNAPSHOTS=1) lo scrive e fa fallire il test:
-/// controlla l'immagine a occhio, poi rilancia.
+/// Comparison with reference PNGs in `__Snapshots__/`.
+/// If the reference is missing (or with PINXEL_RECORD_SNAPSHOTS=1) it writes it and fails the test:
+/// check the image by eye, then rerun.
 enum Snapshot {
     static func assertMatches(
         _ image: CGImage,

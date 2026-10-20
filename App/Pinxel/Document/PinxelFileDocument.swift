@@ -6,16 +6,16 @@ import Persistence
 import Rendering
 
 extension Notification.Name {
-    /// Un documento è stato scritto su disco; `object` è il suo URL. La libreria aggiorna miniatura e dimensioni.
+    /// A document was written to disk; `object` is its URL. The library updates thumbnail and dimensions.
     static let pinxelDocumentDidSave = Notification.Name("com.degiorgi.pinxel.documentDidSave")
 }
 
 @objc(PinxelFileDocument)
 final class PinxelFileDocument: NSDocument {
-    // NSDocument legge e scrive sul thread principale (canConcurrentlyReadDocuments e
-    // canAsynchronouslyWrite sono false), ma i metodi non sono isolati.
+    // NSDocument reads and writes on the main thread (canConcurrentlyReadDocuments and
+    // canAsynchronouslyWrite are false), but the methods are not isolated.
     nonisolated(unsafe) private(set) var contents: PinxelFileContents?
-    /// Creato con la finestra: da lì in poi il documento aggiornato è `editorModel.session.document`.
+    /// Created with the window: from then on the updated document is `editorModel.session.document`.
     nonisolated(unsafe) private(set) var editorModel: EditorModel?
 
     convenience init(contents: PinxelFileContents) {
@@ -38,8 +38,8 @@ final class PinxelFileDocument: NSDocument {
             throw Self.userError(for: error, data: data)
         }
         contents = loaded
-        // Ripristina, Versioni o file cambiato su disco: l'editor già aperto deve mostrare il contenuto riletto,
-        // altrimenti il salvataggio successivo riscriverebbe quello vecchio.
+        // Revert, Versions or file changed on disk: the already open editor must show the re-read content,
+        // otherwise the next save would rewrite the old one.
         MainActor.assumeIsolated { editorModel?.session.replaceDocument(loaded.document) }
     }
 
@@ -47,18 +47,18 @@ final class PinxelFileDocument: NSDocument {
         guard var contents else { throw CocoaError(.fileWriteUnknown) }
         let edited = MainActor.assumeIsolated { () -> (document: PinxelDocument, pasted: [ImageAssetRef: Data])? in
             guard let session = editorModel?.session else { return nil }
-            // Dopo il salvataggio una nuova modifica deve essere un passo nuovo, o NSDocument non la vede.
+            // After saving, a new change must be a new step, or NSDocument does not see it.
             session.breakCoalescing()
             return (session.document, session.assets.addedData)
         }
         if let edited {
             contents.document = edited.document
-            // Le immagini incollate entrano nell'archivio; `PinxelArchive.write` scrive solo quelle usate.
+            // Pasted images enter the archive; `PinxelArchive.write` writes only the ones in use.
             contents.images.merge(edited.pasted) { current, _ in current }
         }
         guard !contents.isReadOnly else {
             throw NSError(domain: "com.degiorgi.pinxel", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Questo documento è stato creato da una versione più recente di Pinxel e si può solo leggere.",
+                NSLocalizedDescriptionKey: String(localized: "This document was created by a newer version of Pinxel and can only be viewed."),
             ])
         }
         let assets = try contents.assetProvider()
@@ -67,8 +67,8 @@ final class PinxelFileDocument: NSDocument {
         return try PinxelArchive.write(document: contents.document, images: contents.images, thumbnail: thumbnail, appVersion: version)
     }
 
-    // Il testo che si sta scrivendo sulla tela entra nel documento prima di salvare (anche in automatico)
-    // e prima di decidere se chiedere di salvare alla chiusura.
+    // The text being written on the canvas enters the document before saving (even automatically)
+    // and before deciding whether to ask to save on close.
     override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
                        completionHandler: @escaping (Error?) -> Void) {
         MainActor.assumeIsolated { editorModel?.commitTextEditing() }
@@ -90,7 +90,7 @@ final class PinxelFileDocument: NSDocument {
         }
     }
 
-    /// Il modello dell'editor per questo documento, senza finestra: serve anche per mostrarlo in una finestra già aperta.
+    /// The editor model for this document, without a window: also used to show it in an already open window.
     @MainActor
     func makeEditorModel() -> EditorModel? {
         if let editorModel { return editorModel }
@@ -106,14 +106,14 @@ final class PinxelFileDocument: NSDocument {
             editorModel = model
             return model
         } catch {
-            // Senza immagini il documento non si può mostrare: avvisa e chiudi, niente documenti senza finestra.
+            // Without images the document cannot be shown: warn and close, no documents without a window.
             presentError(error)
             perform(#selector(NSDocument.close), with: nil, afterDelay: 0)
             return nil
         }
     }
 
-    /// Esporta… dal menu File (arriva qui dalla catena dei responder).
+    /// Export… from the File menu (arrives here through the responder chain).
     @objc func exportImage(_ sender: Any?) {
         MainActor.assumeIsolated {
             guard let model = editorModel, let window = windowControllers.first?.window else { return }
@@ -127,15 +127,15 @@ final class PinxelFileDocument: NSDocument {
     nonisolated private static func userError(for error: Error, data: Data) -> NSError {
         let reason: String
         switch error {
-        case PinxelArchiveError.notAPinxelFile: reason = "Il file non è un documento Pinxel."
-        case PinxelArchiveError.invalidDocument(let detail): reason = "Il documento è danneggiato (\(detail))."
-        case PinxelArchiveError.missingAsset(let name): reason = "Nel documento manca l'immagine \(name)."
-        default: reason = "Il file è danneggiato o illeggibile."
+        case PinxelArchiveError.notAPinxelFile: reason = String(localized: "The file isn't a Pinxel document.")
+        case PinxelArchiveError.invalidDocument(let detail): reason = String(localized: "The document is damaged (\(detail)).")
+        case PinxelArchiveError.missingAsset(let name): reason = String(localized: "The image \(name) is missing from the document.")
+        default: reason = String(localized: "The file is damaged or unreadable.")
         }
         var info: [String: Any] = [NSLocalizedDescriptionKey: reason]
         if PinxelArchive.recoverBackground(data) != nil {
-            info[NSLocalizedRecoverySuggestionErrorKey] = "L'immagine originale è integra: puoi aprirla in un documento nuovo."
-            info[NSLocalizedRecoveryOptionsErrorKey] = ["Apri l'immagine", "Annulla"]
+            info[NSLocalizedRecoverySuggestionErrorKey] = String(localized: "The original image is intact: you can open it in a new document.")
+            info[NSLocalizedRecoveryOptionsErrorKey] = [String(localized: "Open Image"), String(localized: "Cancel")]
             info[NSRecoveryAttempterErrorKey] = RecoveryAttempter(data: data)
         }
         return NSError(domain: "com.degiorgi.pinxel", code: 2, userInfo: info)

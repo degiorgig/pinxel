@@ -1,7 +1,7 @@
 import Compression
 import Foundation
 
-/// DEFLATE grezzo (RFC 1951), il metodo 8 dello ZIP. In Compression si chiama `.zlib`.
+/// Raw DEFLATE (RFC 1951), ZIP method 8. In Compression it is called `.zlib`.
 enum Deflate {
     static func compress(_ data: Data) throws -> Data {
         var output = Data()
@@ -13,7 +13,7 @@ enum Deflate {
         return output
     }
 
-    /// Si ferma appena l'output supera `limit` byte (protezione da zip bomb).
+    /// Stops as soon as the output exceeds `limit` bytes (zip bomb protection).
     static func decompress(_ data: Data, limit: Int) throws -> Data {
         var output = Data()
         output.reserveCapacity(min(limit, 64 * 1024 * 1024))

@@ -6,7 +6,7 @@ import Persistence
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // Il primo controller creato diventa `NSDocumentController.shared`: deve essere il nostro, prima dei file da aprire.
+        // The first controller created becomes `NSDocumentController.shared`: it must be ours, before any files to open.
         _ = PinxelDocumentController()
     }
 
@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         AppEnvironment.shared.start()
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { _ in
-            // Dopo la chiusura, senza documenti aperti l'app torna agente (niente icona nel Dock).
+            // After closing, with no open documents the app goes back to being an agent (no Dock icon).
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     if NSDocumentController.shared.documents.isEmpty {

@@ -7,7 +7,7 @@ struct ScrollCaptureGeometryTests {
 
     @Test func areaIsClippedToItsScreenAndMustBeTallEnough() {
         #expect(ScrollCaptureGeometry.prepare(CGRect(x: 100, y: 100, width: 300, height: 99), on: display, maxHeight: 32768) == nil)
-        // Dentro lo schermo restano 140×100 punti: esattamente il minimo, quindi accettata.
+        // 140×100 points remain inside the screen: exactly the minimum, so accepted.
         let boundary = ScrollCaptureGeometry.prepare(CGRect(x: 1300, y: 800, width: 300, height: 300), on: display, maxHeight: 32768)
         #expect(boundary?.rect == CGRect(x: 1300, y: 800, width: 140, height: 100))
         let ok = ScrollCaptureGeometry.prepare(CGRect(x: 1300, y: 700, width: 300, height: 300), on: display, maxHeight: 32768)
@@ -16,7 +16,7 @@ struct ScrollCaptureGeometryTests {
     }
 
     @Test func theAreaShrinksToWholeScreenPixels() {
-        // Con bordi a metà pixel l'ultima riga catturata prenderebbe un po' di ciò che c'è appena fuori (la cornice).
+        // With half-pixel edges the last captured row would pick up a bit of what is just outside (the frame).
         let prepared = ScrollCaptureGeometry.prepare(CGRect(x: 138.89, y: 146.1, width: 843.39, height: 736.53), on: display, maxHeight: 32768)
         #expect(prepared?.rect == CGRect(x: 139, y: 146.5, width: 843, height: 736))
         let offset = DisplayInfo(id: 3, frame: CGRect(x: 1440.25, y: 0, width: 1000, height: 900), scale: 2)

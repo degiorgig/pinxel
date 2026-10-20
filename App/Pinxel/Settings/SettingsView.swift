@@ -7,29 +7,37 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Dopo la cattura") {
-                Picker("Azione", selection: binding(\.postCaptureAction)) {
+            Section("After Capture") {
+                Picker("Action", selection: binding(\.postCaptureAction)) {
                     ForEach(PostCaptureAction.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                Toggle("Includi l'ombra nelle catture di finestre", isOn: binding(\.includeWindowShadow))
+                Toggle("Include the shadow in window captures", isOn: binding(\.includeWindowShadow))
             }
-            Section("Salvataggio automatico") {
-                Toggle("Salva automaticamente ogni cattura", isOn: binding(\.autoSave))
-                LabeledContent("Cartella") {
+            Section("Automatic Saving") {
+                Toggle("Save every capture automatically", isOn: binding(\.autoSave))
+                LabeledContent("Folder") {
                     HStack {
                         Text(environment.settings.saveFolderURL.path).lineLimit(1).truncationMode(.middle)
-                        Button("Scegli…", action: chooseFolder)
+                        Button("Choose…", action: chooseFolder)
                     }
                 }
-                Picker("Formato", selection: binding(\.saveFormat)) {
-                    Text("Documento Pinxel (.pinxel)").tag(SaveFormat.pinxel)
-                    Text("Immagine PNG").tag(SaveFormat.png)
+                Picker("Format", selection: binding(\.saveFormat)) {
+                    Text("Pinxel Document (.pinxel)").tag(SaveFormat.pinxel)
+                    Text("PNG Image").tag(SaveFormat.png)
                 }
-                TextField("Nome file", text: binding(\.fileNameTemplate))
-                Text("Esempio: \(FileNamer.baseName(template: environment.settings.fileNameTemplate, date: Date()))")
+                // The default is shown in the app's language; going back to it (or not touching it) lets it follow the language.
+                TextField("File Name", text: Binding(
+                    get: { environment.settings.effectiveFileNameTemplate },
+                    set: { value in
+                        environment.update {
+                            $0.fileNameTemplate = value == FileNamer.defaultTemplate ? FileNamer.legacyDefaultTemplate : value
+                        }
+                    }
+                ))
+                Text("Example: \(FileNamer.baseName(template: environment.settings.effectiveFileNameTemplate, date: Date()))")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Scorciatoie globali") {
+            Section("Global Shortcuts") {
                 ForEach(HotKeyAction.allCases, id: \.self) { action in
                     LabeledContent(action.title) {
                         VStack(alignment: .trailing) {
@@ -38,7 +46,7 @@ struct SettingsView: View {
                                 set: { combo in environment.update { $0.hotKeys[action] = combo } }
                             ))
                             if environment.hotKeyConflicts.contains(action) {
-                                Text("Combinazione già in uso da un'altra app").font(.caption).foregroundStyle(.red)
+                                Text("This shortcut is already used by another app").font(.caption).foregroundStyle(.red)
                             }
                         }
                     }
@@ -70,14 +78,14 @@ struct SettingsView: View {
     }
 }
 
-/// Registra una combinazione: richiede almeno un modificatore; Esc annulla.
+/// Records a combination: requires at least one modifier; Esc cancels.
 struct ShortcutRecorder: View {
     @Binding var combo: KeyCombo
     @State private var recording = false
     @State private var monitor: Any?
 
     var body: some View {
-        Button(recording ? "Premi la combinazione…" : combo.displayString) {
+        Button(recording ? String(localized: "Press the shortcut…") : combo.displayString) {
             recording ? stop() : start()
         }
         .onDisappear(perform: stop)
@@ -107,7 +115,7 @@ struct ShortcutRecorder: View {
     }
 }
 
-/// Pinxel è un'app agente e non sempre viene attivata: porta davanti la finestra che contiene questa vista.
+/// Pinxel is an agent app and is not always activated: brings forward the window that contains this view.
 private struct FrontWindowRaiser: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { RaisingView() }
     func updateNSView(_ nsView: NSView, context: Context) {}
