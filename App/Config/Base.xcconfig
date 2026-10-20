@@ -1,5 +1,5 @@
-// Firma predefinita: ad hoc (funziona ovunque, ma macOS richiede di nuovo il permesso di
-// Registrazione schermo a ogni build). Per una firma stabile crea Signing.local.xcconfig.
+// Default signature: ad hoc (works anywhere, but macOS asks for the Screen Recording
+// permission again after every build). For a stable signature create Signing.local.xcconfig.
 CODE_SIGN_STYLE = Manual
 CODE_SIGN_IDENTITY = -
 DEVELOPMENT_TEAM =

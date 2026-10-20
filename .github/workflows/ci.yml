@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Package tests
+        run: swift test --package-path PinxelKit
+
+      - name: Build the app and the UI tests
+        # Ad hoc signature (App/Config/Base.xcconfig): no certificate needed.
+        run: |
+          xcodegen generate
+          xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath build/ci build-for-testing
+
+      - name: Every string in the code has a translation
+        run: python3 scripts/l10n/xcstrings.py coverage build/ci .
