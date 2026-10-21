@@ -8,9 +8,14 @@ options:
 packages:
   PinxelKit:
     path: PinxelKit
+configs:
+  Debug: debug
+  Release: release
+  AppStore: release
 configFiles:
   Debug: App/Config/Base.xcconfig
   Release: App/Config/Base.xcconfig
+  AppStore: App/Config/AppStore.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -48,6 +53,10 @@ targets:
       configs:
         Release:
           # Notarization rejects the debugging entitlement Xcode adds by default.
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+        AppStore:
+          # Only the Mac App Store build is sandboxed: the GitHub build keeps its settings where they are.
+          CODE_SIGN_ENTITLEMENTS: App/Pinxel/PinxelAppStore.entitlements
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
     info:
       path: App/Pinxel/Info.plist

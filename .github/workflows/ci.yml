@@ -42,5 +42,13 @@ jobs:
           xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration Debug \
             -destination 'platform=macOS' -derivedDataPath build/ci build-for-testing
 
+      - name: Build the Mac App Store version
+        # The sandboxed configuration, signed ad hoc: it catches what breaks only in the App Store build.
+        run: |
+          xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration AppStore \
+            -destination 'generic/platform=macOS' -derivedDataPath build/ci-appstore \
+            CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= build
+          codesign -d --entitlements - build/ci-appstore/Build/Products/AppStore/Pinxel.app | grep -q com.apple.security.app-sandbox
+
       - name: Every string in the code has a translation
         run: python3 scripts/l10n/xcstrings.py coverage build/ci .
