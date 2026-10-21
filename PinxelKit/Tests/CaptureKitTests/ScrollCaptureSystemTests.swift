@@ -10,9 +10,4 @@ struct ScrollCaptureSystemTests {
         #expect(ScreenCaptureKitFrameSource.sourceRect(for: rect, on: display) == CGRect(x: 60, y: 300, width: 300, height: 400))
         #expect(ScreenCaptureKitFrameSource.pixelSize(for: rect, on: display) == (600, 800))
     }
-
-    @Test func fixedPermissionReportsItsValue() {
-        #expect(FixedAccessibilityPermission(isGranted: true).isGranted)
-        #expect(!FixedAccessibilityPermission(isGranted: false).isGranted)
-    }
 }

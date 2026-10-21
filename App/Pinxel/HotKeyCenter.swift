@@ -11,11 +11,17 @@ final class HotKeyCenter {
 
     /// `false` if the combination is already used by another app or has no modifiers.
     func register(_ combo: KeyCombo, id: UInt32, action: @escaping @MainActor () -> Void) -> Bool {
+        guard combo.hasModifier else { unregister(id: id); return false }
+        return register(keyCode: combo.keyCode, modifiers: combo.modifiers, id: id, action: action)
+    }
+
+    /// A key with no modifiers too (Esc and Return during the scrolling capture): only while it is needed, since
+    /// it takes the key away from every other app.
+    func register(keyCode: UInt32, modifiers: UInt32 = 0, id: UInt32, action: @escaping @MainActor () -> Void) -> Bool {
         unregister(id: id)
-        guard combo.hasModifier else { return false }
         installHandlerIfNeeded()
         var reference: EventHotKeyRef?
-        let status = RegisterEventHotKey(combo.keyCode, combo.modifiers, EventHotKeyID(signature: Self.signature, id: id),
+        let status = RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: Self.signature, id: id),
                                          GetApplicationEventTarget(), 0, &reference)
         guard status == noErr, let reference else { return false }
         references[id] = reference
@@ -32,8 +38,11 @@ final class HotKeyCenter {
         for id in Array(references.keys) { unregister(id: id) }
     }
 
-    fileprivate func fire(_ id: UInt32) {
-        actions[id]?()
+    /// `false` if the shortcut belongs to another `HotKeyCenter`: its handler gets the event then.
+    fileprivate func fire(_ id: UInt32) -> Bool {
+        guard let action = actions[id] else { return false }
+        action()
+        return true
     }
 
     private func installHandlerIfNeeded() {
@@ -50,8 +59,8 @@ final class HotKeyCenter {
             let center = Unmanaged<HotKeyCenter>.fromOpaque(userData).takeUnretainedValue()
             let id = hotKeyID.id
             // Carbon events arrive on the main thread.
-            MainActor.assumeIsolated { center.fire(id) }
-            return noErr
+            let handled = MainActor.assumeIsolated { center.fire(id) }
+            return handled ? noErr : OSStatus(eventNotHandledErr)
         }, 1, &spec, userData, nil)
     }
 }

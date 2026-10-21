@@ -75,14 +75,11 @@ final class AppEnvironment {
             // 200×150 pt at 2x like the fake area: a 400×1200 px noise page, which "the user" scrolls by 60 px per frame.
             let page = FakeScrollingPage(content: Self.fakeScrollingContent(), viewportHeight: 300, scale: 2)
             page.onFrame = { [unowned page] count in if count > 1 { page.scrollTo(page.position + 60) } }
-            scrolling = ScrollCaptureDependencies(accessibility: FixedAccessibilityPermission(isGranted: true),
-                                                  makeSource: { page }, presenter: ScrollCaptureController(),
-                                                  defaults: store.defaults)
+            scrolling = ScrollCaptureDependencies(makeSource: { page }, presenter: ScrollCaptureController())
         } else {
             let bundle = Bundle.main.bundleIdentifier ?? "com.degiorgi.pinxel"
-            scrolling = ScrollCaptureDependencies(accessibility: SystemAccessibilityPermission(),
-                                                  makeSource: { DebugFrameDump.wrap(ScreenCaptureKitFrameSource(excludingBundleIdentifier: bundle)) },
-                                                  presenter: ScrollCaptureController(), defaults: .standard)
+            scrolling = ScrollCaptureDependencies(makeSource: { DebugFrameDump.wrap(ScreenCaptureKitFrameSource(excludingBundleIdentifier: bundle)) },
+                                                  presenter: ScrollCaptureController())
         }
         coordinator = CaptureCoordinator(engine: engine, permission: permission, selection: selection, actions: actions, scrolling: scrolling) { [unowned self] in
             self.settings
