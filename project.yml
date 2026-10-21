@@ -58,7 +58,7 @@ targets:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.graphics-design
         LSMinimumSystemVersion: "15.0"
-        NSHumanReadableCopyright: "© 2026 Giovanni De Giorgi"
+        NSHumanReadableCopyright: "© 2026 Giovanni Degiorgi"
         CFBundleDocumentTypes:
           - CFBundleTypeName: Pinxel Document
             CFBundleTypeRole: Editor

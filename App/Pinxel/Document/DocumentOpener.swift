@@ -17,11 +17,13 @@ enum DocumentOpener {
     }
 
     /// Opens a file (for example a library capture): it saves itself where it is.
+    /// Activates before opening: the file loads asynchronously, and an activation requested afterwards is no longer
+    /// tied to the click, so macOS would leave the window behind the other apps.
     static func open(url: URL, completion: ((NSDocument?) -> Void)? = nil) {
         NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
         NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { document, _, error in
             if let error { NSApp.presentError(error) }
-            NSApp.activate()
             completion?(document)
         }
     }
