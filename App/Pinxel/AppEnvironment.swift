@@ -161,6 +161,9 @@ final class AppEnvironment {
 
     /// Opens the image on the pasteboard in the editor.
     func openClipboard() {
+        // Activate before reading: the read can wait for the app that copied the image to provide it, and by then
+        // macOS no longer ties the activation to the click and leaves the new window behind the other apps.
+        NSApp.activate()
         guard let (image, scale) = Clipboard.image() else {
             notifier.info(String(localized: "There's no image on the clipboard"))
             return
