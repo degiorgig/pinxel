@@ -1,7 +1,7 @@
 # Checklist manuale — cattura a scorrimento
 
 Prerequisiti: Pinxel firmato (Signing.local.xcconfig), Registrazione schermo concessa. Lo scorrimento lo fa sempre
-l'utente; Accessibilità serve solo perché Esc e Invio non arrivino all'app sotto (S17).
+l'utente. Esc e Invio sono scorciatoie globali temporanee, senza permesso Accessibilità: non arrivano all'app sotto (S17).
 
 | # | Prova | Risultato atteso |
 |---|-------|------------------|

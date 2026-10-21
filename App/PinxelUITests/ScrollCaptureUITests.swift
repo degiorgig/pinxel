@@ -33,4 +33,17 @@ final class ScrollCaptureUITests: XCTestCase {
         add(shot)
         app.terminate()
     }
+
+    /// Return is a global shortcut while the capture runs: it finishes it before any app sees the key.
+    func testReturnFinishesTheScrollingCapture() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestFakeScrolling",
+                               "-PinxelUITestPostCapture", "openEditor", "-PinxelUITestScrollOnLaunch"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 10))
+        sleep(2)
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 20))
+        app.terminate()
+    }
 }

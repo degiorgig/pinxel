@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import CoreGraphics
 @preconcurrency import ScreenCaptureKit
 
@@ -46,40 +45,4 @@ public final class ScreenCaptureKitFrameSource: RegionFrameSource {
     static func pixelSize(for rect: CGRect, on display: DisplayInfo) -> (width: Int, height: Int) {
         (Int((rect.width * display.scale).rounded()), Int((rect.height * display.scale).rounded()))
     }
-}
-
-/// Used by the event tap that consumes Esc and Return during scrolling capture.
-@MainActor
-public protocol AccessibilityPermission {
-    var isGranted: Bool { get }
-    /// Shows the system prompt.
-    func request()
-    func openSystemSettings()
-}
-
-@MainActor
-public struct SystemAccessibilityPermission: AccessibilityPermission {
-    public init() {}
-
-    public var isGranted: Bool { AXIsProcessTrusted() }
-
-    public func request() {
-        // Key of kAXTrustedCheckOptionPrompt, written out in full: the C global is not concurrency-safe.
-        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
-    }
-
-    public func openSystemSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
-    }
-}
-
-/// For tests and UI tests.
-@MainActor
-public struct FixedAccessibilityPermission: AccessibilityPermission {
-    public let isGranted: Bool
-    public init(isGranted: Bool) { self.isGranted = isGranted }
-    public func request() {}
-    public func openSystemSettings() {}
 }

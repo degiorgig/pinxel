@@ -8,11 +8,8 @@ import os
 /// The user always does the scrolling: Pinxel captures and stitches until Done or Return is pressed.
 @MainActor
 struct ScrollCaptureDependencies {
-    /// Only here so that Esc and Return do not also reach the app underneath.
-    let accessibility: any AccessibilityPermission
     let makeSource: () -> any RegionFrameSource
     let presenter: any ScrollCapturePresenting
-    let defaults: UserDefaults
 }
 
 @MainActor
@@ -108,7 +105,6 @@ final class CaptureCoordinator {
     }
 
     static let maxScrollingHeight = 32768 // PinxelDocument.maxImageSide
-    private static let accessibilityAskedKey = "PinxelAccessibilityRequested"
 
     func captureScrolling() async {
         guard !isCapturing else { return }
@@ -136,15 +132,11 @@ final class CaptureCoordinator {
             }
             let center = CGPoint(x: selected.midX, y: selected.midY)
             guard let display = ScreenGeometry.display(at: center, in: snapshot.displays.map(\.info)) else { throw CaptureError.displayNotFound }
-            logger.notice("scrolling capture: area \(String(describing: selected), privacy: .public) on display \(String(describing: display.frame), privacy: .public) scale \(display.scale, privacy: .public), accessibility \(self.scrolling.accessibility.isGranted, privacy: .public)")
+            logger.notice("scrolling capture: area \(String(describing: selected), privacy: .public) on display \(String(describing: display.frame), privacy: .public) scale \(display.scale, privacy: .public)")
             guard let prepared = ScrollCaptureGeometry.prepare(selected, on: display, maxHeight: Self.maxScrollingHeight) else {
                 AppEnvironment.shared.notifier.info(String(localized: "Area too short for scrolling capture: at least \(Int(ScrollCaptureGeometry.minimumHeight)) points"))
                 frontmost?.activate()
                 return
-            }
-            if !scrolling.accessibility.isGranted, !scrolling.defaults.bool(forKey: Self.accessibilityAskedKey) {
-                scrolling.defaults.set(true, forKey: Self.accessibilityAskedKey)
-                scrolling.accessibility.request()
             }
             // The app under the area must receive the user's scrolling: it comes to the front before starting.
             frontmost?.activate()
