@@ -20,7 +20,8 @@ public struct AutoSaver {
 
     /// Writes the capture into the settings folder without ever overwriting existing files.
     public func save(_ contents: PinxelFileContents, settings: CaptureSettings, date: Date) throws -> URL {
-        let folder = settings.saveFolderURL
+        let (folder, stopAccessing) = settings.accessSaveFolder()
+        defer { stopAccessing() }
         do {
             try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {

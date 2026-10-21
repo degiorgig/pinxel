@@ -36,13 +36,14 @@ private struct PermissionView: View {
         .frame(width: 460)
     }
 
-    /// Relaunches after this process exits, so the new instance finds the global shortcuts free.
+    /// Frees the global shortcuts first, so the new instance can register them, then quits once it is launched.
+    /// `NSWorkspace` rather than a shell: it also works inside the App Sandbox.
     private func relaunch() {
-        let pid = ProcessInfo.processInfo.processIdentifier
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", "while kill -0 \(pid) 2>/dev/null; do sleep 0.1; done; /usr/bin/open -n \"$0\"", Bundle.main.bundlePath]
-        try? process.run()
-        NSApp.terminate(nil)
+        AppEnvironment.shared.releaseHotKeys()
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 }

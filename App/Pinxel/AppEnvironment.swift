@@ -172,6 +172,11 @@ final class AppEnvironment {
         }
     }
 
+    /// Before relaunching: the new instance registers the same shortcuts.
+    func releaseHotKeys() {
+        hotKeys.unregisterAll()
+    }
+
     private func applyHotKeys() {
         guard !isUITesting else { return }
         hotKeys.unregisterAll()

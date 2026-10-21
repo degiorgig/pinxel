@@ -73,7 +73,7 @@ struct SettingsView: View {
         panel.canCreateDirectories = true
         panel.directoryURL = environment.settings.saveFolderURL
         if panel.runModal() == .OK, let url = panel.url {
-            environment.update { $0.saveFolderPath = url.path }
+            environment.update { $0.chooseSaveFolder(url) }
         }
     }
 }
