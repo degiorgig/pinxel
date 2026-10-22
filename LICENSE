@@ -1,66 +1,63 @@
-Pinxel License
+Required Notice: Copyright (c) 2026 Giovanni Degiorgi (https://github.com/degiorgig)
 
-Copyright (c) 2026 Giovanni Degiorgi. All rights reserved.
+Commercial use needs a separate license: see COMMERCIAL.md.
 
-1. Definitions
+# PolyForm Strict License 1.0.0
 
-"Software" means Pinxel, including its source code, compiled builds,
-documentation and any other files distributed with it.
+<https://polyformproject.org/licenses/strict/1.0.0>
 
-"Personal Use" means use by an individual for private purposes that are
-not commercial and not performed on behalf of, or for the benefit of, a
-company, organization, public body or other legal entity.
+## Acceptance
 
-"Commercial Use" means any use that is not Personal Use, including use by
-or on behalf of a company, organization or public body, use by employees,
-contractors or freelancers in the course of their work, and use to
-provide paid services or to produce material for commercial purposes.
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
 
-2. Personal Use
+## Copyright License
 
-Subject to the terms of this license, the author grants you a free,
-non-exclusive, non-transferable, worldwide license to download, install,
-use, build from source and modify the Software for Personal Use only.
+The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose, other than distributing the software or making changes or new works based on the software.
 
-3. Commercial Use
+## Patent License
 
-Commercial Use requires a separate paid commercial license from the
-author. No Commercial Use is permitted under this license. To request a
-commercial license, contact the author through
-https://github.com/degiorgig.
+The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
 
-4. Restrictions
+## Noncommercial Purposes
 
-Without the author's prior written consent you may not:
+Any noncommercial purpose is a permitted purpose.
 
-  a. redistribute, publish, sell, rent, lease or sublicense the Software
-     or any modified version of it, in source or compiled form;
-  b. remove or alter this license or any copyright notice in the
-     Software;
-  c. use the Software, or any part of it, in another product or service.
+## Personal Uses
 
-5. Ownership
+Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose.
 
-The Software is licensed, not sold. The author retains all rights,
-title and interest in the Software not expressly granted by this
-license.
+## Noncommercial Organizations
 
-6. Termination
+Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding.
 
-This license terminates automatically if you breach any of its terms.
-Upon termination you must stop using the Software and delete all copies
-in your possession.
+## Fair Use
 
-7. No Warranty
+You may have "fair use" rights for the software under the law. These terms do not limit them.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+## No Other Rights
 
-8. Limitation of Liability
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
-AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Patent Defense
+
+If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+## Violations
+
+The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
+
+**You** refers to the individual or entity agreeing to these terms.
+
+**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the software under these terms.
+
+**Use** means anything you do with the software requiring one of your licenses.

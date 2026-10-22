@@ -73,4 +73,28 @@ struct AutoSaverTests {
         #expect(FileManager.default.fileExists(atPath: first.path))
         #expect(FileManager.default.fileExists(atPath: second.path))
     }
+
+    /// The folder chosen in Settings keeps its bookmark: renamed in the Finder, the captures still go into it.
+    @Test func followsTheChosenFolderWhenRenamed() throws {
+        let parent = temporaryFolder()
+        let folder = parent.appendingPathComponent("Captures")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: parent) }
+        var settings = settings(folder: folder, format: .png)
+        settings.chooseSaveFolder(folder)
+        let renamed = parent.appendingPathComponent("Renamed")
+        try FileManager.default.moveItem(at: folder, to: renamed)
+        let url = try AutoSaver().save(contents(), settings: settings, date: date)
+        #expect(url.deletingLastPathComponent().resolvingSymlinksInPath().path == renamed.resolvingSymlinksInPath().path)
+    }
+
+    /// A bookmark that no longer resolves falls back to the path.
+    @Test func unreadableBookmarkFallsBackToThePath() throws {
+        let folder = temporaryFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        var settings = settings(folder: folder, format: .png)
+        settings.saveFolderBookmark = Data("not a bookmark".utf8)
+        let url = try AutoSaver().save(contents(), settings: settings, date: date)
+        #expect(url.deletingLastPathComponent().resolvingSymlinksInPath().path == folder.resolvingSymlinksInPath().path)
+    }
 }

@@ -22,6 +22,9 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     public var postCaptureAction: PostCaptureAction = .openEditor
     public var autoSave = false
     public var saveFolderPath = "~/Pictures/Pinxel"
+    /// Bookmark of the folder chosen in Settings: in the App Sandbox it is the permission to write there, and
+    /// it follows the folder if it is renamed or moved. Without it, `saveFolderPath` is used.
+    public var saveFolderBookmark: Data?
     public var saveFormat: SaveFormat = .pinxel
     /// The saved template; while it equals the historical default it follows the language (see `effectiveFileNameTemplate`).
     public var fileNameTemplate = FileNamer.legacyDefaultTemplate
@@ -36,7 +39,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case postCaptureAction, autoSave, saveFolderPath, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys
+        case postCaptureAction, autoSave, saveFolderPath, saveFolderBookmark, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys
     }
 
     /// Each unreadable field reverts to its default value without losing the others (e.g. a value from a
@@ -47,6 +50,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
         if let value = try? c.decode(PostCaptureAction.self, forKey: .postCaptureAction) { postCaptureAction = value }
         if let value = try? c.decode(Bool.self, forKey: .autoSave) { autoSave = value }
         if let value = try? c.decode(String.self, forKey: .saveFolderPath) { saveFolderPath = value }
+        if let value = try? c.decode(Data.self, forKey: .saveFolderBookmark) { saveFolderBookmark = value }
         if let value = try? c.decode(SaveFormat.self, forKey: .saveFormat) { saveFormat = value }
         if let value = try? c.decode(String.self, forKey: .fileNameTemplate) { fileNameTemplate = value }
         if let value = try? c.decode(Bool.self, forKey: .includeWindowShadow) { includeWindowShadow = value }
@@ -86,6 +90,25 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
 
     public var saveFolderURL: URL {
         URL(fileURLWithPath: (saveFolderPath as NSString).expandingTildeInPath, isDirectory: true)
+    }
+
+    /// The folder picked in the open panel: its path, and a bookmark that keeps access to it.
+    public mutating func chooseSaveFolder(_ url: URL) {
+        saveFolderPath = url.path
+        saveFolderBookmark = try? url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+    }
+
+    /// The folder to save into, with access granted until `stopAccessing` is called. The bookmark wins over
+    /// the path; a bookmark that no longer resolves falls back to the path.
+    public func accessSaveFolder() -> (url: URL, stopAccessing: () -> Void) {
+        if let bookmark = saveFolderBookmark {
+            var stale = false
+            if let url = try? URL(resolvingBookmarkData: bookmark, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &stale) {
+                let accessing = url.startAccessingSecurityScopedResource()
+                return (url, { if accessing { url.stopAccessingSecurityScopedResource() } })
+            }
+        }
+        return (saveFolderURL, {})
     }
 
     public func combo(for action: HotKeyAction) -> KeyCombo {

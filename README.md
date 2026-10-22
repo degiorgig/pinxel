@@ -85,10 +85,18 @@ The workflow signs with a Developer ID Application certificate, so the app opens
 | `NOTARY_PASSWORD` | secret | an [app-specific password](https://support.apple.com/102654) of that Apple ID |
 | `DEVELOPMENT_TEAM` | variable | the team ID of the certificate |
 
+### Mac App Store
+
+The `AppStore` build configuration is the sandboxed version for the Mac App Store, signed with Apple Distribution and the Mac App Store provisioning profile. `scripts/release/appstore.sh X.Y.Z` archives it and exports `Pinxel.pkg` (with `UPLOAD=1`, it uploads it to App Store Connect). The `app-store` job of the `Release` workflow does the same on every tag, once its secrets are set; the one-time setup is in [docs/app-store/setup.md](docs/app-store/setup.md) (in Italian), and the store texts in [docs/app-store/listing.md](docs/app-store/listing.md).
+
+## Privacy
+
+Pinxel collects no data and does not connect to the internet: see [PRIVACY.md](PRIVACY.md).
+
 ## License
 
-Pinxel is free for personal, non-commercial use: you may download, use and build it at no cost for private purposes.
+Pinxel is licensed under the [PolyForm Strict License 1.0.0](LICENSE). It is free for any noncommercial purpose: personal use, and use by charities, schools, public research, public health and safety organizations and government institutions. You may download, use and build it, but not distribute it or publish modified versions.
 
-Use by companies, organizations or for any commercial purpose — including use by employees on the job — requires a paid commercial license. To obtain one, contact the author through [GitHub](https://github.com/degiorgig).
+Use by companies or for any other commercial purpose, including by employees, contractors and freelancers on the job, needs a commercial license: see [COMMERCIAL.md](COMMERCIAL.md).
 
-Redistribution of the app or of modified versions is not permitted without the author's written consent. The software is provided "as is", without warranty of any kind. See [LICENSE](LICENSE) for the full terms.
+Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).
