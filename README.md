@@ -95,8 +95,8 @@ Pinxel collects no data and does not connect to the internet: see [PRIVACY.md](P
 
 ## License
 
-Pinxel is free for personal, non-commercial use: you may download, use and build it at no cost for private purposes.
+Pinxel is licensed under the [PolyForm Strict License 1.0.0](LICENSE). It is free for any noncommercial purpose: personal use, and use by charities, schools, public research, public health and safety organizations and government institutions. You may download, use and build it, but not distribute it or publish modified versions.
 
-Use by companies, organizations or for any commercial purpose — including use by employees on the job — requires a paid commercial license. To obtain one, contact the author through [GitHub](https://github.com/degiorgig).
+Use by companies or for any other commercial purpose, including by employees, contractors and freelancers on the job, needs a commercial license: see [COMMERCIAL.md](COMMERCIAL.md).
 
-Redistribution of the app or of modified versions is not permitted without the author's written consent. The software is provided "as is", without warranty of any kind. See [LICENSE](LICENSE) for the full terms.
+Contributions are welcome under the terms in [CONTRIBUTING.md](CONTRIBUTING.md).

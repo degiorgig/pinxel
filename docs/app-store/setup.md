@@ -43,7 +43,8 @@ Scarica il file `.provisionprofile`.
 - Piattaforma: macOS; nome: Pinxel; lingua principale: Inglese (USA); bundle ID: `com.degiorgi.pinxel`; SKU: `pinxel`
 - I testi in quattro lingue, la categoria, la privacy e le note per la revisione sono in
   [listing.md](listing.md).
-- Prezzo: gratuito. Contratto di licenza: personalizzato, incolla il testo di `LICENSE`.
+- Prezzo: gratuito. Contratto di licenza: personalizzato, incolla il testo di [EULA.md](EULA.md) dopo aver
+  compilato indirizzo e contatto.
 - Privacy dell'app: "Dati non raccolti".
 
 ## 5. Chiave API di App Store Connect
