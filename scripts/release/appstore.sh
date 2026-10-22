@@ -5,7 +5,7 @@
 #   scripts/release/appstore.sh <version>
 #
 # <version> must match MARKETING_VERSION in project.yml. Needs, in the keychain, the "Apple Distribution" and
-# "Mac Installer Distribution" certificates of the team in App/Config/Signing.local.xcconfig, and the Mac App
+# Mac Installer Distribution certificates of the team in App/Config/Signing.local.xcconfig, and the Mac App
 # Store provisioning profile named in App/Config/AppStore.xcconfig.
 #
 # Environment:
@@ -47,6 +47,10 @@ TEAM=$(setting DEVELOPMENT_TEAM)
 PROFILE=$(setting PROVISIONING_PROFILE_SPECIFIER)
 BUNDLE_ID=$(setting PRODUCT_BUNDLE_IDENTIFIER)
 [ -n "$TEAM" ] || fail "DEVELOPMENT_TEAM is empty (App/Config/Signing.local.xcconfig)"
+# The Mac Installer Distribution certificate is named "3rd Party Mac Developer Installer" or, when newer,
+# "Mac Installer Distribution": take whichever the keychain has.
+INSTALLER=$(security find-identity -v | sed -nE "s/.*\"((3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM\))\"/\1/p" | head -1)
+[ -n "$INSTALLER" ] || fail "no Mac Installer Distribution certificate for team $TEAM in the keychain"
 
 xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration AppStore \
     -destination "generic/platform=macOS" -derivedDataPath "build/appstore-derived-$VERSION" \
@@ -70,7 +74,7 @@ cat > "$STAGE/ExportOptions.plist" <<PLIST
     <key>teamID</key><string>$TEAM</string>
     <key>signingStyle</key><string>manual</string>
     <key>signingCertificate</key><string>Apple Distribution</string>
-    <key>installerSigningCertificate</key><string>Mac Installer Distribution</string>
+    <key>installerSigningCertificate</key><string>$INSTALLER</string>
     <key>provisioningProfiles</key>
     <dict><key>$BUNDLE_ID</key><string>$PROFILE</string></dict>
 </dict>
