@@ -30,6 +30,8 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     public var fileNameTemplate = FileNamer.legacyDefaultTemplate
     public var includeWindowShadow = true
     public var hotKeys: [HotKeyAction: KeyCombo] = Dictionary(uniqueKeysWithValues: HotKeyAction.allCases.map { ($0, $0.defaultCombo) })
+    /// Whether the user has already been asked, at launch, to open Pinxel at login (the answer itself belongs to macOS).
+    public var loginItemAsked = false
 
     public init() {}
 
@@ -39,7 +41,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case postCaptureAction, autoSave, saveFolderPath, saveFolderBookmark, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys
+        case postCaptureAction, autoSave, saveFolderPath, saveFolderBookmark, saveFormat, fileNameTemplate, includeWindowShadow, hotKeys, loginItemAsked
     }
 
     /// Each unreadable field reverts to its default value without losing the others (e.g. a value from a
@@ -55,6 +57,7 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
         if let value = try? c.decode(String.self, forKey: .fileNameTemplate) { fileNameTemplate = value }
         if let value = try? c.decode(Bool.self, forKey: .includeWindowShadow) { includeWindowShadow = value }
         if let value = try? c.decode([HotKeyAction: KeyCombo].self, forKey: .hotKeys) { hotKeys = value }
+        if let value = try? c.decode(Bool.self, forKey: .loginItemAsked) { loginItemAsked = value }
         sanitizeHotKeys()
     }
 

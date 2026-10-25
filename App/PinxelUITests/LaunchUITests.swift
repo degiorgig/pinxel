@@ -11,6 +11,16 @@ final class LaunchUITests: XCTestCase {
         app.terminate()
     }
 
+    func testFirstLaunchAsksToOpenAtLogin() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(en)", "-PinxelUITestFakeCapture", "-PinxelUITestAskLoginItem"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Open Pinxel at login?"].waitForExistence(timeout: 10))
+        app.buttons["Not Now"].click()
+        XCTAssertTrue(app.staticTexts["Open Pinxel at login?"].waitForNonExistence(timeout: 5))
+        app.terminate()
+    }
+
     func testSampleDocumentOpensEditorWindow() {
         let app = XCUIApplication()
         app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-AppleLanguages", "(it)", "-PinxelUITestFakeCapture", "-PinxelUITestOpenSample"]

@@ -177,6 +177,29 @@
         }
       }
     },
+    "Allow Pinxel in Login Items to open it at login." : {
+      "comment" : "Settings: macOS is waiting for the user to approve the login item",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlaube Pinxel in den Anmeldeobjekten, damit es bei der Anmeldung geöffnet wird."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autorisez Pinxel dans les éléments d’ouverture pour l’ouvrir à la connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consenti Pinxel in Elementi login per aprirlo al login."
+          }
+        }
+      }
+    },
     "Apply" : {
       "localizations" : {
         "de" : {
@@ -1563,6 +1586,29 @@
         }
       }
     },
+    "General" : {
+      "comment" : "Settings section",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allgemein"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Général"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generali"
+          }
+        }
+      }
+    },
     "Global Shortcuts" : {
       "localizations" : {
         "de" : {
@@ -2179,6 +2225,29 @@
         }
       }
     },
+    "Not Now" : {
+      "comment" : "First-launch question: button",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht jetzt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas maintenant"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ora"
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "de" : {
@@ -2263,6 +2332,98 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apri l'immagine"
+          }
+        }
+      }
+    },
+    "Open Pinxel at login" : {
+      "comment" : "Settings toggle",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel bei der Anmeldung öffnen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir Pinxel à la connexion"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Pinxel al login"
+          }
+        }
+      }
+    },
+    "Open Pinxel at login?" : {
+      "comment" : "First-launch question",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel bei der Anmeldung öffnen?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir Pinxel à la connexion ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprire Pinxel al login?"
+          }
+        }
+      }
+    },
+    "Open System Settings…" : {
+      "comment" : "Button",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Systemeinstellungen öffnen …"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir Réglages Système…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Impostazioni di Sistema…"
+          }
+        }
+      }
+    },
+    "Open at Login" : {
+      "comment" : "First-launch question: button",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bei Anmeldung öffnen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir à la connexion"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri al login"
           }
         }
       }
@@ -2446,6 +2607,29 @@
         }
       }
     },
+    "Pinxel could not be set to open at login." : {
+      "comment" : "Alert",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel konnte nicht so eingestellt werden, dass es bei der Anmeldung geöffnet wird."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de configurer Pinxel pour qu’il s’ouvre à la connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non è stato possibile impostare Pinxel per aprirsi al login."
+          }
+        }
+      }
+    },
     "Pinxel needs to record the screen" : {
       "localizations" : {
         "de" : {
@@ -2464,6 +2648,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pinxel deve poter registrare lo schermo"
+          }
+        }
+      }
+    },
+    "Pinxel will be ready in the menu bar every time you log in. You can change this in Settings." : {
+      "comment" : "First-launch question",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel ist bei jeder Anmeldung in der Menüleiste bereit. Du kannst das in den Einstellungen ändern."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel sera prêt dans la barre des menus à chaque connexion. Vous pouvez modifier ce choix dans les Réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinxel sarà pronto nella barra dei menu ogni volta che accedi. Puoi cambiarlo nelle Impostazioni."
           }
         }
       }
