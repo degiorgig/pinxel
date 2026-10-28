@@ -5,7 +5,11 @@ purpose, including personal use and use by charitable organizations, educational
 organizations, public safety or health organizations, environmental protection organizations and government
 institutions.
 
-Any other use needs a commercial license from the author. That includes, for example:
+The copy bought on the Mac App Store already includes commercial use, on the Macs of whoever buys it: no other
+license is needed for it.
+
+Any other use of the source code or of builds made from it needs a commercial license from the author. That
+includes, for example:
 
 - use by or for a company, including by its employees and contractors on the job;
 - use by freelancers and self-employed people in their work;

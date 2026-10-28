@@ -4,7 +4,7 @@ Texts for App Store Connect, one section per language. Limits: name and subtitle
 text 170, keywords 100 (comma-separated, no spaces needed), description 4000.
 
 - **Category:** Graphics & Design (secondary: Productivity)
-- **Price:** free. License Agreement: the custom EULA in [EULA.md](EULA.md).
+- **Price:** 4.99 USD (base country: United States; Apple sets the other countries). License Agreement: the custom EULA in [EULA.md](EULA.md).
 - **Privacy Policy URL:** https://github.com/degiorgig/pinxel/blob/main/PRIVACY.md
 - **Support URL:** https://github.com/degiorgig/pinxel/issues
 - **App Privacy:** Data Not Collected.
@@ -45,7 +45,7 @@ ORGANIZE AND SHARE
 PRIVATE BY DESIGN
 Pinxel works entirely on your Mac. It does not connect to the internet and collects no data.
 
-Free for personal and other noncommercial use, including schools, charities and public institutions. Companies and other commercial use need a license: see the License Agreement.
+One purchase covers personal and work use on all your Macs. No subscription, no account.
 
 ## Italiano
 
@@ -82,7 +82,7 @@ ORGANIZZA E CONDIVIDI
 PRIVATA PER SCELTA
 Pinxel funziona interamente sul tuo Mac. Non si collega a internet e non raccoglie dati.
 
-Gratis per uso personale e per ogni uso non commerciale, anche per scuole, enti benefici ed enti pubblici. Aziende e altri usi commerciali richiedono una licenza: vedi il Contratto di licenza.
+Un solo acquisto copre l'uso personale e di lavoro su tutti i tuoi Mac. Nessun abbonamento, nessun account.
 
 ## Deutsch
 
@@ -119,7 +119,7 @@ ORGANISIEREN UND TEILEN
 PRIVAT VON GRUND AUF
 Pinxel arbeitet vollständig auf deinem Mac. Es verbindet sich nicht mit dem Internet und sammelt keine Daten.
 
-Kostenlos für den privaten und jeden anderen nichtkommerziellen Gebrauch, auch für Schulen, gemeinnützige Organisationen und öffentliche Einrichtungen. Unternehmen und andere kommerzielle Nutzung benötigen eine Lizenz: siehe Lizenzvereinbarung.
+Ein Kauf gilt für private und berufliche Nutzung auf allen deinen Macs. Kein Abo, kein Konto.
 
 ## Français
 
@@ -156,11 +156,12 @@ ORGANISER ET PARTAGER
 PRIVÉ PAR CONCEPTION
 Pinxel fonctionne entièrement sur votre Mac. Il ne se connecte pas à Internet et ne collecte aucune donnée.
 
-Gratuit pour un usage personnel et tout usage non commercial, y compris les écoles, les associations et les institutions publiques. Les entreprises et les autres usages commerciaux nécessitent une licence : voir le contrat de licence.
+Un seul achat couvre l'usage personnel et professionnel sur tous vos Mac. Sans abonnement, sans compte.
 
 ## Review notes (App Review Information)
 
 Pinxel is a menu bar app (no Dock icon until a window opens). To try it: click the Pinxel icon in the menu bar
 and choose a capture, or press ⌃⇧1 (area). The Screen Recording permission is needed only to take the
 captures the user starts; captures never leave the Mac. Scrolling capture (⌃⇧5): select an area over a long
-page, scroll it, then press Return or click Done.
+page, scroll it, then press Return or click Done. On first launch Pinxel asks once whether to open at login; it
+stays off unless the user says yes, and can be changed in Settings ▸ General.

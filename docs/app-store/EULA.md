@@ -1,8 +1,8 @@
 # Pinxel End User License Agreement (Mac App Store)
 
-Text to paste in App Store Connect ▸ App Information ▸ License Agreement ▸ Edit. It applies the PolyForm Strict
-License 1.0.0 to the copy of Pinxel obtained from the Mac App Store and adds the terms Apple requires of every
-custom license agreement. Fill in the two fields in square brackets before pasting.
+Text to paste in App Store Connect ▸ App Information ▸ License Agreement ▸ Edit. It covers the copy of Pinxel
+bought on the Mac App Store, which may be used for any purpose, work included; the source code on GitHub stays
+under the PolyForm Strict License 1.0.0. It adds the terms Apple requires of every custom license agreement. Fill in the two fields in square brackets before pasting.
 
 ---
 
@@ -11,16 +11,15 @@ custom license agreement. Fill in the two fields in square brackets before pasti
 This agreement is between you and Giovanni Degiorgi (the "Developer") and covers Pinxel (the "Licensed
 Application") obtained from the Mac App Store.
 
-**1. License.** The Licensed Application is licensed to you under the PolyForm Strict License 1.0.0
-(<https://polyformproject.org/licenses/strict/1.0.0>), which is part of this agreement. In short: you may use it
-for free for any noncommercial purpose, including personal use and use by charitable organizations, educational
-institutions, public research organizations, public safety or health organizations, environmental protection
-organizations and government institutions. You may not distribute it or make changes or new works based on it.
-Your use must also comply with the Usage Rules of the Apple Media Services Terms and Conditions, and is limited
-to Apple-branded products that you own or control.
+**1. License.** The Developer grants you a non-transferable license to use the Licensed Application on any
+Apple-branded products that you own or control, as permitted by the Usage Rules of the Apple Media Services
+Terms and Conditions. You may use it for any purpose, personal or commercial, including for your work and that
+of your organization. You may not distribute, rent, lease or sublicense it, and you may not modify it or make
+new works based on it, except as allowed by applicable law.
 
-**2. Commercial use.** Any other use, including use by or for a company, by its employees or contractors on the
-job, or by freelancers in their work, requires a separate commercial license from the Developer:
+**2. Source code.** The source code of Pinxel published by the Developer is licensed separately, under the
+PolyForm Strict License 1.0.0. This agreement covers only the Licensed Application obtained from the Mac App
+Store. For other licenses, such as for an organization's own builds:
 <https://github.com/degiorgig/pinxel/blob/main/COMMERCIAL.md>.
 
 **3. Acknowledgement.** This agreement is concluded between you and the Developer only, and not with Apple Inc.
