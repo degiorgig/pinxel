@@ -68,13 +68,15 @@ targets:
         LSApplicationCategoryType: public.app-category.graphics-design
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: "© 2026 Giovanni Degiorgi"
+        # No encryption beyond what macOS provides: App Store Connect does not ask about export compliance for each build.
+        ITSAppUsesNonExemptEncryption: false
         CFBundleDocumentTypes:
           - CFBundleTypeName: Pinxel Document
             CFBundleTypeRole: Editor
             LSHandlerRank: Owner
             LSItemContentTypes: [com.degiorgi.pinxel.document]
             NSDocumentClass: PinxelFileDocument
-          # Le immagini si aprono in un documento nuovo (PinxelDocumentController); Pinxel non le rivendica.
+          # Images open in a new document (PinxelDocumentController); Pinxel does not claim them.
           - CFBundleTypeName: Image
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
