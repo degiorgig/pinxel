@@ -33,6 +33,15 @@ struct SettingsTests {
         #expect(store.load() == settings)
     }
 
+    @Test func loginItemQuestionIsRemembered() {
+        let store = SettingsStore(defaults: freshDefaults())
+        #expect(!store.load().loginItemAsked)
+        var settings = CaptureSettings()
+        settings.loginItemAsked = true
+        store.save(settings)
+        #expect(store.load().loginItemAsked)
+    }
+
     @Test func chosenFolderKeepsPathAndBookmark() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-folder-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

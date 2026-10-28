@@ -7,6 +7,22 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("General") {
+                Toggle("Open Pinxel at login", isOn: Binding(
+                    get: { environment.loginItem.isEnabled },
+                    set: { environment.loginItem.setEnabled($0) }
+                ))
+                if environment.loginItem.needsApproval {
+                    LabeledContent {
+                        Button("Open System Settings…", action: SystemLoginItemService.openSystemSettings)
+                    } label: {
+                        Text("Allow Pinxel in Login Items to open it at login.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if let error = environment.loginItem.error {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                }
+            }
             Section("After Capture") {
                 Picker("Action", selection: binding(\.postCaptureAction)) {
                     ForEach(PostCaptureAction.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -57,6 +73,11 @@ struct SettingsView: View {
         .frame(width: 520)
         .background(FrontWindowRaiser())
         .padding()
+        // The user can also change it in System Settings ▸ General ▸ Login Items.
+        .onAppear { environment.loginItem.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            environment.loginItem.refresh()
+        }
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<CaptureSettings, Value>) -> Binding<Value> {

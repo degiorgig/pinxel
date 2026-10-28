@@ -31,6 +31,8 @@ final class AppEnvironment {
     @ObservationIgnored let notifier: Notifier
     @ObservationIgnored private var coordinator: CaptureCoordinator!
     @ObservationIgnored let library: LibraryModel
+    @ObservationIgnored let loginItem: LoginItem
+    @ObservationIgnored private let asksAboutLoginItem: Bool
 
     private init(arguments: [String] = ProcessInfo.processInfo.arguments) {
         isUITesting = arguments.contains("-PinxelUITestFakeCapture")
@@ -49,6 +51,9 @@ final class AppEnvironment {
         }
         settings = loaded
         notifier = Notifier(enabled: !isUITesting)
+        // UI tests must not register the app being tested to open at login, nor stop at the question.
+        loginItem = LoginItem(service: isUITesting ? InMemoryLoginItemService() : SystemLoginItemService())
+        asksAboutLoginItem = !isUITesting || arguments.contains("-PinxelUITestAskLoginItem")
         let engine: any CaptureEngine = isUITesting ? FakeCaptureEngine() : ScreenCaptureKitEngine()
         let permission: any ScreenRecordingPermission = isUITesting ? GrantedScreenRecordingPermission() : SystemScreenRecordingPermission()
         let selection: any SelectionProvider = isUITesting
@@ -88,6 +93,29 @@ final class AppEnvironment {
 
     func start() {
         applyHotKeys()
+        if asksAboutLoginItem {
+            DispatchQueue.main.async { self.askAboutLoginItem() }
+        }
+    }
+
+    /// Once, at the first launch: opening at login is the user's choice (App Store guideline 2.4.5).
+    private func askAboutLoginItem() {
+        guard loginItem.shouldAsk(alreadyAsked: settings.loginItemAsked) else { return }
+        update { $0.loginItemAsked = true }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Open Pinxel at login?")
+        alert.informativeText = String(localized: "Pinxel will be ready in the menu bar every time you log in. You can change this in Settings.")
+        alert.addButton(withTitle: String(localized: "Open at Login"))
+        alert.addButton(withTitle: String(localized: "Not Now"))
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        loginItem.setEnabled(true)
+        if let error = loginItem.error {
+            let failure = NSAlert()
+            failure.messageText = String(localized: "Pinxel could not be set to open at login.")
+            failure.informativeText = error
+            failure.runModal()
+        }
     }
 
     func update(_ change: (inout CaptureSettings) -> Void) {
