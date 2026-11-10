@@ -55,6 +55,17 @@ struct SettingsTests {
         #expect(store.load().saveFolderBookmark == settings.saveFolderBookmark)
     }
 
+    @Test func inTheSandboxAutomaticSavingNeedsAChosenFolder() throws {
+        var settings = CaptureSettings()
+        #expect(settings.needsSaveFolderChoice(sandboxed: true))
+        #expect(!settings.needsSaveFolderChoice(sandboxed: false))
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-folder-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        settings.chooseSaveFolder(folder)
+        #expect(!settings.needsSaveFolderChoice(sandboxed: true))
+    }
+
     @Test func corruptSettingsFallBackToDefaults() {
         let defaults = freshDefaults()
         defaults.set(Data("{not json".utf8), forKey: SettingsStore.key)

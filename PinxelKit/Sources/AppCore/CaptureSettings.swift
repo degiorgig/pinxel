@@ -101,6 +101,11 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
         saveFolderBookmark = try? url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
     }
 
+    /// In the App Sandbox only a folder picked in the open panel can be written to: the default path cannot.
+    public func needsSaveFolderChoice(sandboxed: Bool = AppSandbox.isActive) -> Bool {
+        sandboxed && saveFolderBookmark == nil
+    }
+
     /// The folder to save into, with access granted until `stopAccessing` is called. The bookmark wins over
     /// the path; a bookmark that no longer resolves falls back to the path.
     public func accessSaveFolder() -> (url: URL, stopAccessing: () -> Void) {
@@ -117,6 +122,11 @@ public struct CaptureSettings: Codable, Equatable, Sendable {
     public func combo(for action: HotKeyAction) -> KeyCombo {
         hotKeys[action] ?? action.defaultCombo
     }
+}
+
+public enum AppSandbox {
+    /// Whether this process runs in the App Sandbox (the Mac App Store build).
+    public static var isActive: Bool { ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil }
 }
 
 /// Settings persistence in `UserDefaults` as JSON; unreadable data → default values.

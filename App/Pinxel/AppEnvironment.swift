@@ -69,7 +69,7 @@ final class AppEnvironment {
                 ?? UUID().uuidString
             libraryFolder = FileManager.default.temporaryDirectory.appendingPathComponent("pinxel-uitest-library-\(name)", isDirectory: true)
         } else {
-            libraryFolder = LibraryStore.defaultFolder
+            libraryFolder = LibraryStore.defaultFolder()
         }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
         library = LibraryModel(store: LibraryStore(folder: libraryFolder, appVersion: version), notifier: notifier)

@@ -61,6 +61,8 @@ BUILT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Con
 [ "$BUILT" = "$VERSION" ] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
 ENTITLEMENTS=$(codesign -d --entitlements - "$APP" 2>/dev/null || true)
 grep -q "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" || fail "the App Store build is not sandboxed"
+# App Review rejects entitlements without matching functionality (guideline 2.4.5(i)): folders come from the open panel.
+grep -q "com.apple.security.assets\." <<<"$ENTITLEMENTS" && fail "the App Store build asks for a media folder entitlement"
 
 DESTINATION=export
 [ "$UPLOAD" = 1 ] && DESTINATION=upload

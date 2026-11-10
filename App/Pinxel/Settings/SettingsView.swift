@@ -30,11 +30,22 @@ struct SettingsView: View {
                 Toggle("Include the shadow in window captures", isOn: binding(\.includeWindowShadow))
             }
             Section("Automatic Saving") {
-                Toggle("Save every capture automatically", isOn: binding(\.autoSave))
+                // In the App Sandbox the user picks the folder: turning saving on without one asks for it first.
+                Toggle("Save every capture automatically", isOn: Binding(
+                    get: { environment.settings.autoSave },
+                    set: { on in
+                        if on && environment.settings.needsSaveFolderChoice() && !chooseFolder() { return }
+                        environment.update { $0.autoSave = on }
+                    }
+                ))
                 LabeledContent("Folder") {
                     HStack {
-                        Text(environment.settings.saveFolderURL.path).lineLimit(1).truncationMode(.middle)
-                        Button("Choose…", action: chooseFolder)
+                        if environment.settings.needsSaveFolderChoice() {
+                            Text("No folder chosen").foregroundStyle(.secondary)
+                        } else {
+                            Text(environment.settings.saveFolderURL.path).lineLimit(1).truncationMode(.middle)
+                        }
+                        Button("Choose…") { chooseFolder() }
                     }
                 }
                 Picker("Format", selection: binding(\.saveFormat)) {
@@ -87,15 +98,20 @@ struct SettingsView: View {
         )
     }
 
-    private func chooseFolder() {
+    /// Whether the user picked a folder.
+    @discardableResult
+    private func chooseFolder() -> Bool {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.directoryURL = environment.settings.saveFolderURL
-        if panel.runModal() == .OK, let url = panel.url {
-            environment.update { $0.chooseSaveFolder(url) }
+        panel.prompt = String(localized: "Choose")
+        if !environment.settings.needsSaveFolderChoice() {
+            panel.directoryURL = environment.settings.saveFolderURL
         }
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        environment.update { $0.chooseSaveFolder(url) }
+        return true
     }
 }
 
