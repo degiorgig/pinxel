@@ -750,6 +750,29 @@
         }
       }
     },
+    "Choose" : {
+      "comment" : "Open panel button for the automatic saving folder",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli"
+          }
+        }
+      }
+    },
     "Choose…" : {
       "localizations" : {
         "de" : {
@@ -2199,6 +2222,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuna cattura corrisponde al filtro."
+          }
+        }
+      }
+    },
+    "No folder chosen" : {
+      "comment" : "Settings, automatic saving folder not picked yet (App Store build)",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Ordner ausgewählt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun dossier choisi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna cartella scelta"
           }
         }
       }

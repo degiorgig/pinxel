@@ -164,4 +164,6 @@ Pinxel is a menu bar app (no Dock icon until a window opens). To try it: click t
 and choose a capture, or press ⌃⇧1 (area). The Screen Recording permission is needed only to take the
 captures the user starts; captures never leave the Mac. Scrolling capture (⌃⇧5): select an area over a long
 page, scroll it, then press Return or click Done. On first launch Pinxel asks once whether to open at login; it
-stays off unless the user says yes, and can be changed in Settings ▸ General.
+stays off unless the user says yes, and can be changed in Settings ▸ General. Pinxel asks for no folder access of its own: the library lives in
+the app container, and automatic saving writes only to a folder the user picks in the standard Open panel
+(Settings ▸ Automatic Saving ▸ Choose…).

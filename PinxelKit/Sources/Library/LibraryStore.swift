@@ -32,8 +32,9 @@ public final class LibraryStore {
 
     public static let defaultFolderName = "Library"
 
-    public static var defaultFolder: URL {
-        FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+    /// `~/Pictures/Pinxel/Library`; in the App Sandbox, where Pictures is off limits, Application Support in the app's container.
+    public static func defaultFolder(sandboxed: Bool = AppSandbox.isActive) -> URL {
+        FileManager.default.urls(for: sandboxed ? .applicationSupportDirectory : .picturesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Pinxel", isDirectory: true)
             .appendingPathComponent(defaultFolderName, isDirectory: true)
     }
