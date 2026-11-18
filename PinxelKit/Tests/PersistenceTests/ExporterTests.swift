@@ -56,6 +56,59 @@ struct ExporterTests {
         #expect(box.size == CGSize(width: 200, height: 150))
     }
 
+    @Test(arguments: [
+        Annotation(kind: .blur(BlurData(rect: CGRect(x: 150, y: 30, width: 100, height: 80), radius: 12))),
+        Annotation(kind: .pixelate(PixelateData(rect: CGRect(x: 150, y: 30, width: 100, height: 80), blockSize: 16))),
+        Annotation(kind: .shape(ShapeData(rect: CGRect(x: 150, y: 30, width: 100, height: 80), shape: .rectangle)),
+                   style: Style(stroke: nil, fill: .black)),
+    ])
+    func pdfEmbedsOnlyTheFlattenedScreenshot(cover: Annotation) throws {
+        let document = TestDocuments.document(annotations: [cover])
+        let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
+        let pdf = try #require(CGPDFDocument(CGDataProvider(data: data as CFData)!))
+        let page = try #require(pdf.page(at: 1))
+        // The source is 400×300. The only image in the PDF must be the 200×150 composite.
+        #expect(Self.embeddedImageSizes(in: page.dictionary) == [CGSize(width: 200, height: 150)])
+
+        let context = TestImages.makeContext(width: 200, height: 150)
+        context.drawPDFPage(page)
+        let renderedPage = try #require(context.makeImage())
+        let flattened = try DocumentRenderer().renderImage(document, assets: provider, options: RenderOptions(outputScale: 0.5))
+        #expect(PixelBuffer(renderedPage).differingPixelFraction(from: PixelBuffer(flattened)) < 0.01)
+    }
+
+    private static func embeddedImageSizes(in dictionary: CGPDFDictionaryRef?) -> [CGSize] {
+        var resources: CGPDFDictionaryRef?
+        var objects: CGPDFDictionaryRef?
+        guard let dictionary,
+              CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources), let resources,
+              CGPDFDictionaryGetDictionary(resources, "XObject", &objects), let objects else { return [] }
+
+        var sizes: [CGSize] = []
+        CGPDFDictionaryApplyBlock(objects, { _, object, _ in
+            var stream: CGPDFStreamRef?
+            guard CGPDFObjectGetValue(object, .stream, &stream),
+                  let stream, let details = CGPDFStreamGetDictionary(stream) else { return true }
+            var subtype: UnsafePointer<CChar>?
+            guard CGPDFDictionaryGetName(details, "Subtype", &subtype), let subtype else { return true }
+            switch String(cString: subtype) {
+            case "Image":
+                var width: CGPDFInteger = 0
+                var height: CGPDFInteger = 0
+                if CGPDFDictionaryGetInteger(details, "Width", &width),
+                   CGPDFDictionaryGetInteger(details, "Height", &height) {
+                    sizes.append(CGSize(width: width, height: height))
+                }
+            case "Form":
+                sizes.append(contentsOf: embeddedImageSizes(in: details))
+            default:
+                break
+            }
+            return true
+        }, nil)
+        return sizes
+    }
+
     @Test func emptyCanvasCannotBeExported() {
         var empty = TestDocuments.document(annotations: [])
         empty.annotations = []

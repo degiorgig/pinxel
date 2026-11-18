@@ -34,26 +34,35 @@ final class PostCaptureActions {
         weak var finished: QuickPreviewController?
         let preview = QuickPreviewController(
             image: image, scale: contents.document.scale,
-            onOpen: { [weak self] in
-                self?.openEditor(contents, libraryURL: libraryURL)
-                self?.removePreview(finished)
-            },
-            onExpire: { [weak self] in
+            onComplete: { [weak self] openEditor in
                 guard let self else { return }
-                var opened = false
-                self.run(plan.afterPreview, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &opened)
+                var opened = editorOpened
+                let steps = plan.stepsAfterPreview(openEditor: openEditor)
+                self.run(steps, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &opened)
                 self.removePreview(finished)
             }
         )
         finished = preview
         previews.append(preview)
-        preview.show(stackIndex: previews.count - 1)
+        positionPreviews(adding: preview)
     }
 
     /// Removes the finished preview and moves the remaining ones down.
     private func removePreview(_ preview: QuickPreviewController?) {
         previews.removeAll { $0 === preview }
-        for (index, remaining) in previews.enumerated() { remaining.move(toStackIndex: index) }
+        positionPreviews()
+    }
+
+    private func positionPreviews(adding newPreview: QuickPreviewController? = nil) {
+        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let frames = QuickPreviewLayout.frames(for: previews.map(\.size), in: screen)
+        for (preview, frame) in zip(previews, frames) {
+            if preview === newPreview {
+                preview.show(at: frame)
+            } else {
+                preview.move(to: frame)
+            }
+        }
     }
 
     private func openEditor(_ contents: PinxelFileContents, libraryURL: URL?) {

@@ -7,13 +7,12 @@ import UniformTypeIdentifiers
 final class QuickPreviewController {
     private let panel: NSPanel
     private var timer: Timer?
-    private let onOpen: () -> Void
-    private let onExpire: () -> Void
+    private let onComplete: (Bool) -> Void
     private var finished = false
+    var size: NSSize { panel.frame.size }
 
-    init(image: CGImage, scale: Double, onOpen: @escaping () -> Void, onExpire: @escaping () -> Void) {
-        self.onOpen = onOpen
-        self.onExpire = onExpire
+    init(image: CGImage, scale: Double, onComplete: @escaping (Bool) -> Void) {
+        self.onComplete = onComplete
         let maxSide: CGFloat = 220
         let pointSize = NSSize(width: Double(image.width) / scale, height: Double(image.height) / scale)
         let factor = min(1, maxSide / max(pointSize.width, pointSize.height))
@@ -31,14 +30,13 @@ final class QuickPreviewController {
         panel.contentView = view
     }
 
-    /// `stackIndex` stacks the previews one above the other. It enters from the right edge, as it leaves.
-    func show(stackIndex: Int = 0) {
-        let target = frame(forStackIndex: stackIndex)
+    /// Enters from the right edge.
+    func show(at target: NSRect) {
         if Self.reduceMotion {
             panel.setFrame(target, display: false)
             panel.alphaValue = 0
         } else {
-            panel.setFrame(target.offsetBy(dx: target.width + Self.margin, dy: 0), display: false)
+            panel.setFrame(target.offsetBy(dx: target.width + QuickPreviewLayout.margin, dy: 0), display: false)
         }
         panel.orderFrontRegardless()
         animate(duration: 0.3) {
@@ -49,21 +47,12 @@ final class QuickPreviewController {
     }
 
     /// Repositions the preview when those below it disappear.
-    func move(toStackIndex index: Int) {
-        guard !finished else { return }
-        let target = frame(forStackIndex: index)
+    func move(to target: NSRect) {
+        guard !finished, panel.frame != target else { return }
         animate(duration: 0.3) { self.panel.animator().setFrame(target, display: true) }
     }
 
-    private static let margin: CGFloat = 20
     private static var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
-
-    private func frame(forStackIndex index: Int) -> NSRect {
-        let screen = NSScreen.main?.visibleFrame ?? .zero
-        let size = panel.frame.size
-        let y = screen.minY + Self.margin + CGFloat(index) * (size.height + 12)
-        return NSRect(x: screen.maxX - size.width - Self.margin, y: y, width: size.width, height: size.height)
-    }
 
     private func animate(duration: TimeInterval, _ changes: @escaping () -> Void, completion: (@MainActor @Sendable () -> Void)? = nil) {
         NSAnimationContext.runAnimationGroup({ context in
@@ -89,9 +78,9 @@ final class QuickPreviewController {
         guard !finished else { return }
         finished = true
         pause()
-        open ? onOpen() : onExpire()
+        onComplete(open)
         // On expiry it returns where it came from; when opened it dissolves in place.
-        let exit = open || Self.reduceMotion ? panel.frame : panel.frame.offsetBy(dx: panel.frame.width + Self.margin, dy: 0)
+        let exit = open || Self.reduceMotion ? panel.frame : panel.frame.offsetBy(dx: panel.frame.width + QuickPreviewLayout.margin, dy: 0)
         animate(duration: open ? 0.15 : 0.3, {
             self.panel.animator().setFrame(exit, display: true)
             self.panel.animator().alphaValue = 0
@@ -110,6 +99,10 @@ final class QuickPreviewView: NSView, NSDraggingSource {
     init(image: CGImage, size: NSSize) {
         self.image = image
         super.init(frame: NSRect(origin: .zero, size: size))
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel(PostCaptureAction.openEditor.title)
+        setAccessibilityIdentifier("pinxel.quickPreview")
         wantsLayer = true
         layer?.cornerRadius = 8
         layer?.masksToBounds = true
@@ -120,6 +113,12 @@ final class QuickPreviewView: NSView, NSDraggingSource {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func accessibilityPerformPress() -> Bool {
+        guard let onClick else { return false }
+        onClick()
+        return true
+    }
 
     override func mouseEntered(with event: NSEvent) { onHover?(true) }
     override func mouseExited(with event: NSEvent) { onHover?(false) }

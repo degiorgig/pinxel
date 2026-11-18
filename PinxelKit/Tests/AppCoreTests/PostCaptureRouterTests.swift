@@ -16,11 +16,13 @@ struct PostCaptureRouterTests {
             == PostCapturePlan(immediate: [.autoSave, .openEditor], showsQuickPreview: false, afterPreview: []))
     }
 
-    @Test func quickPreviewSavesWhenItExpires() {
-        #expect(PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: true))
-            == PostCapturePlan(immediate: [], showsQuickPreview: true, afterPreview: [.autoSave]))
-        #expect(PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: false))
-            == PostCapturePlan(immediate: [], showsQuickPreview: true, afterPreview: []))
+    @Test(arguments: [false, true]) func quickPreviewHandlesAutoSaveOnOpenAndExpiry(autoSave: Bool) {
+        let plan = PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: autoSave))
+        let save: [PostCaptureStep] = autoSave ? [.autoSave] : []
+        #expect(plan.showsQuickPreview)
+        #expect(plan.immediate.isEmpty)
+        #expect(plan.stepsAfterPreview(openEditor: false) == save)
+        #expect(plan.stepsAfterPreview(openEditor: true) == save + [.openEditor])
     }
 
     @Test func clipboard() {

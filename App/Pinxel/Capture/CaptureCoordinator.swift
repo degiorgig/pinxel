@@ -142,13 +142,19 @@ final class CaptureCoordinator {
             frontmost?.activate()
             let session = ScrollCaptureSession(source: scrolling.makeSource(), rect: prepared.rect,
                                                display: display, maxHeight: Self.maxScrollingHeight)
-            guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else { return }
+            guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else {
+                if let error = session.captureError { throw error }
+                return
+            }
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)
             metadata.windowTitle = nil
             let contents = try CaptureDocumentBuilder.make(image: image, scale: display.scale, metadata: metadata)
             let plan = PostCaptureRouter.plan(for: current)
             actions.perform(plan, contents: contents, image: image, settings: current)
-            if session.outcome == .reachedLimit {
+            if let error = session.captureError {
+                let reason = Notifier.message(for: error)
+                AppEnvironment.shared.notifier.info(String(localized: "Scrolling capture is incomplete. \(reason)"))
+            } else if session.outcome == .reachedLimit {
                 AppEnvironment.shared.notifier.info(String(localized: "Reached the maximum height of \(Self.maxScrollingHeight) pixels"))
             } else if session.outcome == .contentChanging {
                 AppEnvironment.shared.notifier.info(String(localized: "The content changes by itself: capture stopped"))

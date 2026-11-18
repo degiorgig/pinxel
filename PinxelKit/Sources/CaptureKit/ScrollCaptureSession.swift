@@ -9,7 +9,7 @@ import os
 @Observable
 public final class ScrollCaptureSession {
     public enum Outcome: Equatable, Sendable {
-        case finishedByUser, reachedLimit, contentChanging, cancelled
+        case finishedByUser, reachedLimit, contentChanging, captureFailed, cancelled
     }
 
     /// Why stitching is stalled, to show in the panel.
@@ -33,6 +33,8 @@ public final class ScrollCaptureSession {
     public private(set) var preview: CGImage?
     public private(set) var outcome: Outcome?
     public private(set) var pause: Pause = .none
+    /// The acquisition error, if any. A failed session can still return the image stitched so far.
+    @ObservationIgnored public private(set) var captureError: (any Error)?
 
     @ObservationIgnored private let source: any RegionFrameSource
     @ObservationIgnored private let rect: CGRect
@@ -100,7 +102,7 @@ public final class ScrollCaptureSession {
         stopRequest = .cancelled
     }
 
-    /// Captures until Done; `nil` if cancelled.
+    /// Captures until Done or an interruption. Returns `nil` if cancelled or no image is available.
     public func run() async -> CGImage? {
         do {
             try await source.prepare(display: display)
@@ -147,9 +149,12 @@ public final class ScrollCaptureSession {
             }
         } catch {
             logger.error("scrolling capture failed: \(String(describing: error), privacy: .public)")
-            outcome = stopRequest ?? .contentChanging
+            if stopRequest != .cancelled {
+                captureError = error
+                outcome = .captureFailed
+            }
         }
-        if outcome == nil { outcome = stopRequest ?? .contentChanging }
+        if stopRequest == .cancelled { outcome = .cancelled }
         pause = .none
         logger.notice("scrolling capture ended: \(String(describing: self.outcome), privacy: .public), height \(self.height, privacy: .public)")
         return outcome == .cancelled ? nil : await worker.finalImage()

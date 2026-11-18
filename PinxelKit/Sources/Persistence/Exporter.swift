@@ -48,9 +48,9 @@ public enum Exporter {
     }
 
     private static func pdf(_ document: PinxelDocument, assets: any AssetProvider, outputScale: Double, renderer: DocumentRenderer) throws -> Data {
+        // Drawing objects directly into a PDF would embed the original screenshot under any covering annotation.
+        let image = try renderer.renderImage(document, assets: assets, options: RenderOptions(outputScale: outputScale))
         let canvas = renderer.canvasSize(for: document)
-        // Empty canvas: the same error as the other formats.
-        guard canvas.width > 0, canvas.height > 0 else { throw RenderError.invalidSize }
         var mediaBox = CGRect(x: 0, y: 0, width: canvas.width * outputScale, height: canvas.height * outputScale)
         let data = NSMutableData()
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
@@ -58,7 +58,7 @@ public enum Exporter {
             throw RenderError.contextCreationFailed
         }
         ctx.beginPDFPage(nil)
-        try renderer.render(document, assets: assets, in: ctx, options: RenderOptions(outputScale: outputScale))
+        ctx.draw(image, in: mediaBox)
         ctx.endPDFPage()
         ctx.closePDF()
         return data as Data

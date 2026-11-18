@@ -3359,6 +3359,28 @@
         }
       }
     },
+    "Scrolling capture is incomplete. %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die scrollende Aufnahme ist unvollständig. %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La capture défilante est incomplète. %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cattura a scorrimento è incompleta. %@"
+          }
+        }
+      }
+    },
     "Search" : {
       "localizations" : {
         "de" : {

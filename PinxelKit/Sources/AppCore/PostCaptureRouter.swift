@@ -7,13 +7,17 @@ public enum PostCaptureStep: Equatable, Sendable {
 public struct PostCapturePlan: Equatable, Sendable {
     public var immediate: [PostCaptureStep]
     public var showsQuickPreview: Bool
-    /// Steps performed when the quick preview expires without being opened.
+    /// Steps performed when the quick preview expires or is opened.
     public var afterPreview: [PostCaptureStep]
 
     public init(immediate: [PostCaptureStep], showsQuickPreview: Bool, afterPreview: [PostCaptureStep]) {
         self.immediate = immediate
         self.showsQuickPreview = showsQuickPreview
         self.afterPreview = afterPreview
+    }
+
+    public func stepsAfterPreview(openEditor: Bool) -> [PostCaptureStep] {
+        openEditor ? afterPreview + [.openEditor] : afterPreview
     }
 }
 
