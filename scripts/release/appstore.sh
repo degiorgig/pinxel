@@ -27,10 +27,10 @@ UPLOAD=${UPLOAD:-0}
 
 fail() { echo "error: $*" >&2; exit 1; }
 
-[ -e "$OUT" ] && fail "$OUT already exists; remove it or set OUT_DIR"
-[ -e "$ARCHIVE" ] && fail "$ARCHIVE already exists; remove it"
-if [ "$UPLOAD" = 1 ]; then
-    [ -n "${ASC_KEY_PATH:-}" ] && [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] \
+[[ -e "$OUT" ]] && fail "$OUT already exists; remove it or set OUT_DIR"
+[[ -e "$ARCHIVE" ]] && fail "$ARCHIVE already exists; remove it"
+if [[ "$UPLOAD" = 1 ]]; then
+    [[ -n "${ASC_KEY_PATH:-}" ]] && [[ -n "${ASC_KEY_ID:-}" ]] && [[ -n "${ASC_ISSUER_ID:-}" ]] \
         || fail "UPLOAD=1 needs ASC_KEY_PATH, ASC_KEY_ID and ASC_ISSUER_ID"
 fi
 
@@ -46,11 +46,11 @@ xcodegen generate >/dev/null
 TEAM=$(setting DEVELOPMENT_TEAM)
 PROFILE=$(setting PROVISIONING_PROFILE_SPECIFIER)
 BUNDLE_ID=$(setting PRODUCT_BUNDLE_IDENTIFIER)
-[ -n "$TEAM" ] || fail "DEVELOPMENT_TEAM is empty (App/Config/Signing.local.xcconfig)"
+[[ -n "$TEAM" ]] || fail "DEVELOPMENT_TEAM is empty (App/Config/Signing.local.xcconfig)"
 # The Mac Installer Distribution certificate is named "3rd Party Mac Developer Installer" or, when newer,
 # "Mac Installer Distribution": take whichever the keychain has.
 INSTALLER=$(security find-identity -v | sed -nE "s/.*\"((3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM\))\"/\1/p" | head -1)
-[ -n "$INSTALLER" ] || fail "no Mac Installer Distribution certificate for team $TEAM in the keychain"
+[[ -n "$INSTALLER" ]] || fail "no Mac Installer Distribution certificate for team $TEAM in the keychain"
 
 xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration AppStore \
     -destination "generic/platform=macOS" -derivedDataPath "build/appstore-derived-$VERSION" \
@@ -58,14 +58,14 @@ xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration AppStore \
 
 APP=$ARCHIVE/Products/Applications/Pinxel.app
 BUILT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
-[ "$BUILT" = "$VERSION" ] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
+[[ "$BUILT" = "$VERSION" ]] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
 ENTITLEMENTS=$(codesign -d --entitlements - "$APP" 2>/dev/null || true)
 grep -q "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS" || fail "the App Store build is not sandboxed"
 # App Review rejects entitlements without matching functionality (guideline 2.4.5(i)): folders come from the open panel.
 grep -q "com.apple.security.assets\." <<<"$ENTITLEMENTS" && fail "the App Store build asks for a media folder entitlement"
 
 DESTINATION=export
-[ "$UPLOAD" = 1 ] && DESTINATION=upload
+[[ "$UPLOAD" = 1 ]] && DESTINATION=upload
 cat > "$STAGE/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -84,15 +84,15 @@ cat > "$STAGE/ExportOptions.plist" <<PLIST
 PLIST
 
 AUTH=()
-if [ "$UPLOAD" = 1 ]; then
+if [[ "$UPLOAD" = 1 ]]; then
     AUTH=(-authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 fi
 xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath "$OUT" \
     -exportOptionsPlist "$STAGE/ExportOptions.plist" ${AUTH[@]+"${AUTH[@]}"} | tail -1
 
-if [ "$UPLOAD" = 1 ]; then
+if [[ "$UPLOAD" = 1 ]]; then
     echo "Uploaded Pinxel $VERSION to App Store Connect"
 else
-    [ -f "$OUT/Pinxel.pkg" ] || fail "the export did not produce Pinxel.pkg"
+    [[ -f "$OUT/Pinxel.pkg" ]] || fail "the export did not produce Pinxel.pkg"
     echo "Exported Pinxel $VERSION for the App Store in $OUT"
 fi

@@ -28,12 +28,12 @@ CATALOGS = {
 
 
 def load(path):
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:  # NOSONAR: a developer tool that opens the paths it is given
         return json.load(f)
 
 
 def save(path, catalog):
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:  # NOSONAR: a developer tool that opens the paths it is given
         json.dump(catalog, f, ensure_ascii=False, indent=2, sort_keys=True, separators=(",", " : "))
         f.write("\n")
 
@@ -41,7 +41,7 @@ def save(path, catalog):
 def merge(catalog_path, table_path):
     catalog = load(catalog_path)
     strings = catalog.setdefault("strings", {})
-    with open(table_path, encoding="utf-8") as f:
+    with open(table_path, encoding="utf-8") as f:  # NOSONAR: a developer tool that opens the paths it is given
         for row in csv.reader(f, delimiter="\t"):
             if not row or row[0].startswith("#"):
                 continue
@@ -58,7 +58,7 @@ def merge(catalog_path, table_path):
 
 def coverage(derived, root):
     used = {name: set() for name in CATALOGS}
-    for path in glob.glob(os.path.join(derived, "Build/Intermediates.noindex/**/*.stringsdata"), recursive=True):
+    for path in glob.glob(os.path.join(derived, "Build/Intermediates.noindex/**/*.stringsdata"), recursive=True):  # NOSONAR: a developer tool that opens the paths it is given
         owner = next((name for name in CATALOGS if f"/{name}/" in path or f"/{name}-" in path), None)
         if owner is None:
             continue
