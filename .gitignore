@@ -10,3 +10,7 @@ App/Config/Signing.local.xcconfig
 App/Pinxel/Info.plist
 build/
 App/Config/AppStore.local.xcconfig
+
+# Python bytecode
+__pycache__/
+*.pyc
