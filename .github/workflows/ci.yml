@@ -68,7 +68,7 @@ jobs:
 
       - name: SonarQube coverage report
         if: steps.sonar.outputs.enabled == 'true'
-        run: python3 scripts/sonar/xccov_to_generic.py build/ci-package.xcresult . > build/sonar-coverage.xml
+        run: python3 scripts/sonar/xccov_to_generic.py > build/sonar-coverage.xml
 
       - name: SonarQube analysis
         # Fails the job when the quality gate fails, so the pull request shows it.

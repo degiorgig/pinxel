@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Converts the code coverage in an .xcresult bundle to SonarQube's generic coverage format.
 
-xccov_to_generic.py <result.xcresult> <repoRoot> > coverage.xml
+xccov_to_generic.py > build/sonar-coverage.xml
 
-Only source files under <repoRoot> are kept (not the tests), with paths relative to it. A line counts as covered when it ran at least
+It reads build/ci-package.xcresult, the bundle the CI package tests write. It takes no arguments, so nothing from the
+command line reaches xcrun. Only source files under the repository are kept (not the tests), with paths relative to it. A line counts as covered when it ran at least
 once; xccov's sub-line ranges are ignored (the generic format has no branch data from Swift).
 """
 import os
@@ -13,6 +14,8 @@ import sys
 from xml.sax.saxutils import quoteattr
 
 LINE = re.compile(r"^\s*(\d+): (\d+)")
+ROOT = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+RESULT = os.path.join(ROOT, "build", "ci-package.xcresult")
 
 
 def xccov(*args):
@@ -20,12 +23,11 @@ def xccov(*args):
 
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 1:
         sys.exit(__doc__)
-    # Absolute paths of an existing bundle only: nothing that xccov could read as an option.
-    result, root = os.path.realpath(sys.argv[1]), os.path.realpath(sys.argv[2])
-    if not (result.endswith(".xcresult") and os.path.isdir(result) and os.path.isdir(root)):
-        sys.exit(f"Not an .xcresult bundle and a folder: {sys.argv[1]} {sys.argv[2]}")
+    result, root = RESULT, ROOT
+    if not os.path.isdir(result):
+        sys.exit(f"No result bundle at {result}: run the package tests with -resultBundlePath first.")
     out = ['<coverage version="1">']
     for path in xccov("--file-list", result).splitlines():
         real = os.path.realpath(path)
