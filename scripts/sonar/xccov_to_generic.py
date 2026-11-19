@@ -22,7 +22,10 @@ def xccov(*args):
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
-    result, root = sys.argv[1], os.path.realpath(sys.argv[2])
+    # Absolute paths of an existing bundle only: nothing that xccov could read as an option.
+    result, root = os.path.realpath(sys.argv[1]), os.path.realpath(sys.argv[2])
+    if not (result.endswith(".xcresult") and os.path.isdir(result) and os.path.isdir(root)):
+        sys.exit(f"Not an .xcresult bundle and a folder: {sys.argv[1]} {sys.argv[2]}")
     out = ['<coverage version="1">']
     for path in xccov("--file-list", result).splitlines():
         real = os.path.realpath(path)
