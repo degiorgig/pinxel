@@ -1,25 +1,25 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ What was captured so far is open in the editor." : {
-      "comment" : "Notification body: the reason, then where the partial capture is",
+    "%@ What was captured so far is open in the editor. It is not in the library: save it if you want to keep it." : {
+      "comment" : "Alert over the editor: the reason a scrolling capture stopped, then where the partial capture is",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ Was bisher aufgenommen wurde, ist im Editor geöffnet."
+            "value" : "%@ Was bisher aufgenommen wurde, ist im Editor geöffnet. Es ist nicht in der Mediathek: Sichere es, wenn du es behalten möchtest."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ Ce qui a été capturé jusqu'ici est ouvert dans l'éditeur."
+            "value" : "%@ Ce qui a été capturé jusqu'ici est ouvert dans l'éditeur. Ce n'est pas dans la bibliothèque : enregistrez-le si vous voulez le garder."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ Quello che è stato catturato finora è aperto nell'editor."
+            "value" : "%@ Quello che è stato catturato finora è aperto nell'editor. Non è nella libreria: salvalo se vuoi tenerlo."
           }
         }
       }

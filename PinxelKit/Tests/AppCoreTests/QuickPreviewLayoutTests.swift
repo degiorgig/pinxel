@@ -35,4 +35,13 @@ struct QuickPreviewLayoutTests {
         ])
         #expect(frames.allSatisfy { screen.insetBy(dx: QuickPreviewLayout.margin, dy: QuickPreviewLayout.margin).contains($0) })
     }
+
+    @Test func whenTheColumnsRunOutTheStackStartsAgainFromTheCorner() {
+        let small = CGRect(x: 0, y: 0, width: 800, height: 600)
+        let big = CGSize(width: 220, height: 220)
+        let frames = QuickPreviewLayout.frames(for: Array(repeating: big, count: 7), in: small)
+        // Two per column, three columns; the seventh goes back over the first.
+        #expect(frames[6] == frames[0])
+        #expect(frames.allSatisfy { small.insetBy(dx: QuickPreviewLayout.margin, dy: QuickPreviewLayout.margin).contains($0) })
+    }
 }

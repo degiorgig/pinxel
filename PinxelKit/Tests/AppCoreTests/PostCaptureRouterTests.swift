@@ -28,8 +28,15 @@ struct PostCaptureRouterTests {
 
     @Test func anIncompleteCaptureOnlyOpensTheEditor() {
         // Neither saved nor copied as if it were complete: the user sees what was captured and decides.
+        // Nor archived in the library: it opens as an unsaved document.
         #expect(PostCaptureRouter.planForIncompleteCapture()
-            == PostCapturePlan(immediate: [.openEditor], showsQuickPreview: false, afterPreview: []))
+            == PostCapturePlan(immediate: [.openEditor], showsQuickPreview: false, afterPreview: [], addsToLibrary: false))
+    }
+
+    @Test func completeCapturesGoToTheLibrary() {
+        for action in PostCaptureAction.allCases {
+            #expect(PostCaptureRouter.plan(for: settings(action, autoSave: true)).addsToLibrary)
+        }
     }
 
     @Test func clipboard() {

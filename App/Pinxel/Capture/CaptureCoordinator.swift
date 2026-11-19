@@ -153,7 +153,7 @@ final class CaptureCoordinator {
             let plan = session.captureError == nil ? PostCaptureRouter.plan(for: current) : PostCaptureRouter.planForIncompleteCapture()
             actions.perform(plan, contents: contents, image: image, settings: current)
             if let error = session.captureError {
-                AppEnvironment.shared.notifier.incomplete(error)
+                Self.showIncomplete(error)
             } else if session.outcome == .reachedLimit {
                 AppEnvironment.shared.notifier.info(String(localized: "Reached the maximum height of \(Self.maxScrollingHeight) pixels"))
             } else if session.outcome == .contentChanging {
@@ -164,6 +164,15 @@ final class CaptureCoordinator {
             AppEnvironment.shared.notifier.failure(error)
             frontmost?.activate()
         }
+    }
+
+    /// Said in a dialog over the editor, not in a notification that may be turned off: the document looks like any other.
+    private static func showIncomplete(_ error: Error) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = String(localized: "Scrolling Capture Incomplete")
+        alert.informativeText = String(localized: "\(Notifier.message(for: error)) What was captured so far is open in the editor. It is not in the library: save it if you want to keep it.")
+        alert.runModal()
     }
 
     /// Debug only: `-PinxelDebugScrollRect x,y,w,h` skips the selection, to try the real capture from a script.
