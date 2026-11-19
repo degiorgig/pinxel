@@ -67,14 +67,44 @@ struct ExporterTests {
         let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
         let pdf = try #require(CGPDFDocument(CGDataProvider(data: data as CFData)!))
         let page = try #require(pdf.page(at: 1))
-        // The source is 400×300. The only image in the PDF must be the 200×150 composite.
-        #expect(Self.embeddedImageSizes(in: page.dictionary) == [CGSize(width: 200, height: 150)])
+        // The only image in the PDF is the flattened capture, at the 400×300 pixels of the source even on a 200×150 pt page.
+        #expect(Self.embeddedImageSizes(in: page.dictionary) == [CGSize(width: 400, height: 300)])
 
         let context = TestImages.makeContext(width: 200, height: 150)
         context.drawPDFPage(page)
         let renderedPage = try #require(context.makeImage())
         let flattened = try DocumentRenderer().renderImage(document, assets: provider, options: RenderOptions(outputScale: 0.5))
         #expect(PixelBuffer(renderedPage).differingPixelFraction(from: PixelBuffer(flattened)) < 0.01)
+    }
+
+    @Test func pdfKeepsTextAndArrowsAboveTheCaptureAsVectors() throws {
+        let document = TestDocuments.document(annotations: [
+            Annotation(kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 20, y: 20), end: CGPoint(x: 200, y: 150))))),
+            Annotation(kind: .text(TextData(rect: CGRect(x: 20, y: 200, width: 300, height: 40), text: RichText("Selectable", fontSize: 24))),
+                       style: Style(stroke: nil, fill: nil, lineWidth: 0)),
+        ])
+        let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
+        let page = try #require(CGPDFDocument(CGDataProvider(data: data as CFData)!)?.page(at: 1))
+        // Only the capture is a bitmap; the text brings its font, so it stays selectable.
+        #expect(Self.embeddedImageSizes(in: page.dictionary) == [CGSize(width: 400, height: 300)])
+        #expect(Self.hasFonts(page.dictionary))
+    }
+
+    /// Whether the page, or a form drawn on it (each annotation is a transparency group), uses a font.
+    private static func hasFonts(_ dictionary: CGPDFDictionaryRef?) -> Bool {
+        var resources: CGPDFDictionaryRef?
+        guard let dictionary, CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources), let resources else { return false }
+        var fonts: CGPDFDictionaryRef?
+        if CGPDFDictionaryGetDictionary(resources, "Font", &fonts), let fonts, CGPDFDictionaryGetCount(fonts) > 0 { return true }
+        var objects: CGPDFDictionaryRef?
+        guard CGPDFDictionaryGetDictionary(resources, "XObject", &objects), let objects else { return false }
+        var found = false
+        CGPDFDictionaryApplyBlock(objects, { _, object, _ in
+            var stream: CGPDFStreamRef?
+            if CGPDFObjectGetValue(object, .stream, &stream), let stream, hasFonts(CGPDFStreamGetDictionary(stream)) { found = true }
+            return !found
+        }, nil)
+        return found
     }
 
     private static func embeddedImageSizes(in dictionary: CGPDFDictionaryRef?) -> [CGSize] {

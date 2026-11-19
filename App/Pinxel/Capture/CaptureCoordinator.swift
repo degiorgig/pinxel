@@ -149,11 +149,11 @@ final class CaptureCoordinator {
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)
             metadata.windowTitle = nil
             let contents = try CaptureDocumentBuilder.make(image: image, scale: display.scale, metadata: metadata)
-            let plan = PostCaptureRouter.plan(for: current)
+            // Stopped by an error: the part captured so far opens in the editor, and is neither saved nor copied as if complete.
+            let plan = session.captureError == nil ? PostCaptureRouter.plan(for: current) : PostCaptureRouter.planForIncompleteCapture()
             actions.perform(plan, contents: contents, image: image, settings: current)
             if let error = session.captureError {
-                let reason = Notifier.message(for: error)
-                AppEnvironment.shared.notifier.info(String(localized: "Scrolling capture is incomplete. \(reason)"))
+                AppEnvironment.shared.notifier.incomplete(error)
             } else if session.outcome == .reachedLimit {
                 AppEnvironment.shared.notifier.info(String(localized: "Reached the maximum height of \(Self.maxScrollingHeight) pixels"))
             } else if session.outcome == .contentChanging {

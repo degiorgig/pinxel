@@ -17,11 +17,18 @@ public struct PostCapturePlan: Equatable, Sendable {
     }
 
     public func stepsAfterPreview(openEditor: Bool) -> [PostCaptureStep] {
-        openEditor ? afterPreview + [.openEditor] : afterPreview
+        // The editor first: saving a large capture must not delay it.
+        openEditor ? [.openEditor] + afterPreview : afterPreview
     }
 }
 
 public enum PostCaptureRouter {
+    /// A scrolling capture that stopped on an error: only the editor, so the user sees what was captured before
+    /// anything saves or copies it as if it were complete.
+    public static func planForIncompleteCapture() -> PostCapturePlan {
+        PostCapturePlan(immediate: [.openEditor], showsQuickPreview: false, afterPreview: [])
+    }
+
     public static func plan(for settings: CaptureSettings) -> PostCapturePlan {
         let save: [PostCaptureStep] = settings.autoSave ? [.autoSave] : []
         switch settings.postCaptureAction {

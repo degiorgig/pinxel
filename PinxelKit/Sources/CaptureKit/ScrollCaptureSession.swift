@@ -149,7 +149,10 @@ public final class ScrollCaptureSession {
             }
         } catch {
             logger.error("scrolling capture failed: \(String(describing: error), privacy: .public)")
-            if stopRequest != .cancelled {
+            // Once the user pressed Done or Esc, a frame that fails while the stream closes is part of stopping.
+            if let stop = stopRequest {
+                outcome = stop
+            } else {
                 captureError = error
                 outcome = .captureFailed
             }

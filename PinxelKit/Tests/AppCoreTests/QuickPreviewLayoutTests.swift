@@ -24,4 +24,15 @@ struct QuickPreviewLayoutTests {
             CGRect(origin: CGPoint(x: -120, y: 104), size: square),
         ])
     }
+
+    @Test func previewsThatDoNotFitStartANewColumnToTheLeft() {
+        let frames = QuickPreviewLayout.frames(for: [portrait, portrait, portrait, square], in: screen)
+        #expect(frames == [
+            CGRect(origin: CGPoint(x: -80, y: 52), size: portrait),
+            CGRect(origin: CGPoint(x: -80, y: 284), size: portrait),
+            CGRect(origin: CGPoint(x: -152, y: 52), size: portrait),
+            CGRect(origin: CGPoint(x: -192, y: 284), size: square),
+        ])
+        #expect(frames.allSatisfy { screen.insetBy(dx: QuickPreviewLayout.margin, dy: QuickPreviewLayout.margin).contains($0) })
+    }
 }

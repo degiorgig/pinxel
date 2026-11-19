@@ -23,11 +23,18 @@ public struct RenderOptions: Sendable {
     public var excludedAnnotationIDs: Set<UUID>
     /// Solid color under everything (e.g. white for JPEG).
     public var matte: RGBA?
+    /// The first annotations, drawn as one bitmap at `flatteningScale` output pixels per document pixel instead of
+    /// one by one (for PDF, where a vector page would keep the pixels under a blur or a cover).
+    public var flattenedCount: Int
+    public var flatteningScale: Double
 
-    public init(outputScale: Double = 1, excludedAnnotationIDs: Set<UUID> = [], matte: RGBA? = nil) {
+    public init(outputScale: Double = 1, excludedAnnotationIDs: Set<UUID> = [], matte: RGBA? = nil,
+                flattenedCount: Int = 0, flatteningScale: Double = 1) {
         self.outputScale = outputScale
         self.excludedAnnotationIDs = excludedAnnotationIDs
         self.matte = matte
+        self.flattenedCount = flattenedCount
+        self.flatteningScale = flatteningScale
     }
 }
 
@@ -85,15 +92,21 @@ public final class DocumentRenderer {
         )
         // The content in a single layer: the canvas shadow follows its silhouette.
         ctx.saveGState()
+        // Only a shadow needs the layer: in a PDF a transparency group would also shift the colors of the capture.
         if let shadow = style.shadow {
             ShadowStyle.apply(shadow, to: ctx, outputScale: options.outputScale)
+            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         }
-        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         ctx.translateBy(x: style.padding, y: style.padding)
-        for (index, annotation) in document.annotations.enumerated() where !excluded.contains(annotation.id) {
+        let flattened = min(max(options.flattenedCount, 0), document.annotations.count)
+        if flattened > 0 {
+            try drawFlattened(document.annotations.prefix(flattened), size: document.imageSize, scale: options.flatteningScale,
+                              excluded: excluded, context: context, in: ctx)
+        }
+        for (index, annotation) in document.annotations.enumerated() where index >= flattened && !excluded.contains(annotation.id) {
             AnnotationRenderer.draw(annotation, index: index, in: ctx, context: context)
         }
-        ctx.endTransparencyLayer()
+        if style.shadow != nil { ctx.endTransparencyLayer() }
         ctx.restoreGState()
 
         if let border = style.border, border.width > 0, !contentRect.isEmpty {
@@ -102,6 +115,43 @@ public final class DocumentRenderer {
             ctx.setLineDash(phase: 0, lengths: [])
             ctx.stroke(contentRect.insetBy(dx: border.width / 2, dy: border.width / 2))
         }
+    }
+
+    /// How many annotations, from the bottom, a PDF draws as one bitmap: up to the last one that hides what is below it
+    /// (an image, a blur, a pixelation or a filled object). Everything above stays vector, so text remains selectable.
+    public static func flattenedCountForPDF(_ document: PinxelDocument) -> Int {
+        guard let last = document.annotations.lastIndex(where: { annotation in
+            switch annotation.kind {
+            case .image, .blur, .pixelate: true
+            default: (annotation.style.fill?.alpha ?? 0) > 0
+            }
+        }) else { return 0 }
+        return last + 1
+    }
+
+    /// Draws `annotations` into one bitmap of the content at `scale`, then places it in `ctx` (document space, y down).
+    private func drawFlattened(_ annotations: ArraySlice<Annotation>, size: PixelSize, scale: Double, excluded: Set<UUID>,
+                               context: RenderContext, in ctx: CGContext) throws {
+        let width = Double(size.width) * scale
+        let height = Double(size.height) * scale
+        let maxPixels = Double(PinxelDocument.maxImageSide * 4)
+        guard width >= 1, height >= 1, width <= maxPixels, height <= maxPixels else { throw RenderError.invalidSize }
+        guard let bitmap = ImageDrawing.makeContext(width: Int(width.rounded()), height: Int(height.rounded())) else {
+            throw RenderError.contextCreationFailed
+        }
+        bitmap.translateBy(x: 0, y: CGFloat(height.rounded()))
+        bitmap.scaleBy(x: scale, y: -scale)
+        let flat = RenderContext(contentSize: context.contentSize, stepLabels: context.stepLabels, assets: context.assets,
+                                 outputScale: scale, effects: context.effects, layers: context.layers)
+        for (index, annotation) in zip(annotations.indices, annotations) where !excluded.contains(annotation.id) {
+            AnnotationRenderer.draw(annotation, index: index, in: bitmap, context: flat)
+        }
+        guard let image = bitmap.makeImage() else { throw RenderError.contextCreationFailed }
+        ctx.saveGState()
+        ctx.translateBy(x: 0, y: CGFloat(size.height))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: Double(size.width), height: Double(size.height)))
+        ctx.restoreGState()
     }
 
     /// Size of the last layers image computed (for tests).

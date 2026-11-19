@@ -1,6 +1,29 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ What was captured so far is open in the editor." : {
+      "comment" : "Notification body: the reason, then where the partial capture is",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Was bisher aufgenommen wurde, ist im Editor geöffnet."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Ce qui a été capturé jusqu'ici est ouvert dans l'éditeur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Quello che è stato catturato finora è aperto nell'editor."
+          }
+        }
+      }
+    },
     "%lld percent" : {
       "localizations" : {
         "de" : {
@@ -3359,24 +3382,25 @@
         }
       }
     },
-    "Scrolling capture is incomplete. %@" : {
+    "Scrolling Capture Incomplete" : {
+      "comment" : "Notification title: a scrolling capture stopped on an error",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die scrollende Aufnahme ist unvollständig. %@"
+            "value" : "Scrollende Aufnahme unvollständig"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La capture défilante est incomplète. %@"
+            "value" : "Capture défilante incomplète"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La cattura a scorrimento è incompleta. %@"
+            "value" : "Cattura a scorrimento incompleta"
           }
         }
       }

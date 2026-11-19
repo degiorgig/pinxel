@@ -22,7 +22,14 @@ struct PostCaptureRouterTests {
         #expect(plan.showsQuickPreview)
         #expect(plan.immediate.isEmpty)
         #expect(plan.stepsAfterPreview(openEditor: false) == save)
-        #expect(plan.stepsAfterPreview(openEditor: true) == save + [.openEditor])
+        // The editor opens first: saving a large capture must not delay it.
+        #expect(plan.stepsAfterPreview(openEditor: true) == [.openEditor] + save)
+    }
+
+    @Test func anIncompleteCaptureOnlyOpensTheEditor() {
+        // Neither saved nor copied as if it were complete: the user sees what was captured and decides.
+        #expect(PostCaptureRouter.planForIncompleteCapture()
+            == PostCapturePlan(immediate: [.openEditor], showsQuickPreview: false, afterPreview: []))
     }
 
     @Test func clipboard() {

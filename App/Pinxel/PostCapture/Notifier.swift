@@ -20,6 +20,14 @@ final class Notifier {
         post(title: String(localized: "Capture Failed"), body: message)
     }
 
+    /// A scrolling capture stopped by an error, whose first part is open in the editor.
+    func incomplete(_ error: Error) {
+        let message = Self.message(for: error)
+        logger.error("incomplete scrolling capture: \(message, privacy: .public)")
+        post(title: String(localized: "Scrolling Capture Incomplete"),
+             body: String(localized: "\(message) What was captured so far is open in the editor."))
+    }
+
     func info(_ text: String) {
         post(title: "Pinxel", body: text)
     }

@@ -121,6 +121,20 @@ struct ScrollCaptureSessionTests {
         #expect(session.captureError == nil)
     }
 
+    @Test func finishingDuringAFailedAcquisitionKeepsTheImageWithoutAnError() async throws {
+        let source = FailingFrameSource()
+        let firstFrame = TestImages.noise(width: 64, height: 120)
+        source.frames = [firstFrame]
+        let session = ScrollCaptureSession(source: source, rect: rect, display: display)
+        source.onFrameFailure = { session.finish() }
+        defer { source.onFrameFailure = nil }
+
+        let image = try #require(await session.run())
+        #expect(PixelBuffer(image) == PixelBuffer(firstFrame))
+        #expect(session.outcome == .finishedByUser)
+        #expect(session.captureError == nil)
+    }
+
     @Test func contentThatChangesByItselfAsksToGoBackWithoutStopping() async {
         let page = FakeScrollingPage(content: TestImages.noise(width: 64, height: 900), viewportHeight: 120, scale: 1)
         let session = makeSession(page)

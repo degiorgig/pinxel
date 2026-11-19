@@ -9,6 +9,8 @@ final class PostCaptureActions {
     private let autoSaver: AutoSaver
     private let library: LibraryModel
     private var previews: [QuickPreviewController] = []
+    /// Where the current stack of previews lives: the screen of the first one, until the stack is empty.
+    private var previewScreen: CGRect?
     /// Called on every capture, whatever the chosen action.
     var onCapture: ((AppEnvironment.LastCapture) -> Void)?
 
@@ -36,7 +38,7 @@ final class PostCaptureActions {
             image: image, scale: contents.document.scale,
             onComplete: { [weak self] openEditor in
                 guard let self else { return }
-                var opened = editorOpened
+                var opened = false
                 let steps = plan.stepsAfterPreview(openEditor: openEditor)
                 self.run(steps, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editorOpened: &opened)
                 self.removePreview(finished)
@@ -50,11 +52,13 @@ final class PostCaptureActions {
     /// Removes the finished preview and moves the remaining ones down.
     private func removePreview(_ preview: QuickPreviewController?) {
         previews.removeAll { $0 === preview }
+        if previews.isEmpty { previewScreen = nil }
         positionPreviews()
     }
 
     private func positionPreviews(adding newPreview: QuickPreviewController? = nil) {
-        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let screen = previewScreen ?? NSScreen.main?.visibleFrame ?? .zero
+        previewScreen = screen
         let frames = QuickPreviewLayout.frames(for: previews.map(\.size), in: screen)
         for (preview, frame) in zip(previews, frames) {
             if preview === newPreview {
