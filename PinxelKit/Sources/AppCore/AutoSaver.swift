@@ -9,7 +9,9 @@ public enum AutoSaveError: Error, Equatable {
     case writeFailed(String)
 }
 
-public struct AutoSaver {
+/// Runs off the main thread. `FileManager` is not marked `Sendable`, but its methods are thread safe as long as it has no
+/// delegate, which this one never gets.
+public struct AutoSaver: @unchecked Sendable {
     private let fileManager: FileManager
     private let appVersion: String
 

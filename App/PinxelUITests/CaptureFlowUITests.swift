@@ -51,6 +51,54 @@ final class CaptureFlowUITests: XCTestCase {
         app.terminate()
     }
 
+    @MainActor
+    func testOpeningQuickPreviewAutoSavesOneCapture() throws {
+        let app = XCUIApplication()
+        let folder = launchQuickPreviewWithAutoSave(app)
+        defer { app.terminate() }
+
+        let preview = app.buttons["pinxel.quickPreview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 4))
+        preview.click()
+        XCTAssertTrue(app.images["pinxel.editor.canvas"].waitForExistence(timeout: 10))
+        try assertOneSavedCapture(in: folder)
+    }
+
+    @MainActor
+    func testExpiringQuickPreviewAutoSavesOneCaptureWithoutOpeningEditor() throws {
+        let app = XCUIApplication()
+        let folder = launchQuickPreviewWithAutoSave(app)
+        defer { app.terminate() }
+
+        let fileAppears = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (try? FileManager.default.contentsOfDirectory(atPath: folder.path).contains { $0.hasSuffix(".png") }) == true
+        }, object: nil)
+        wait(for: [fileAppears], timeout: 15)
+        try assertOneSavedCapture(in: folder)
+        XCTAssertFalse(app.images["pinxel.editor.canvas"].exists)
+    }
+
+    @MainActor
+    private func launchQuickPreviewWithAutoSave(_ app: XCUIApplication) -> URL {
+        // AutoSaver creates the folder. The sandboxed test runner can read it.
+        let folder = URL(fileURLWithPath: "/private/tmp/pinxel-uitest-autosave-\(UUID().uuidString)", isDirectory: true)
+        app.launchEnvironment["PINXEL_UITEST_AUTO_SAVE_FOLDER"] = folder.path
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES", "-PinxelUITestPostCapture", "quickPreview",
+                               "-PinxelUITestFakeCapture", "-PinxelUITestCaptureOnLaunch"]
+        app.launch()
+        return folder
+    }
+
+    private func assertOneSavedCapture(in folder: URL, file: StaticString = #filePath, line: UInt = #line) throws {
+        let images = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "png" }
+        XCTAssertEqual(images.count, 1, file: file, line: line)
+        let url = try XCTUnwrap(images.first, file: file, line: line)
+        let image = try XCTUnwrap(NSBitmapImageRep(data: Data(contentsOf: url)), file: file, line: line)
+        XCTAssertEqual(image.pixelsWide, 400, file: file, line: line)
+        XCTAssertEqual(image.pixelsHigh, 300, file: file, line: line)
+    }
+
     func testMenuBarIconOpensLastCaptureInEditor() throws {
         NSPasteboard.general.clearContents()
         let app = XCUIApplication()

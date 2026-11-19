@@ -14,6 +14,25 @@ final class FakeTime {
 }
 
 @MainActor
+private final class FailingFrameSource: RegionFrameSource {
+    var frames: [CGImage] = []
+    var failsDuringPreparation = false
+    var onFrameFailure: (() -> Void)?
+
+    func prepare(display: DisplayInfo) async throws {
+        if failsDuringPreparation { throw CaptureError.displayNotFound }
+    }
+
+    func frame(of rect: CGRect, on display: DisplayInfo) async throws -> CGImage {
+        guard !frames.isEmpty else {
+            onFrameFailure?()
+            throw CaptureError.displayNotFound
+        }
+        return frames.removeFirst()
+    }
+}
+
+@MainActor
 struct ScrollCaptureSessionTests {
     let display = DisplayInfo(id: 1, frame: CGRect(x: 0, y: 0, width: 800, height: 600), scale: 1)
     let rect = CGRect(x: 0, y: 0, width: 64, height: 120)
@@ -65,6 +84,55 @@ struct ScrollCaptureSessionTests {
         }
         #expect(await session.run() == nil)
         #expect(session.outcome == .cancelled)
+    }
+
+    @Test(arguments: [false, true])
+    func failureBeforeFirstFramePreservesTheOriginalError(duringPreparation: Bool) async {
+        let source = FailingFrameSource()
+        source.failsDuringPreparation = duringPreparation
+        let session = ScrollCaptureSession(source: source, rect: rect, display: display)
+
+        #expect(await session.run() == nil)
+        #expect(session.outcome == .captureFailed)
+        #expect(session.captureError as? CaptureError == .displayNotFound)
+    }
+
+    @Test func failureAfterFirstFrameReturnsPartialImageAndOriginalError() async throws {
+        let source = FailingFrameSource()
+        let firstFrame = TestImages.noise(width: 64, height: 120)
+        source.frames = [firstFrame]
+        let session = ScrollCaptureSession(source: source, rect: rect, display: display)
+
+        let image = try #require(await session.run())
+        #expect(PixelBuffer(image) == PixelBuffer(firstFrame))
+        #expect(session.outcome == .captureFailed)
+        #expect(session.captureError as? CaptureError == .displayNotFound)
+    }
+
+    @Test func cancellingDuringAFailedAcquisitionDiscardsThePartialImage() async {
+        let source = FailingFrameSource()
+        source.frames = [TestImages.noise(width: 64, height: 120)]
+        let session = ScrollCaptureSession(source: source, rect: rect, display: display)
+        source.onFrameFailure = { session.cancel() }
+        defer { source.onFrameFailure = nil }
+
+        #expect(await session.run() == nil)
+        #expect(session.outcome == .cancelled)
+        #expect(session.captureError == nil)
+    }
+
+    @Test func finishingDuringAFailedAcquisitionKeepsTheImageWithoutAnError() async throws {
+        let source = FailingFrameSource()
+        let firstFrame = TestImages.noise(width: 64, height: 120)
+        source.frames = [firstFrame]
+        let session = ScrollCaptureSession(source: source, rect: rect, display: display)
+        source.onFrameFailure = { session.finish() }
+        defer { source.onFrameFailure = nil }
+
+        let image = try #require(await session.run())
+        #expect(PixelBuffer(image) == PixelBuffer(firstFrame))
+        #expect(session.outcome == .finishedByUser)
+        #expect(session.captureError == nil)
     }
 
     @Test func contentThatChangesByItselfAsksToGoBackWithoutStopping() async {

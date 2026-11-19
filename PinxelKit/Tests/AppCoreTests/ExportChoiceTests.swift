@@ -4,14 +4,13 @@ import UniformTypeIdentifiers
 @testable import AppCore
 
 struct ExportChoiceTests {
-    @Test func defaultScaleFollowsTheCapture() {
-        #expect(ExportChoice(documentScale: 2).scale == .twoX)
-        #expect(ExportChoice(documentScale: 1).scale == .oneX)
-        #expect(ExportChoice(documentScale: 2).fileType == .png)
+    @Test func defaultsArePNGAtOneX() {
+        #expect(ExportChoice().scale == .oneX)
+        #expect(ExportChoice().fileType == .png)
     }
 
     @Test func qualityMapsToZeroOneAndIsClamped() {
-        var choice = ExportChoice(documentScale: 2)
+        var choice = ExportChoice()
         choice.fileType = .jpeg
         #expect(choice.format == .jpeg(quality: 0.9))
         choice.quality = 150
@@ -26,7 +25,7 @@ struct ExportChoiceTests {
     }
 
     @Test func fileNameReplacesOnlyKnownExtensions() {
-        var choice = ExportChoice(documentScale: 2)
+        var choice = ExportChoice()
         #expect(choice.fileName(from: "Cattura.pinxel") == "Cattura.png")
         #expect(choice.fileName(from: "Pinxel 2026-10-14 at 10.00.00") == "Pinxel 2026-10-14 at 10.00.00.png")
         #expect(choice.fileName(from: "") == "Pinxel.png")

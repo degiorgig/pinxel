@@ -16,11 +16,27 @@ struct PostCaptureRouterTests {
             == PostCapturePlan(immediate: [.autoSave, .openEditor], showsQuickPreview: false, afterPreview: []))
     }
 
-    @Test func quickPreviewSavesWhenItExpires() {
-        #expect(PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: true))
-            == PostCapturePlan(immediate: [], showsQuickPreview: true, afterPreview: [.autoSave]))
-        #expect(PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: false))
-            == PostCapturePlan(immediate: [], showsQuickPreview: true, afterPreview: []))
+    @Test(arguments: [false, true]) func quickPreviewHandlesAutoSaveOnOpenAndExpiry(autoSave: Bool) {
+        let plan = PostCaptureRouter.plan(for: settings(.quickPreview, autoSave: autoSave))
+        let save: [PostCaptureStep] = autoSave ? [.autoSave] : []
+        #expect(plan.showsQuickPreview)
+        #expect(plan.immediate.isEmpty)
+        #expect(plan.stepsAfterPreview(openEditor: false) == save)
+        // The editor opens first: saving a large capture must not delay it.
+        #expect(plan.stepsAfterPreview(openEditor: true) == [.openEditor] + save)
+    }
+
+    @Test func anIncompleteCaptureOnlyOpensTheEditor() {
+        // Neither saved nor copied as if it were complete: the user sees what was captured and decides.
+        // Nor archived in the library: it opens as an unsaved document.
+        #expect(PostCaptureRouter.planForIncompleteCapture()
+            == PostCapturePlan(immediate: [.openEditor], showsQuickPreview: false, afterPreview: [], addsToLibrary: false))
+    }
+
+    @Test func completeCapturesGoToTheLibrary() {
+        for action in PostCaptureAction.allCases {
+            #expect(PostCaptureRouter.plan(for: settings(action, autoSave: true)).addsToLibrary)
+        }
     }
 
     @Test func clipboard() {

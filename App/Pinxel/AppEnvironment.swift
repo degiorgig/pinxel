@@ -49,6 +49,11 @@ final class AppEnvironment {
            let action = PostCaptureAction(rawValue: arguments[index + 1]) {
             loaded.postCaptureAction = action
         }
+        if isUITesting, let folder = ProcessInfo.processInfo.environment["PINXEL_UITEST_AUTO_SAVE_FOLDER"] {
+            loaded.autoSave = true
+            loaded.saveFolderPath = folder
+            loaded.saveFormat = .png
+        }
         settings = loaded
         notifier = Notifier(enabled: !isUITesting)
         // UI tests must not register the app being tested to open at login, nor stop at the question.

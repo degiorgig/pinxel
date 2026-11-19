@@ -142,13 +142,19 @@ final class CaptureCoordinator {
             frontmost?.activate()
             let session = ScrollCaptureSession(source: scrolling.makeSource(), rect: prepared.rect,
                                                display: display, maxHeight: Self.maxScrollingHeight)
-            guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else { return }
+            guard let image = await scrolling.presenter.run(session, rect: prepared.rect, display: display, narrowed: prepared.narrowed) else {
+                if let error = session.captureError { throw error }
+                return
+            }
             var metadata = CaptureMetadata(captureDate: Date(), appName: frontmost?.localizedName, bundleIdentifier: frontmost?.bundleIdentifier)
             metadata.windowTitle = nil
             let contents = try CaptureDocumentBuilder.make(image: image, scale: display.scale, metadata: metadata)
-            let plan = PostCaptureRouter.plan(for: current)
+            // Stopped by an error: the part captured so far opens in the editor, and is neither saved nor copied as if complete.
+            let plan = session.captureError == nil ? PostCaptureRouter.plan(for: current) : PostCaptureRouter.planForIncompleteCapture()
             actions.perform(plan, contents: contents, image: image, settings: current)
-            if session.outcome == .reachedLimit {
+            if let error = session.captureError {
+                Self.showIncomplete(error)
+            } else if session.outcome == .reachedLimit {
                 AppEnvironment.shared.notifier.info(String(localized: "Reached the maximum height of \(Self.maxScrollingHeight) pixels"))
             } else if session.outcome == .contentChanging {
                 AppEnvironment.shared.notifier.info(String(localized: "The content changes by itself: capture stopped"))
@@ -158,6 +164,15 @@ final class CaptureCoordinator {
             AppEnvironment.shared.notifier.failure(error)
             frontmost?.activate()
         }
+    }
+
+    /// Said in a dialog over the editor, not in a notification that may be turned off: the document looks like any other.
+    private static func showIncomplete(_ error: Error) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = String(localized: "Scrolling Capture Incomplete")
+        alert.informativeText = String(localized: "\(Notifier.message(for: error)) What was captured so far is open in the editor. It is not in the library: save it if you want to keep it.")
+        alert.runModal()
     }
 
     /// Debug only: `-PinxelDebugScrollRect x,y,w,h` skips the selection, to try the real capture from a script.

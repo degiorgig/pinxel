@@ -58,7 +58,11 @@ public enum Exporter {
             throw RenderError.contextCreationFailed
         }
         ctx.beginPDFPage(nil)
-        try renderer.render(document, assets: assets, in: ctx, options: RenderOptions(outputScale: outputScale))
+        // Drawn one by one, the capture would keep its original pixels under a blur, a cover or a stroke: what hides
+        // something goes in as one bitmap with what it hides, at no less than the capture's own pixels. The rest stays vector.
+        let options = RenderOptions(outputScale: outputScale, flattenedAnnotationIDs: DocumentRenderer.flattenedForPDF(document),
+                                    flatteningScale: max(outputScale, 1))
+        try renderer.render(document, assets: assets, in: ctx, options: options)
         ctx.endPDFPage()
         ctx.closePDF()
         return data as Data

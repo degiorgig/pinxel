@@ -57,6 +57,34 @@ final class EditorUITests: XCTestCase {
         app.terminate()
     }
 
+    // The options are an accessory view of the save panel: they must take clicks, not only be drawn.
+    func testExportOptionsTakeClicks() {
+        let app = launchWithSample()
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.click()
+        app.typeKey("e", modifierFlags: .command)
+        let sheet = app.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5))
+
+        let oneX = sheet.radioButtons["1x"], twoX = sheet.radioButtons["2x"]
+        XCTAssertTrue(oneX.waitForExistence(timeout: 5), sheet.debugDescription)
+        let other = oneX.isSelected ? twoX : oneX
+        other.click()
+        XCTAssertTrue(other.isSelected, "the scale did not change")
+
+        let format = sheet.popUpButtons.matching(NSPredicate(format: "value == 'PNG'")).firstMatch
+        XCTAssertTrue(format.exists, sheet.debugDescription)
+        format.click()
+        app.menuItems["PDF"].click()
+        let name = sheet.textFields.firstMatch
+        let pdfName = NSPredicate(format: "value ENDSWITH '.pdf'")
+        wait(for: [expectation(for: pdfName, evaluatedWith: name)], timeout: 5)
+
+        app.typeKey(.escape, modifierFlags: [])
+        app.terminate()
+    }
+
     func testTextToolTypesAndCommitsWithEscape() {
         let app = launchWithSample()
         let canvas = app.images["pinxel.editor.canvas"]
