@@ -48,7 +48,7 @@ private struct ExportOptionsView: View {
 @MainActor
 enum ExportPanel {
     static func run(document: PinxelDocument, assets: any AssetProvider, suggestedName: String, window: NSWindow) async {
-        let options = ExportOptions(choice: ExportChoice(documentScale: document.scale))
+        let options = ExportOptions(choice: ExportChoice())
         let panel = NSSavePanel()
         panel.title = String(localized: "Export")
         panel.prompt = String(localized: "Export")

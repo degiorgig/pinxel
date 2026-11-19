@@ -42,12 +42,10 @@ public struct ExportChoice: Equatable, Sendable {
     public var fileType: ExportFileType = .png
     /// 0...100.
     public var quality: Double = 90
-    public var scale: ExportScale
+    /// 1x by default, also for a Retina capture: the size the capture has on screen.
+    public var scale: ExportScale = .oneX
 
-    /// For a Retina capture the default is 2x (native pixels), otherwise 1x.
-    public init(documentScale: Double) {
-        scale = documentScale >= 2 ? .twoX : .oneX
-    }
+    public init() {}
 
     public var format: ExportFormat {
         let normalized = min(max(quality, 0), 100) / 100
