@@ -79,3 +79,11 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: -Dsonar.qualitygate.wait=true
+
+      - name: SonarQube issues on new code
+        # Lists what made the quality gate fail, without opening SonarQube Cloud.
+        if: failure() && steps.sonar.outputs.enabled == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: python3 scripts/sonar/new_code_issues.py degiorgig_pinxel "$PULL_REQUEST"
