@@ -56,10 +56,18 @@ enum ExportPanel {
         panel.isExtensionHidden = false
         panel.allowedContentTypes = [options.choice.fileType.contentType]
         panel.nameFieldStringValue = options.choice.fileName(from: suggestedName)
-        panel.accessoryView = NSHostingView(rootView: ExportOptionsView(options: options) { fileType in
+        // NSHostingView starts at 0×0 and does not clip: the options were drawn outside the view, out of reach of the
+        // mouse. The panel sizes the accessory by its frame, so the frame follows the content (Quality comes and goes).
+        let accessory = NSHostingView(rootView: ExportOptionsView(options: options) { fileType in
             panel.allowedContentTypes = [fileType.contentType]
             panel.nameFieldStringValue = options.choice.fileName(from: panel.nameFieldStringValue)
+            Task { @MainActor in
+                guard let view = panel.accessoryView else { return }
+                view.setFrameSize(view.fittingSize)
+            }
         })
+        accessory.setFrameSize(accessory.fittingSize)
+        panel.accessoryView = accessory
 
         guard await panel.beginSheetModal(for: window) == .OK, let url = panel.url else { return }
         do {
