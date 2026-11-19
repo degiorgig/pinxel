@@ -16,9 +16,6 @@ jobs:
   test:
     runs-on: macos-latest
     timeout-minutes: 45
-    env:
-      # Empty on pull requests from forks and until the secrets are set: the analysis is skipped.
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,15 +57,25 @@ jobs:
       - name: Every string in the code has a translation
         run: python3 scripts/l10n/xcstrings.py coverage build/ci .
 
+      - name: SonarQube enabled
+        # The token is empty on pull requests from forks and until the secret is set: the analysis is skipped.
+        # Only this step and the analysis see it, not the build and test steps.
+        id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT"; fi
+
       - name: SonarQube coverage report
-        if: env.SONAR_TOKEN != ''
+        if: steps.sonar.outputs.enabled == 'true'
         run: python3 scripts/sonar/xccov_to_generic.py build/ci-package.xcresult . > build/sonar-coverage.xml
 
       - name: SonarQube analysis
         # Fails the job when the quality gate fails, so the pull request shows it.
-        if: env.SONAR_TOKEN != ''
+        if: steps.sonar.outputs.enabled == 'true'
         uses: SonarSource/sonarqube-scan-action@v5
         env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: -Dsonar.qualitygate.wait=true
