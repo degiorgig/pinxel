@@ -31,12 +31,12 @@ NOTARIZE=${NOTARIZE:-1}
 
 fail() { echo "error: $*" >&2; exit 1; }
 
-[ -e "$OUT" ] && fail "$OUT already exists; remove it or set OUT_DIR"
+[[ -e "$OUT" ]] && fail "$OUT already exists; remove it or set OUT_DIR"
 
-if [ "$NOTARIZE" = 1 ]; then
-    if [ -n "${NOTARY_PROFILE:-}" ]; then
+if [[ "$NOTARIZE" = 1 ]]; then
+    if [[ -n "${NOTARY_PROFILE:-}" ]]; then
         NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
-    elif [ -n "${NOTARY_APPLE_ID:-}" ] && [ -n "${NOTARY_PASSWORD:-}" ] && [ -n "${NOTARY_TEAM_ID:-}" ]; then
+    elif [[ -n "${NOTARY_APPLE_ID:-}" ]] && [[ -n "${NOTARY_PASSWORD:-}" ]] && [[ -n "${NOTARY_TEAM_ID:-}" ]]; then
         NOTARY_ARGS=(--apple-id "$NOTARY_APPLE_ID" --password "$NOTARY_PASSWORD" --team-id "$NOTARY_TEAM_ID")
     else
         fail "set NOTARY_PROFILE or NOTARY_APPLE_ID, NOTARY_PASSWORD and NOTARY_TEAM_ID (or NOTARIZE=0)"
@@ -44,7 +44,7 @@ if [ "$NOTARIZE" = 1 ]; then
 fi
 
 notarize() {
-    [ "$NOTARIZE" = 1 ] || return 0
+    [[ "$NOTARIZE" = 1 ]] || return 0
     echo "Notarizing $(basename "$1")…"
     xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait --timeout 50m \
         --output-format json > "$STAGE/notary.json" || true
@@ -53,7 +53,7 @@ notarize() {
         grep -q "Timeout" "$STAGE/notary.json" && fail "Apple has not finished notarizing $(basename "$1") yet; \
 the first submissions of a new app can take hours. Check with \`xcrun notarytool history\` and run again later"
         ID=$(sed -nE 's/.*"id" *: *"([^"]+)".*/\1/p' "$STAGE/notary.json" | head -1)
-        [ -n "$ID" ] && xcrun notarytool log "$ID" "${NOTARY_ARGS[@]}" >&2 || true
+        [[ -n "$ID" ]] && xcrun notarytool log "$ID" "${NOTARY_ARGS[@]}" >&2 || true
         fail "notarization of $(basename "$1") was not accepted"
     fi
 }
@@ -68,11 +68,11 @@ xcodebuild -project Pinxel.xcodeproj -scheme Pinxel -configuration Release \
 
 APP=$DERIVED/Build/Products/Release/Pinxel.app
 BUILT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
-[ "$BUILT" = "$VERSION" ] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
+[[ "$BUILT" = "$VERSION" ]] || fail "the app is version $BUILT, not $VERSION (update MARKETING_VERSION in project.yml)"
 
 for bundle in "$APP" "$APP"/Contents/Resources/PinxelKit_*.bundle; do
     for language in it de fr; do
-        [ -n "$(find "$bundle" -maxdepth 3 -type d -name "$language.lproj" -print -quit)" ] \
+        [[ -n "$(find "$bundle" -maxdepth 3 -type d -name "$language.lproj" -print -quit)" ]] \
             || fail "$(basename "$bundle") has no $language translation"
     done
 done
@@ -90,7 +90,7 @@ grep -q "get-task-allow" <<<"$ENTITLEMENTS" && fail "the app has the get-task-al
 # dmg both carry the ticket and open offline.
 ditto -c -k --keepParent "$APP" "$STAGE/Pinxel-notarize.zip"
 notarize "$STAGE/Pinxel-notarize.zip"
-[ "$NOTARIZE" = 1 ] && xcrun stapler staple "$APP"
+[[ "$NOTARIZE" = 1 ]] && xcrun stapler staple "$APP"
 
 mkdir -p "$OUT"
 ditto -c -k --keepParent "$APP" "$OUT/Pinxel-$VERSION.zip"
@@ -102,13 +102,13 @@ ln -s /Applications "$STAGE/dmg/Applications"
 for attempt in 1 2 3; do
     hdiutil create -volname "Pinxel $VERSION" -srcfolder "$STAGE/dmg" -format UDZO \
         "$OUT/Pinxel-$VERSION.dmg" >/dev/null && break
-    [ "$attempt" = 3 ] && fail "hdiutil create failed"
+    [[ "$attempt" = 3 ]] && fail "hdiutil create failed"
     sleep 5
 done
 codesign --sign "$SIGN_IDENTITY" --timestamp "$OUT/Pinxel-$VERSION.dmg"
 hdiutil verify "$OUT/Pinxel-$VERSION.dmg" >/dev/null 2>&1 || fail "the dmg does not verify"
 notarize "$OUT/Pinxel-$VERSION.dmg"
-if [ "$NOTARIZE" = 1 ]; then
+if [[ "$NOTARIZE" = 1 ]]; then
     xcrun stapler staple "$OUT/Pinxel-$VERSION.dmg"
     spctl --assess --type execute "$APP" || fail "Gatekeeper rejects the app"
     spctl --assess --type open --context context:primary-signature "$OUT/Pinxel-$VERSION.dmg" \

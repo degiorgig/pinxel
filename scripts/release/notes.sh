@@ -12,7 +12,7 @@ DIST=${2:?usage: scripts/release/notes.sh <version> <dist dir>}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 NOTES=$ROOT/docs/releases/$VERSION.md
 
-[ -f "$NOTES" ] || { echo "error: $NOTES is missing" >&2; exit 1; }
+[[ -f "$NOTES" ]] || { echo "error: $NOTES is missing" >&2; exit 1; }
 
 cat "$NOTES"
 printf '\n## SHA-256 checksums\n\n```\n'
