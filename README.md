@@ -60,7 +60,7 @@ Package tests: `cd PinxelKit && swift test`.
 
 ### Code analysis
 
-The CI workflow analyzes every pull request and `main` with SonarQube Server, coverage of the package tests included, and fails when the quality gate fails. It needs the `SONAR_HOST_URL` and `SONAR_TOKEN` repository secrets; without them, and on pull requests from forks, the analysis is skipped. The setup is in [docs/ci/sonarqube.md](docs/ci/sonarqube.md) (in Italian).
+The CI workflow analyzes every pull request and `main` with SonarQube Cloud, coverage of the package tests included, and fails when the quality gate fails. It needs the `SONAR_TOKEN` repository secret; without it, and on pull requests from forks, the analysis is skipped. The setup is in [docs/ci/sonarqube.md](docs/ci/sonarqube.md) (in Italian).
 
 ## Releasing
 

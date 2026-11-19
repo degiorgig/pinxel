@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # SonarQube needs the history to tell new code from old
+          fetch-depth: 0   # SonarQube Cloud needs the history to tell new code from old
 
       - name: Select the newest Xcode
         run: |
@@ -69,6 +69,6 @@ jobs:
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v5
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: -Dsonar.qualitygate.wait=true
