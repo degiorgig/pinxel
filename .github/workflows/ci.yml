@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # SonarQube Cloud needs the history to tell new code from old
 
       - name: Select the newest Xcode
         run: |
@@ -33,7 +35,9 @@ jobs:
         working-directory: PinxelKit
         env:
           TEST_RUNNER_CI: 'true'   # xcodebuild passes it to the tests as CI
-        run: xcodebuild test -scheme PinxelKit-Package -destination 'platform=macOS' -derivedDataPath ../build/ci-package
+        run: |
+          xcodebuild test -scheme PinxelKit-Package -destination 'platform=macOS' -derivedDataPath ../build/ci-package \
+            -enableCodeCoverage YES -resultBundlePath ../build/ci-package.xcresult
 
       - name: Build the app and the UI tests
         # Ad hoc signature (App/Config/Base.xcconfig): no certificate needed.
@@ -52,3 +56,34 @@ jobs:
 
       - name: Every string in the code has a translation
         run: python3 scripts/l10n/xcstrings.py coverage build/ci .
+
+      - name: SonarQube enabled
+        # The token is empty on pull requests from forks and until the secret is set: the analysis is skipped.
+        # Only this step and the analysis see it, not the build and test steps.
+        id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: SonarQube coverage report
+        if: steps.sonar.outputs.enabled == 'true'
+        run: python3 scripts/sonar/xccov_to_generic.py > build/sonar-coverage.xml
+
+      - name: SonarQube analysis
+        # Fails the job when the quality gate fails, so the pull request shows it.
+        if: steps.sonar.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: -Dsonar.qualitygate.wait=true
+
+      - name: SonarQube issues on new code
+        # Lists what made the quality gate fail, without opening SonarQube Cloud.
+        if: failure() && steps.sonar.outputs.enabled == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: python3 scripts/sonar/new_code_issues.py degiorgig_pinxel "$PULL_REQUEST"
