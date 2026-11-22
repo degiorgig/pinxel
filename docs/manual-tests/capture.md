@@ -30,3 +30,6 @@ Segna ogni voce con ✅ / ❌ e note.
 | M20 | Seleziona un testo piccolo con un trascinamento lento sul trackpad | Cattura nitida, nessuna sfocatura | non verificato |
 | M21 | Anteprima veloce: osserva entrata e uscita; poi attiva Accessibilità → Movimento → Riduci movimento e ripeti | Entra dal bordo destro ed esce dallo stesso lato; con Riduci movimento si dissolve sul posto; quando una sparisce, quelle sopra scendono | non verificato |
 | M22 | Apri il menu di Pinxel; premi una scorciatoia globale con il menu chiuso | Scorciatoie allineate a destra come nei menu di sistema; dalla scorciatoia la cattura parte senza ritardo percepibile | ✅ |
+| M23 | Con una finestra dell'editor aperta (una cattura della libreria), fai una nuova cattura che apre l'editor | La nuova cattura compare nella stessa finestra, che viene in primo piano; le modifiche alla cattura di prima sono salvate; nessuna finestra nuova | non verificato |
+| M24 | Con l'editor aperto su un documento senza nome con qualcosa dentro (es. Nuovo dagli appunti), cattura | La cattura si apre in una finestra nuova; il documento senza nome resta nella sua | non verificato |
+| M25 | Nessuna finestra dell'editor aperta (o solo ridotte nel Dock), cattura | La cattura si apre in una finestra nuova, come prima | non verificato |

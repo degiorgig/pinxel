@@ -15,4 +15,13 @@ struct LibraryOpenDecisionTests {
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .untitled(blank: true)) == .replaceInWindow)
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .untitled(blank: false)) == .keepInLibraryThenReplace)
     }
+
+    /// A new capture takes the open window, except from an untitled document with something in it (an incomplete
+    /// capture, kept out of the library on purpose): that one keeps its window.
+    @Test func aNewCaptureReusesTheWindowUnlessItHoldsUnsavedWork() {
+        #expect(LibraryOpenDecision.capturesReuseWindow(showing: .libraryItem))
+        #expect(LibraryOpenDecision.capturesReuseWindow(showing: .otherFile))
+        #expect(LibraryOpenDecision.capturesReuseWindow(showing: .untitled(blank: true)))
+        #expect(!LibraryOpenDecision.capturesReuseWindow(showing: .untitled(blank: false)))
+    }
 }
