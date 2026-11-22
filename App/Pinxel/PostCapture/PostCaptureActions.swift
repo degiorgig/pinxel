@@ -75,7 +75,11 @@ final class PostCaptureActions {
     }
 
     private func openEditor(_ contents: PinxelFileContents, libraryURL: URL?) {
-        if let libraryURL { DocumentOpener.open(url: libraryURL) } else { DocumentOpener.open(contents) }
+        if let libraryURL {
+            if !LibraryOpener.openCapture(at: libraryURL) { DocumentOpener.open(url: libraryURL) }
+        } else {
+            DocumentOpener.open(contents)
+        }
     }
 
     /// Whether this capture's editor is open: a save that fails later opens it only once.

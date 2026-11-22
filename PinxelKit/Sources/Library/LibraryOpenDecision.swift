@@ -19,4 +19,11 @@ public enum LibraryOpenDecision: Equatable, Sendable {
         if targetAlreadyOpen { return .focusExisting }
         return current == .untitled(blank: false) ? .keepInLibraryThenReplace : .replaceInWindow
     }
+
+    /// A new capture shows up in the editor window already open, as a click on its thumbnail would. Not over an
+    /// untitled document with something in it: that is kept out of the library on purpose (an incomplete capture),
+    /// so it keeps its window and the capture gets a new one.
+    public static func capturesReuseWindow(showing current: WindowContent) -> Bool {
+        current != .untitled(blank: false)
+    }
 }

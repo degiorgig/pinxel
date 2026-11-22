@@ -7,6 +7,23 @@ import os
 enum LibraryOpener {
     private static let logger = Logger(subsystem: "com.degiorgi.pinxel", category: "library")
 
+    /// A new capture already in the library: shown in the frontmost editor window instead of a new one.
+    /// False when there is no window to reuse, or when it holds an untitled document with something in it.
+    static func openCapture(at url: URL) -> Bool {
+        let library = AppEnvironment.shared.library
+        guard let file = library.file(for: url), let item = library.index.item(file),
+              let window = NSApp.orderedWindows.first(where: { $0.isVisible && $0.windowController is EditorWindowController }),
+              let controller = window.windowController as? EditorWindowController,
+              let current = controller.document as? PinxelFileDocument,
+              LibraryOpenDecision.capturesReuseWindow(showing: content(of: current, controller: controller))
+        else { return false }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+        open(item, from: window)
+        return true
+    }
+
     /// Click on a thumbnail: brings forward the window that already shows it, otherwise shows it in the same window.
     /// An untitled document with something in it first enters the library, so it is not lost.
     static func open(_ item: Library.LibraryItem, from window: NSWindow?, newWindow: Bool = false) {
