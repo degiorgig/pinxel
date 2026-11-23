@@ -3118,6 +3118,29 @@
         }
       }
     },
+    "Resize Strip" : {
+      "comment" : "Accessibility label of the drag handle on top of the capture strip",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leiste anpassen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redimensionner le bandeau"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ridimensiona carosello"
+          }
+        }
+      }
+    },
     "Right" : {
       "localizations" : {
         "de" : {
