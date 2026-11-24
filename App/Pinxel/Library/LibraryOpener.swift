@@ -74,6 +74,16 @@ enum LibraryOpener {
         }
     }
 
+    /// The capture shown in a window was deleted: the window stays and shows `item` instead. False without an editor window.
+    static func show(_ item: Library.LibraryItem, replacing document: NSDocument) -> Bool {
+        guard let current = document as? PinxelFileDocument,
+              let controller = current.windowControllers.first as? EditorWindowController else { return false }
+        let url = AppEnvironment.shared.library.url(for: item).standardizedFileURL
+        logger.notice("deleted capture replaced by \(item.file, privacy: .public)")
+        replace(current, in: controller, with: url, item: item)
+        return true
+    }
+
     private static func content(of document: PinxelFileDocument, controller: EditorWindowController) -> WindowContent {
         if let url = document.fileURL {
             return AppEnvironment.shared.library.file(for: url) != nil ? .libraryItem : .otherFile
