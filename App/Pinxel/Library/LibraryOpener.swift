@@ -40,6 +40,8 @@ enum LibraryOpener {
         switch decision {
         case .focusExisting:
             existing?.showWindows()
+        case .openInNewWindow:
+            DocumentOpener.open(url: url)
         case .replaceInWindow:
             // It saves where it is (if it has a file), then the new capture enters the same window.
             guard current.fileURL != nil else { return replace(current, in: controller, with: url, item: item) }
@@ -89,6 +91,7 @@ enum LibraryOpener {
             return AppEnvironment.shared.library.file(for: url) != nil ? .libraryItem : .otherFile
         }
         let blank = (controller.model.canvas as? CanvasView)?.isBlank ?? false
+        if document.keepsOutOfLibrary, !blank { return .keptOutOfLibrary }
         return .untitled(blank: blank && !document.isDocumentEdited)
     }
 

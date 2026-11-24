@@ -3,7 +3,7 @@ import Testing
 
 struct LibraryOpenDecisionTests {
     @Test func aCaptureAlreadyOpenIsBroughtForward() {
-        for current in [WindowContent.libraryItem, .otherFile, .untitled(blank: true), .untitled(blank: false)] {
+        for current in [WindowContent.libraryItem, .otherFile, .untitled(blank: true), .untitled(blank: false), .keptOutOfLibrary] {
             #expect(LibraryOpenDecision.decide(targetAlreadyOpen: true, current: current) == .focusExisting)
         }
     }
@@ -14,6 +14,12 @@ struct LibraryOpenDecisionTests {
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .otherFile) == .replaceInWindow)
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .untitled(blank: true)) == .replaceInWindow)
         #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .untitled(blank: false)) == .keepInLibraryThenReplace)
+    }
+
+    /// An incomplete capture never enters the library behind the user's back: it keeps its window.
+    @Test func aDocumentKeptOutOfTheLibraryKeepsItsWindow() {
+        #expect(LibraryOpenDecision.decide(targetAlreadyOpen: false, current: .keptOutOfLibrary) == .openInNewWindow)
+        #expect(!LibraryOpenDecision.capturesReuseWindow(showing: .keptOutOfLibrary))
     }
 
     /// A new capture takes the open window, except from an untitled document with something in it (an incomplete
