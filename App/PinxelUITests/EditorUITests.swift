@@ -71,7 +71,10 @@ final class EditorUITests: XCTestCase {
         XCTAssertTrue(oneX.waitForExistence(timeout: 5), sheet.debugDescription)
         let other = oneX.isSelected ? twoX : oneX
         other.click()
-        XCTAssertTrue(other.isSelected, "the scale did not change")
+        // SwiftUI updates the segmented control after the click: wait for it instead of reading it at once.
+        let selected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: other)
+        XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 5), .completed,
+                       "the scale did not change: \(sheet.debugDescription)")
 
         let format = sheet.popUpButtons.matching(NSPredicate(format: "value == 'PNG'")).firstMatch
         XCTAssertTrue(format.exists, sheet.debugDescription)
