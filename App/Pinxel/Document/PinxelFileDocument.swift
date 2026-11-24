@@ -17,6 +17,9 @@ final class PinxelFileDocument: NSDocument {
     nonisolated(unsafe) private(set) var contents: PinxelFileContents?
     /// Created with the window: from then on the updated document is `editorModel.session.document`.
     nonisolated(unsafe) private(set) var editorModel: EditorModel?
+    /// Kept out of the library on purpose (an incomplete scrolling capture): a click on a thumbnail must not save it
+    /// there to make room. Only while untitled: once saved, it is a file like any other.
+    var keepsOutOfLibrary = false
 
     convenience init(contents: PinxelFileContents) {
         self.init()

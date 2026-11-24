@@ -27,14 +27,17 @@ public struct RenderOptions: Sendable {
     /// (for PDF, where a vector page would keep whatever a later object hides). See `flattenedForPDF`.
     public var flattenedAnnotationIDs: Set<UUID>
     public var flatteningScale: Double
+    /// Flattened annotations drawn again as vectors over the bitmap, where nothing hides them (see `pdfLayers`).
+    public var redrawnAnnotationIDs: Set<UUID>
 
     public init(outputScale: Double = 1, excludedAnnotationIDs: Set<UUID> = [], matte: RGBA? = nil,
-                flattenedAnnotationIDs: Set<UUID> = [], flatteningScale: Double = 1) {
+                flattenedAnnotationIDs: Set<UUID> = [], flatteningScale: Double = 1, redrawnAnnotationIDs: Set<UUID> = []) {
         self.outputScale = outputScale
         self.excludedAnnotationIDs = excludedAnnotationIDs
         self.matte = matte
         self.flattenedAnnotationIDs = flattenedAnnotationIDs
         self.flatteningScale = flatteningScale
+        self.redrawnAnnotationIDs = redrawnAnnotationIDs
     }
 }
 
@@ -99,11 +102,13 @@ public final class DocumentRenderer {
         }
         ctx.translateBy(x: style.padding, y: style.padding)
         let flattened = options.flattenedAnnotationIDs
+        let redrawn = options.redrawnAnnotationIDs.intersection(flattened)
         if !flattened.isEmpty {
-            try drawFlattened(document.annotations, ids: flattened, size: document.imageSize, scale: options.flatteningScale,
+            try drawFlattened(document.annotations, ids: flattened, redrawn: redrawn, size: document.imageSize, scale: options.flatteningScale,
                               excluded: excluded, context: context, in: ctx)
         }
-        for (index, annotation) in document.annotations.enumerated() where !flattened.contains(annotation.id) && !excluded.contains(annotation.id) {
+        for (index, annotation) in document.annotations.enumerated()
+        where (!flattened.contains(annotation.id) || redrawn.contains(annotation.id)) && !excluded.contains(annotation.id) {
             AnnotationRenderer.draw(annotation, index: index, in: ctx, context: context)
         }
         if style.shadow != nil { ctx.endTransparencyLayer() }
@@ -117,10 +122,32 @@ public final class DocumentRenderer {
         }
     }
 
-    /// The annotations a PDF draws as one bitmap, so that nothing hidden in the picture is left in the file: every object
-    /// with something above it that can hide it (any mark but plain text), together with what hides it. Objects that
-    /// overlap one of them from below join too, to keep the stacking order; the rest stays vector and is drawn above
-    /// the bitmap, which it does not touch. Plain text over the capture stays selectable.
+    /// How a PDF draws the annotations, so that nothing hidden in the picture is left in the file.
+    public struct PDFLayers: Equatable, Sendable {
+        /// Drawn together as one bitmap: whatever they hide is gone from the file.
+        public var flattened: Set<UUID>
+        /// Flattened ones drawn again as vectors over the bitmap: opaque marks with nothing above them that could hide
+        /// them, so arrows and shapes stay sharp when zooming and text stays selectable. Their bitmap copy lies exactly
+        /// under the vector one (without its shadow, which would darken twice).
+        public var redrawn: Set<UUID>
+    }
+
+    public static func pdfLayers(_ document: PinxelDocument) -> PDFLayers {
+        let annotations = document.annotations
+        let flattened = flattenedForPDF(document)
+        let bounds = annotations.map(\.visualBounds)
+        let flatIndices = annotations.indices.filter { flattened.contains(annotations[$0].id) }
+        let redrawn = flatIndices.filter { index in
+            redrawable(annotations[index]) && !flatIndices.contains { above in
+                above > index && !bounds[above].isNull && !bounds[index].isNull && bounds[above].intersects(bounds[index])
+            }
+        }
+        return PDFLayers(flattened: flattened, redrawn: Set(redrawn.map { annotations[$0].id }))
+    }
+
+    /// The annotations a PDF draws as one bitmap: every object with something above it that can hide it, together with
+    /// what hides it. Objects that overlap one of them from below join too, to keep the stacking order; the rest stays
+    /// vector and is drawn above the bitmap, which it does not touch.
     public static func flattenedForPDF(_ document: PinxelDocument) -> Set<UUID> {
         let annotations = document.annotations
         let bounds = annotations.map(\.visualBounds)
@@ -144,17 +171,37 @@ public final class DocumentRenderer {
         return Set(flat.map { annotations[$0].id })
     }
 
-    /// Whether the annotation can cover what is below it. Only text without a box leaves it visible.
+    /// Whether the annotation can cover what is below it. Opaque text can, with its glyphs too (a row of █ over a
+    /// password); only see-through text without a box leaves it visible.
     private static func hides(_ annotation: Annotation) -> Bool {
         guard case .text = annotation.kind else { return true }
         let box = annotation.style.fill != nil || (annotation.style.stroke != nil && annotation.style.lineWidth > 0)
-        return box
+        return box || isOpaque(annotation)
+    }
+
+    /// Vector marks that look the same drawn once or twice: opaque, with no effect computed from what is below.
+    private static func redrawable(_ annotation: Annotation) -> Bool {
+        switch annotation.kind {
+        case .arrow, .line, .shape, .text, .callout, .step, .pen: isOpaque(annotation)
+        default: false
+        }
+    }
+
+    private static func isOpaque(_ annotation: Annotation) -> Bool {
+        let style = annotation.style
+        var colors = [style.stroke, style.fill].compactMap { $0 }
+        switch annotation.kind {
+        case .text(let data): colors += [data.text.color] + data.text.runs.compactMap(\.color)
+        case .callout(let data): colors += [data.text.color] + data.text.runs.compactMap(\.color)
+        default: break
+        }
+        return style.opacity >= 1 && colors.allSatisfy { $0.alpha >= 1 }
     }
 
     /// Draws the annotations in `ids`, in their order, into one bitmap of the content at `scale`, then places it in `ctx`
     /// (document space, y down).
-    private func drawFlattened(_ annotations: [Annotation], ids: Set<UUID>, size: PixelSize, scale: Double, excluded: Set<UUID>,
-                               context: RenderContext, in ctx: CGContext) throws {
+    private func drawFlattened(_ annotations: [Annotation], ids: Set<UUID>, redrawn: Set<UUID>, size: PixelSize, scale: Double,
+                               excluded: Set<UUID>, context: RenderContext, in ctx: CGContext) throws {
         let width = Double(size.width) * scale
         let height = Double(size.height) * scale
         let maxPixels = Double(PinxelDocument.maxImageSide * 4)
@@ -167,7 +214,10 @@ public final class DocumentRenderer {
         let flat = RenderContext(contentSize: context.contentSize, stepLabels: context.stepLabels, assets: context.assets,
                                  outputScale: scale, effects: context.effects, layers: context.layers)
         for (index, annotation) in annotations.enumerated() where ids.contains(annotation.id) && !excluded.contains(annotation.id) {
-            AnnotationRenderer.draw(annotation, index: index, in: bitmap, context: flat)
+            var drawn = annotation
+            // Its shadow comes with the vector copy drawn above.
+            if redrawn.contains(annotation.id) { drawn.style.shadow = nil }
+            AnnotationRenderer.draw(drawn, index: index, in: bitmap, context: flat)
         }
         guard let image = bitmap.makeImage() else { throw RenderError.contextCreationFailed }
         ctx.saveGState()

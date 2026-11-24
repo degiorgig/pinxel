@@ -32,7 +32,8 @@ final class PostCaptureActions {
         }
         onCapture?(libraryURL.map { .file($0) } ?? .contents(contents))
         let editor = EditorState()
-        run(plan.immediate, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editor: editor)
+        let keptOut = !plan.addsToLibrary
+        run(plan.immediate, contents: contents, libraryURL: libraryURL, keptOut: keptOut, image: image, settings: settings, editor: editor)
         guard plan.showsQuickPreview else { return }
         // Each preview removes only itself from the list: the others still visible must stay alive.
         weak var finished: QuickPreviewController?
@@ -41,7 +42,7 @@ final class PostCaptureActions {
             onComplete: { [weak self] openEditor in
                 guard let self else { return }
                 let steps = plan.stepsAfterPreview(openEditor: openEditor)
-                self.run(steps, contents: contents, libraryURL: libraryURL, image: image, settings: settings, editor: EditorState())
+                self.run(steps, contents: contents, libraryURL: libraryURL, keptOut: keptOut, image: image, settings: settings, editor: EditorState())
                 self.removePreview(finished)
             }
         )
@@ -74,11 +75,12 @@ final class PostCaptureActions {
         }
     }
 
-    private func openEditor(_ contents: PinxelFileContents, libraryURL: URL?) {
+    /// `keptOut`: the capture stays out of the library on purpose (incomplete), and its window must keep it so.
+    private func openEditor(_ contents: PinxelFileContents, libraryURL: URL?, keptOut: Bool) {
         if let libraryURL {
             if !LibraryOpener.openCapture(at: libraryURL) { DocumentOpener.open(url: libraryURL) }
         } else {
-            DocumentOpener.open(contents)
+            (DocumentOpener.open(contents) as? PinxelFileDocument)?.keepsOutOfLibrary = keptOut
         }
     }
 
@@ -87,11 +89,12 @@ final class PostCaptureActions {
         var opened = false
     }
 
-    private func run(_ steps: [PostCaptureStep], contents: PinxelFileContents, libraryURL: URL?, image: CGImage, settings: CaptureSettings, editor: EditorState) {
+    private func run(_ steps: [PostCaptureStep], contents: PinxelFileContents, libraryURL: URL?, keptOut: Bool, image: CGImage,
+                     settings: CaptureSettings, editor: EditorState) {
         let openOnce = { [weak self] in
             guard !editor.opened else { return }
             editor.opened = true
-            self?.openEditor(contents, libraryURL: libraryURL)
+            self?.openEditor(contents, libraryURL: libraryURL, keptOut: keptOut)
         }
         for step in steps {
             switch step {

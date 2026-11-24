@@ -32,7 +32,8 @@ public struct AutoSaver: @unchecked Sendable {
         guard fileManager.isWritableFile(atPath: folder.path) else { throw AutoSaveError.folderNotWritable(folder.path) }
 
         let baseName = FileNamer.baseName(template: settings.effectiveFileNameTemplate, date: date)
-        let url = FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: settings.saveFormat.fileExtension, fileManager: fileManager)
+        let fileExtension = settings.saveFormat.fileExtension
+        var url = FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: fileExtension, fileManager: fileManager)
         let data: Data
         do {
             let assets = try contents.assetProvider()
@@ -44,19 +45,26 @@ public struct AutoSaver: @unchecked Sendable {
                 let image = try DocumentRenderer().renderImage(contents.document, assets: assets)
                 data = try ImageCodec.encode(image, type: .png)
             }
-            // Atomic write to a hidden file, then move: a full disk does not leave a half-written file,
-            // and `moveItem` fails if the file appeared in the meantime, so it never overwrites.
+            // Atomic write to a hidden file, then an exclusive rename: a full disk does not leave a half-written file,
+            // and a name taken in the meantime (another capture saving at the same moment) is never overwritten:
+            // the next free name is tried instead.
             let temporary = folder.appendingPathComponent(".\(UUID().uuidString).tmp")
             try data.write(to: temporary, options: .atomic)
-            do {
-                try fileManager.moveItem(at: temporary, to: url)
-            } catch {
-                try? fileManager.removeItem(at: temporary)
-                throw error
+            defer { try? fileManager.removeItem(at: temporary) }
+            var attempts = 0
+            while !Self.renameExclusively(temporary, to: url) {
+                attempts += 1
+                guard errno == EEXIST, attempts < 1000 else { throw CocoaError(.fileWriteFileExists) }
+                url = FileNamer.uniqueURL(in: folder, baseName: baseName, fileExtension: fileExtension, fileManager: fileManager)
             }
         } catch {
             throw AutoSaveError.writeFailed(url.path)
         }
         return url
+    }
+
+    /// `rename` that fails with `EEXIST` instead of replacing an existing file; one system call, so no race.
+    private static func renameExclusively(_ source: URL, to destination: URL) -> Bool {
+        renamex_np(source.path, destination.path, UInt32(RENAME_EXCL)) == 0
     }
 }
