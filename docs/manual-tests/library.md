@@ -12,7 +12,7 @@ Avvia l'app normale (libreria in `~/Pictures/Pinxel/Library`).
 | L6 | ⌘-clic su tre miniature, clic destro ▸ Sposta in ▸ Nuova cartella… "Lavoro" | Le tre stanno in Lavoro; il menu Cartella ▸ Lavoro mostra solo quelle |
 | L7 | Etichette ▸ Nuova etichetta… "bug" su una, poi "BUG" su un'altra | Una sola etichetta "bug"; il filtro le mostra entrambe |
 | L8 | Cerca "safari", poi la data di oggi (2026-10-19) | Filtri corretti; accenti e maiuscole ignorati |
-| L9 | Elimina (⌫) una cattura aperta in un'altra finestra | La finestra si chiude; il file è nel Cestino |
+| L9 | Elimina (⌫) una cattura aperta in un'altra finestra | Il file è nel Cestino; quella finestra resta aperta e mostra la cattura vicina nel carosello |
 | L10 | Trascina una miniatura oltre il bordo sinistro della tela | Diventa un oggetto immagine, annotazioni comprese; la tela si allarga da quella parte; ⌘Z annulla tutto in un passo |
 | L11 | Trascina una miniatura nel Finder | Arriva un PNG con il nome della cattura |
 | L12 | Trascina un PNG dal Finder sulla striscia | Entra nella libreria; l'originale resta |
@@ -26,4 +26,7 @@ Avvia l'app normale (libreria in `~/Pictures/Pinxel/Library`).
 | L20 | Chiudi la finestra, aprine un'altra e poi riavvia Pinxel | Il carosello ha l'altezza scelta; doppio clic sul bordo superiore lo riporta all'altezza iniziale |
 | L21 | Passa il mouse su una miniatura | In alto a destra compare una X; togliendo il mouse sparisce |
 | L22 | Clic sulla X di una miniatura che non è aperta | La cattura sparisce dal carosello e finisce nel Cestino; la finestra resta com'è |
-| L23 | Clic sulla X della miniatura aperta in questa finestra | Come con ⌫: la cattura va nel Cestino e la finestra si chiude |
+| L23 | Clic sulla X della miniatura aperta in questa finestra | La cattura va nel Cestino; la finestra resta e mostra la successiva (o la precedente, se era l'ultima), evidenziata nel carosello |
+| L24 | Tasto destro su una miniatura aperta ▸ Elimina | Come L23: la finestra non si chiude |
+| L25 | Seleziona con ⌘-clic la cattura aperta e la sua vicina, Elimina | La finestra mostra la prima cattura rimasta dopo di loro |
+| L26 | Elimina l'unica cattura della libreria, aperta nella finestra | Non resta niente da mostrare: la finestra si chiude |

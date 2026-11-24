@@ -118,16 +118,27 @@ final class LibraryModel {
         }
     }
 
-    /// Moves captures to the Trash (or, if there is none, asks and deletes), then closes the windows of the deleted ones.
-    /// Windows close only afterwards: if deletion fails or is canceled, the changes remain.
+    /// Moves captures to the Trash (or, if there is none, asks and deletes). A window that showed a deleted one
+    /// stays and shows its neighbour in the strip; it closes only when no capture is left to show.
+    /// Windows change only afterwards: if deletion fails or is canceled, the changes remain.
     func delete(_ files: Set<String>) {
         guard !files.isEmpty else { return }
-        let open = NSDocumentController.shared.documents.compactMap { document -> (NSDocument, String)? in
+        let open = NSDocumentController.shared.documents.compactMap { document -> (document: NSDocument, file: String, strip: [String])? in
             guard let url = document.fileURL, let file = store.file(for: url), files.contains(file) else { return nil }
-            return (document, file)
+            let filter = (document.windowControllers.first as? EditorWindowController)?.stripState.filter ?? LibraryFilter()
+            return (document, file, items(for: filter).map(\.file))
         }
         defer {
-            for (document, file) in open where index.item(file) == nil { document.close() }
+            var shown = Set(NSDocumentController.shared.documents.compactMap { $0.fileURL.flatMap(store.file(for:)) })
+            for entry in open where index.item(entry.file) == nil {
+                guard let next = LibraryDeletion.replacement(for: entry.file, in: entry.strip, deleted: files, unavailable: shown),
+                      let item = index.item(next), LibraryOpener.show(item, replacing: entry.document)
+                else {
+                    entry.document.close()
+                    continue
+                }
+                shown.insert(next)
+            }
         }
         do {
             try store.trash(files, in: &index)
