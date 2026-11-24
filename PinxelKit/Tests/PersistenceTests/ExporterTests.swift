@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import PDFKit
 import Testing
 import DocumentModel
 import Rendering
@@ -124,6 +125,87 @@ struct ExporterTests {
         let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
         let page = try #require(CGPDFDocument(CGDataProvider(data: data as CFData)!)?.page(at: 1))
         #expect(!Self.hasFonts(page.dictionary))
+    }
+
+    /// Opaque glyphs hide what is below them too: a row of █ typed over a password must leave no password in the file.
+    @Test func textCoveredByOpaqueTextIsNotInThePDF() throws {
+        let plain = Style(stroke: nil, fill: nil, lineWidth: 0)
+        let document = TestDocuments.document(annotations: [
+            Annotation(kind: .text(TextData(rect: CGRect(x: 20, y: 200, width: 300, height: 40), text: RichText("Secret", fontSize: 24))),
+                       style: plain),
+            Annotation(kind: .text(TextData(rect: CGRect(x: 20, y: 200, width: 300, height: 40), text: RichText("██████████", fontSize: 24))),
+                       style: plain),
+        ])
+        let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
+        let text = try #require(PDFDocument(data: data)).string ?? ""
+        #expect(!text.contains("Secret"), "got \(text)")
+        // The cover is on top: it stays selectable text.
+        #expect(text.contains("█"), "got \(text)")
+    }
+
+    /// An arrow over the capture is in the bitmap (the pixels under it are gone) and drawn again above as a vector path,
+    /// so it stays sharp when zooming.
+    @Test func anArrowOverTheCaptureStaysVector() throws {
+        let arrow = Annotation(kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 20, y: 20), end: CGPoint(x: 200, y: 150)))))
+        let document = TestDocuments.document(annotations: [arrow])
+        #expect(DocumentRenderer.pdfLayers(document).redrawn == [arrow.id])
+        let data = try Exporter.export(document, assets: provider, format: .pdf, scale: .oneX)
+        let page = try #require(CGPDFDocument(CGDataProvider(data: data as CFData)!)?.page(at: 1))
+        #expect(Self.pathPaintingOperators(on: page) > 0)
+        let empty = try Exporter.export(TestDocuments.document(annotations: []), assets: provider, format: .pdf, scale: .oneX)
+        let emptyPage = try #require(CGPDFDocument(CGDataProvider(data: empty as CFData)!)?.page(at: 1))
+        #expect(Self.pathPaintingOperators(on: emptyPage) == 0)
+    }
+
+    /// What lies under another flattened object is not drawn again: drawn above, it would show what is meant to be hidden.
+    @Test func onlyMarksWithNothingAboveAreRedrawn() {
+        let arrow = Annotation(kind: .arrow(ArrowData(line: LineGeometry(start: CGPoint(x: 20, y: 20), end: CGPoint(x: 200, y: 150)))))
+        let cover = Annotation(kind: .shape(ShapeData(rect: CGRect(x: 0, y: 0, width: 250, height: 200), shape: .rectangle)),
+                               style: Style(stroke: nil, fill: .black))
+        let faded = Annotation(kind: .shape(ShapeData(rect: CGRect(x: 300, y: 200, width: 50, height: 50), shape: .rectangle)),
+                               style: Style(stroke: nil, fill: RGBA(red: 0, green: 0, blue: 0, alpha: 0.5)))
+        let layers = DocumentRenderer.pdfLayers(TestDocuments.document(annotations: [arrow, cover, faded]))
+        #expect(layers.flattened.isSuperset(of: [arrow.id, cover.id, faded.id]))
+        // The see-through one would darken twice.
+        #expect(layers.redrawn == [cover.id])
+    }
+
+    /// Fill and stroke operators on the page, inside forms too (each annotation is drawn in its own transparency
+    /// group): vector drawing, as opposed to placed bitmaps.
+    private static func pathPaintingOperators(on page: CGPDFPage) -> Int {
+        var total = 0
+        let stream = CGPDFContentStreamCreateWithPage(page)
+        withUnsafeMutablePointer(to: &total) { scanForPaths(stream, counter: $0) }
+        CGPDFContentStreamRelease(stream)
+        return total
+    }
+
+    private static func scanForPaths(_ stream: CGPDFContentStreamRef, counter: UnsafeMutablePointer<Int>) {
+        guard let table = CGPDFOperatorTableCreate() else { return }
+        let paint: CGPDFOperatorCallback = { _, info in
+            info?.assumingMemoryBound(to: Int.self).pointee += 1
+        }
+        for op in ["f", "F", "f*", "S", "s", "B", "B*", "b", "b*"] { CGPDFOperatorTableSetCallback(table, op, paint) }
+        CGPDFOperatorTableSetCallback(table, "Do") { scanner, info in
+            var name: UnsafePointer<CChar>?
+            guard CGPDFScannerPopName(scanner, &name), let name, let info else { return }
+            let parent = CGPDFScannerGetContentStream(scanner)
+            var form: CGPDFStreamRef?
+            guard let object = CGPDFContentStreamGetResource(parent, "XObject", name),
+                  CGPDFObjectGetValue(object, .stream, &form), let form,
+                  let dictionary = CGPDFStreamGetDictionary(form) else { return }
+            var subtype: UnsafePointer<CChar>?
+            guard CGPDFDictionaryGetName(dictionary, "Subtype", &subtype), let subtype, String(cString: subtype) == "Form" else { return }
+            var resources: CGPDFDictionaryRef?
+            guard CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources), let resources else { return }
+            let inner = CGPDFContentStreamCreateWithStream(form, resources, parent)
+            ExporterTests.scanForPaths(inner, counter: info.assumingMemoryBound(to: Int.self))
+            CGPDFContentStreamRelease(inner)
+        }
+        let scanner = CGPDFScannerCreate(stream, table, counter)
+        CGPDFScannerScan(scanner)
+        CGPDFScannerRelease(scanner)
+        CGPDFOperatorTableRelease(table)
     }
 
     struct EmbeddedImage {
