@@ -1478,6 +1478,29 @@
         }
       }
     },
+    "Export as %@…" : {
+      "comment" : "Toolbar Export menu item; %@ is a file format (PNG, JPEG, HEIC, PDF)",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als %@ exportieren…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporter en %@…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esporta come %@…"
+          }
+        }
+      }
+    },
     "Export…" : {
       "localizations" : {
         "de" : {
@@ -3648,24 +3671,48 @@
         }
       }
     },
-    "Share the image" : {
+    "Share" : {
+      "comment" : "Toolbar Export menu item that opens the share services",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bild teilen"
+            "value" : "Teilen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partager l'image"
+            "value" : "Partager"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Condividi l'immagine"
+            "value" : "Condividi"
+          }
+        }
+      }
+    },
+    "Share the image, or export it as a file" : {
+      "comment" : "Help tag of the toolbar Export menu",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bild teilen oder als Datei exportieren"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partager l'image ou l'exporter dans un fichier"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Condividi l'immagine o esportala come file"
           }
         }
       }

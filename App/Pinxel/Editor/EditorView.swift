@@ -1,3 +1,4 @@
+import AppCore
 import EditorUI
 import Library
 import SwiftUI
@@ -83,8 +84,19 @@ struct EditorView: View {
                     .disabled(!canArrange)
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    ShareLink(item: SharedCapture(model: model), preview: SharePreview("Pinxel Capture"))
-                        .help("Share the image")
+                    Menu {
+                        ShareLink("Share", item: SharedCapture(model: model), preview: SharePreview("Pinxel Capture"))
+                        Divider()
+                        ForEach(ExportFileType.allCases, id: \.self) { fileType in
+                            Button(String(localized: "Export as \(fileType.title)…")) {
+                                (window()?.windowController?.document as? PinxelFileDocument)?.export(as: fileType)
+                            }
+                        }
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up")
+                    }
+                    .help("Share the image, or export it as a file")
+                    .accessibilityIdentifier("pinxel.toolbar.export")
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
