@@ -115,13 +115,16 @@ final class PinxelFileDocument: NSDocument {
 
     /// Export… from the File menu (arrives here through the responder chain).
     @objc func exportImage(_ sender: Any?) {
-        MainActor.assumeIsolated {
-            guard let model = editorModel, let window = windowControllers.first?.window else { return }
-            model.commitTextEditing()
-            let session = model.session
-            let name = displayName ?? "Pinxel"
-            Task { await ExportPanel.run(document: session.document, assets: session.assets, suggestedName: name, window: window) }
-        }
+        MainActor.assumeIsolated { export(as: nil) }
+    }
+
+    /// The Export panel, with `fileType` already chosen (the toolbar's Export menu) or PNG.
+    func export(as fileType: ExportFileType?) {
+        guard let model = editorModel, let window = windowControllers.first?.window else { return }
+        model.commitTextEditing()
+        let session = model.session
+        let name = displayName ?? "Pinxel"
+        Task { await ExportPanel.run(document: session.document, assets: session.assets, suggestedName: name, window: window, fileType: fileType) }
     }
 
     nonisolated private static func userError(for error: Error, data: Data) -> NSError {

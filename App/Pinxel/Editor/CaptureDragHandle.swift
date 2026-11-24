@@ -15,7 +15,7 @@ struct CaptureDragHandle: View {
             .frame(width: 36, height: 36)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
-                Image(systemName: "photo.on.rectangle")
+                Image(systemName: "arrow.up.doc")
                     .font(.system(size: 15))
                     .foregroundStyle(.secondary)
                     .allowsHitTesting(false)

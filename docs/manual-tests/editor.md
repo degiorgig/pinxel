@@ -19,7 +19,7 @@ Segna ogni voce con ✅ / ❌ e note.
 | E12 | ⌘C senza selezione e incolla in Anteprima → Nuovo dagli appunti | Immagine composita con le annotazioni | |
 | E13 | Seleziona due oggetti, ⌘C, apri un'altra cattura, ⌘V | Le copie compaiono spostate di 10 px e selezionate | |
 | E14 | File → Esporta… (⌘E): PNG 2x, JPEG qualità 50, PDF | File corretti; il PNG a 2x ha le dimensioni in pixel della cattura | |
-| E15 | Toolbar → Condividi → AirDrop o Messaggi | Viene proposto un PNG con le annotazioni | |
+| E15 | Toolbar → Esporta (quadrato con la freccia) → Condividi → AirDrop o Messaggi | Viene proposto un PNG con le annotazioni | |
 | E16 | Aspetto chiaro e scuro; Accessibilità → Riduci movimento | Toolbar, pannello e maniglie leggibili in entrambi; nessuna animazione che blocca | |
 | E17 | Con "Solo appunti": cattura, poi icona nella barra dei menu → Modifica ultima cattura | La cattura si apre nell'editor; prima di qualsiasi cattura la voce è disattivata | |
 | E18 | Copia un'immagine (es. da Safari), poi icona → Nuova dagli appunti, oppure ⇧⌘N con l'editor in primo piano | L'immagine si apre nell'editor; uno screenshot Retina mantiene la scala 2x. Senza immagine negli appunti compare un avviso | |
@@ -47,3 +47,5 @@ Segna ogni voce con ✅ / ❌ e note.
 | E40 | Icona → Nuovo, oppure ⌘N | Si apre un editor vuoto: solo quadretti e l'invito “Incolla uno screenshot con ⌘V”, nessun riquadro o bordo di tela; incollando uno screenshot la tela prende le sue dimensioni |
 | E41 | Incolla uno screenshot con ⌘V, poi forbici (Taglia e ricuci) e trascina in verticale su una parte | La fascia sparisce e le due parti si ricuciono (bordo dritto o zig-zag); lo screenshot non si schiaccia. Anche Ritaglia ed effetti lavorano sui pixel dello screenshot |
 | E42 | Comandi in basso a destra sulla tela: −, +, clic e doppio clic sulla percentuale, poi la manina e trascina; Esc | − e + cambiano lo zoom e la percentuale lo segue (anche con ⌘+rotella e pinch); clic adatta, doppio clic 100%; con la manina il trascinamento sposta la vista senza disegnare, Esc o un altro strumento la spengono; i comandi non finiscono nelle esportazioni |
+| E43 | Toolbar → Esporta (quadrato con la freccia), poi Esporta come JPEG…, PDF…, HEIC…, PNG… | Si apre il pannello di salvataggio con quel formato già scelto, l'estensione giusta nel nome e la scala 1x; il file esportato è nel formato scelto |
+| E44 | Angolo in basso a destra della tela: l'icona del documento con la freccia; trascinala su Finder e su Mail | Il cursore diventa una mano aperta; arriva un PNG con le annotazioni |

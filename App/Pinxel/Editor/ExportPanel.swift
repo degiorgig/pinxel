@@ -47,8 +47,12 @@ private struct ExportOptionsView: View {
 /// Export… (spec §9): save panel with format, quality and scale; goes through `Exporter`.
 @MainActor
 enum ExportPanel {
-    static func run(document: PinxelDocument, assets: any AssetProvider, suggestedName: String, window: NSWindow) async {
-        let options = ExportOptions(choice: ExportChoice())
+    /// `fileType` is the format already chosen in the panel (from the toolbar's Export menu); PNG otherwise.
+    static func run(document: PinxelDocument, assets: any AssetProvider, suggestedName: String, window: NSWindow,
+                    fileType: ExportFileType? = nil) async {
+        var choice = ExportChoice()
+        if let fileType { choice.fileType = fileType }
+        let options = ExportOptions(choice: choice)
         let panel = NSSavePanel()
         panel.title = String(localized: "Export")
         panel.prompt = String(localized: "Export")
