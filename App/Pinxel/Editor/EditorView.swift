@@ -11,25 +11,29 @@ struct EditorView: View {
     /// The window hosting this view: a click on the carousel decides about it, not about the frontmost window.
     let window: () -> NSWindow?
     @AppStorage("libraryStripVisible") private var stripVisible = true
+    private static let canvasMinHeight: Double = 240
 
     var body: some View {
-        VStack(spacing: 0) {
-            CanvasRepresentable(model: model)
-                // Capture changed in the same window: a new canvas, not the old one with another model.
-                .id(ObjectIdentifier(model))
-                .frame(minWidth: 320, minHeight: 240)
-                .overlay(alignment: .bottomTrailing) {
-                    HStack(spacing: 8) {
-                        ZoomControls(model: model)
-                        CaptureDragHandle(model: model)
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                CanvasRepresentable(model: model)
+                    // Capture changed in the same window: a new canvas, not the old one with another model.
+                    .id(ObjectIdentifier(model))
+                    .frame(minWidth: 320, minHeight: Self.canvasMinHeight)
+                    .overlay(alignment: .bottomTrailing) {
+                        HStack(spacing: 8) {
+                            ZoomControls(model: model)
+                            CaptureDragHandle(model: model)
+                        }
+                        .padding(12)
                     }
-                    .padding(12)
-                }
-            if stripVisible {
-                let library = AppEnvironment.shared.library
-                LibraryStrip(library: library, state: stripState,
-                             currentFile: currentURL().flatMap { library.file(for: $0) }) { item, newWindow in
-                    LibraryOpener.open(item, from: window(), newWindow: newWindow)
+                if stripVisible {
+                    let library = AppEnvironment.shared.library
+                    LibraryStrip(library: library, state: stripState,
+                                 currentFile: currentURL().flatMap { library.file(for: $0) },
+                                 heightLimit: geometry.size.height - Self.canvasMinHeight) { item, newWindow in
+                        LibraryOpener.open(item, from: window(), newWindow: newWindow)
+                    }
                 }
             }
         }

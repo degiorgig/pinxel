@@ -21,8 +21,15 @@ struct LibraryStrip: View {
     @Bindable var state: LibraryStripState
     /// File of the capture open in this window, if it is in the library.
     let currentFile: String?
+    /// The most the window can give the strip, so the canvas keeps its room.
+    var heightLimit: Double = .infinity
     let open: (Library.LibraryItem, _ newWindow: Bool) -> Void
     @FocusState private var focused: Bool
+    @AppStorage("libraryStripHeight") private var storedHeight = LibraryStripLayout.defaultHeight
+    /// Height when the drag on the top edge started.
+    @State private var dragStart: Double?
+
+    private var height: Double { LibraryStripLayout.clampedHeight(storedHeight, limit: heightLimit) }
 
     private var items: [Library.LibraryItem] { library.items(for: state.filter) }
 
@@ -48,9 +55,9 @@ struct LibraryStrip: View {
             }
         }
         .padding(.vertical, 6)
-        .frame(height: 110)
+        .frame(height: height)
         .background(.bar)
-        .overlay(alignment: .top) { Divider() }
+        .overlay(alignment: .top) { resizeHandle }
         .focusable()
         .focused($focused)
         .focusEffectDisabled()
@@ -65,10 +72,41 @@ struct LibraryStrip: View {
     private func thumbnail(_ item: Library.LibraryItem) -> some View {
         let url = library.url(for: item)
         return LibraryThumbnailView(item: item, url: url, revision: library.thumbnailRevision[item.file] ?? .distantPast,
-                                    isCurrent: item.file == currentFile, isSelected: state.selection.contains(item.file))
+                                    isCurrent: item.file == currentFile, isSelected: state.selection.contains(item.file),
+                                    size: LibraryStripLayout.thumbnailSize(stripHeight: height)) {
+            state.selection.remove(item.file)
+            library.delete([item.file])
+        }
             .onTapGesture { click(item) }
             .onDrag { dragProvider(for: item, url: url) }
             .contextMenu { contextMenu(for: item) }
+    }
+
+    // MARK: Resizing
+
+    /// The top edge: dragged, it changes the strip's height (remembered for every window); double-clicked, it goes back to the default.
+    private var resizeHandle: some View {
+        Divider()
+            .frame(maxWidth: .infinity)
+            .overlay {
+                Color.clear
+                    .frame(height: 8)
+                    .contentShape(Rectangle())
+                    .pointerStyle(.frameResize(position: .top))
+                    .gesture(
+                        DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                            .onChanged { drag in
+                                let start = dragStart ?? height
+                                dragStart = start
+                                storedHeight = LibraryStripLayout.clampedHeight(start - drag.translation.height, limit: heightLimit)
+                            }
+                            .onEnded { _ in dragStart = nil }
+                    )
+                    .onTapGesture(count: 2) { storedHeight = LibraryStripLayout.defaultHeight }
+                    .accessibilityElement()
+                    .accessibilityLabel(String(localized: "Resize Strip"))
+                    .accessibilityIdentifier("pinxel.library.strip.resize")
+            }
     }
 
     // MARK: Selection and click

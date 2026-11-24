@@ -20,3 +20,10 @@ Avvia l'app normale (libreria in `~/Pictures/Pinxel/Library`).
 | L14 | Esci da Pinxel, rovina `library.json` (scrivi "x"), riapri | Avviso; catture presenti, cartelle ed etichette perse; `library.json.rovinato` esiste |
 | L15 | Cancella un `.pinxel` dal Finder, torna su Pinxel | La miniatura sparisce |
 | L16 | Con 200+ catture (copia file nella cartella), scorri il carosello | Scorrimento fluido, miniature che arrivano senza bloccare |
+| L17 | Apri un editor con il carosello visibile, al primo avvio dopo l'aggiornamento | Le miniature si vedono intere, non tagliate in basso |
+| L18 | Trascina in su il bordo superiore del carosello | Il cursore diventa quello di ridimensionamento; il carosello si alza e le miniature crescono, sempre nitide |
+| L19 | Trascina il bordo fino in cima, con la finestra bassa | Si ferma prima: alla tela restano sempre almeno 240 punti; trascinando in giù si ferma all'altezza minima |
+| L20 | Chiudi la finestra, aprine un'altra e poi riavvia Pinxel | Il carosello ha l'altezza scelta; doppio clic sul bordo superiore lo riporta all'altezza iniziale |
+| L21 | Passa il mouse su una miniatura | In alto a destra compare una X; togliendo il mouse sparisce |
+| L22 | Clic sulla X di una miniatura che non è aperta | La cattura sparisce dal carosello e finisce nel Cestino; la finestra resta com'è |
+| L23 | Clic sulla X della miniatura aperta in questa finestra | Come con ⌫: la cattura va nel Cestino e la finestra si chiude |
