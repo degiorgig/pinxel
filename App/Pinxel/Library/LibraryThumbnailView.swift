@@ -24,10 +24,10 @@ struct LibraryThumbnailView: View {
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onTap)
                 .onDrag(dragProvider)
-            deleteButton
-                .opacity(hovering ? 1 : 0)
-                .allowsHitTesting(hovering)
-                .accessibilityHidden(!hovering)
+            // Only built under the pointer, so keyboard focus can never land on a hidden button.
+            if hovering {
+                deleteButton
+            }
         }
         // A fitted image can leave empty space between its pixels and the delete button.
         .contentShape(Rectangle())
@@ -61,13 +61,19 @@ struct LibraryThumbnailView: View {
         .accessibilityIdentifier("pinxel.library.item")
     }
 
+    /// Side of the delete hit area: 28 pt on normal thumbnails, down to 20 pt on the smallest strip,
+    /// so the corner left for selecting a short thumbnail stays large enough.
+    private var deleteSide: CGFloat {
+        min(28, max(20, min(size.width, size.height) * 0.3))
+    }
+
     private var deleteButton: some View {
         Button(action: onDelete) {
             Image(systemName: "xmark.circle.fill")
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(.white, .black.opacity(0.65))
-                .font(.system(size: 16))
-                .frame(width: 28, height: 28)
+                .font(.system(size: deleteSide * 0.57))
+                .frame(width: deleteSide, height: deleteSide)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

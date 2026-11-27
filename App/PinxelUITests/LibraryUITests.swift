@@ -56,9 +56,10 @@ final class LibraryUITests: XCTestCase {
 
         let thumbnail = items(app).firstMatch
         let delete = app.buttons["pinxel.library.item.delete"]
-        XCTAssertFalse(delete.exists)
-        // A tall capture leaves empty space on both sides of its image.
-        thumbnail.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.25)).hover()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: delete)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 4), .completed)
+        // A tall capture leaves empty space on both sides of its image: hover there, below the button.
+        thumbnail.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.75)).hover()
         XCTAssertTrue(delete.waitForExistence(timeout: 4))
         delete.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).hover()
         XCTAssertTrue(delete.isHittable)
