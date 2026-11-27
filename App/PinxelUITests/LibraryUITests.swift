@@ -42,6 +42,30 @@ final class LibraryUITests: XCTestCase {
         app.terminate()
     }
 
+    @MainActor
+    func testDeleteButtonIsReachableFromTheEmptyEdgeOfATallThumbnail() {
+        let app = launch(["-PinxelUITestFakeScrolling", "-PinxelUITestScrollOnLaunch"])
+        defer { app.terminate() }
+        XCTAssertTrue(app.staticTexts["1200 px"].waitForExistence(timeout: 15))
+        app.buttons["Fine"].click()
+
+        let canvas = app.images["pinxel.editor.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 15))
+        XCTAssertTrue(waitForItems(app, count: 1))
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).hover()
+
+        let thumbnail = items(app).firstMatch
+        let delete = app.buttons["pinxel.library.item.delete"]
+        XCTAssertFalse(delete.exists)
+        // A tall capture leaves empty space on both sides of its image.
+        thumbnail.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.25)).hover()
+        XCTAssertTrue(delete.waitForExistence(timeout: 4))
+        delete.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).hover()
+        XCTAssertTrue(delete.isHittable)
+        delete.click()
+        XCTAssertTrue(waitForItems(app, count: 0))
+    }
+
     func testClipboardOnlyCaptureStillEntersTheLibrary() {
         NSPasteboard.general.clearContents()
         var app = launch(["-PinxelUITestPostCapture", "clipboardOnly", "-PinxelUITestCaptureOnLaunch"])

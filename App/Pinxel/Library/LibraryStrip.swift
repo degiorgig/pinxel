@@ -73,13 +73,12 @@ struct LibraryStrip: View {
         let url = library.url(for: item)
         return LibraryThumbnailView(item: item, url: url, revision: library.thumbnailRevision[item.file] ?? .distantPast,
                                     isCurrent: item.file == currentFile, isSelected: state.selection.contains(item.file),
-                                    size: LibraryStripLayout.thumbnailSize(stripHeight: height)) {
+                                    size: LibraryStripLayout.thumbnailSize(stripHeight: height),
+                                    onTap: { click(item) }, dragProvider: { dragProvider(for: item, url: url) }) {
             state.selection.remove(item.file)
             library.delete([item.file])
         }
-            .onTapGesture { click(item) }
-            .onDrag { dragProvider(for: item, url: url) }
-            .contextMenu { contextMenu(for: item) }
+        .contextMenu { contextMenu(for: item) }
     }
 
     // MARK: Resizing
