@@ -69,10 +69,11 @@ final class EditorUITests: XCTestCase {
 
         let oneX = sheet.radioButtons["1x"], twoX = sheet.radioButtons["2x"]
         XCTAssertTrue(oneX.waitForExistence(timeout: 5), sheet.debugDescription)
-        let other = oneX.isSelected ? twoX : oneX
+        // The segments report their state through `value` (1 when chosen); `isSelected` stays false.
+        let other = (oneX.value as? NSNumber)?.intValue == 1 ? twoX : oneX
         other.click()
         // SwiftUI updates the segmented control after the click: wait for it instead of reading it at once.
-        let selected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: other)
+        let selected = expectation(for: NSPredicate(format: "value == 1"), evaluatedWith: other)
         XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 5), .completed,
                        "the scale did not change: \(sheet.debugDescription)")
 
